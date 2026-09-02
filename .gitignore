@@ -1,0 +1,13 @@
+   # Ignore Node modules
+   node_modules/
+   
+   # Ignore environment variables (YOUR SECRETS)
+   .env
+   
+   # Ignore build folders
+   frontend/build/
+   backend/uploads/
+   
+   # Ignore OS files
+   .DS_Store
+   Thumbs.db
