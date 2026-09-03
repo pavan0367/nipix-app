@@ -6,44 +6,40 @@ import PublicRoute from './PublicRoute';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Home from '../pages/Home';
-import Feed from '../pages/Feed';
-import Profile from '../pages/Profile';
+import StudyMaterials from '../pages/StudyMaterials';
+import NewsFeed from '../pages/News';
+import YouTubeHub from '../pages/YouTube';
 import Explore from '../pages/Explore';
-import Search from '../pages/Search';
-import Reels from '../pages/Reels';
-import Messages from '../pages/Messages';
 import Chat from '../pages/Chat';
-import Notifications from '../pages/Notifications';
+import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
-import CreatePost from '../pages/CreatePost';
 import Saved from '../pages/Saved';
 
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Public Study & Content Routes (Open for Public Learning) */}
+      <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Home />} />
+      <Route path="/study" element={<StudyMaterials />} />
+      <Route path="/news" element={<NewsFeed />} />
+      <Route path="/youtube" element={<YouTubeHub />} />
+      <Route path="/explore" element={<Explore />} />
+
+      {/* Chat Route: Open to preview with locked privacy previews, interactive for auth */}
+      <Route path="/chat" element={<Chat />} />
+
+      {/* Auth Entry Routes */}
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-      {/* Protected Routes */}
-      <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-      <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-      <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
-      <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-      <Route path="/reels" element={<ProtectedRoute><Reels /></ProtectedRoute>} />
-      <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-      <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+      {/* Protected Scholar Routes (Require Authentication) */}
       <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
-
-      {/* Profile Routes */}
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/id/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
-      {/* Default fallback */}
-      <Route path="/" element={<Navigate to="/home" replace />} />
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );

@@ -1,11 +1,17 @@
-/* Nipix Application Styles */
+/* Nipix AI Study Platform Layout Styles */
 .app-container {
   display: flex;
   min-height: 100vh;
 }
 
+@media (max-width: 900px) {
+  .theatre-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 @media (max-width: 768px) {
-  .mobile-header {
-    display: flex !important;
+  .desktop-quick-nav {
+    display: none !important;
   }
 }

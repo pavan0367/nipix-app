@@ -1,118 +1,204 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchFeed } from '../store/slices/postSlice';
-import PostCard from '../components/Post/PostCard';
-import Stories from '../components/Stories';
-import { Link } from 'react-router-dom';
-import { Sparkles, Compass, UserPlus, Image as ImageIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Sparkles,
+  BookOpen,
+  Newspaper,
+  Film,
+  Compass,
+  MessageSquare,
+  ArrowRight,
+  Flame,
+  CheckCircle2,
+  Clock,
+  Send,
+  Code2,
+  Zap,
+  TrendingUp,
+  BrainCircuit
+} from 'lucide-react';
 
 const Home = () => {
-  const dispatch = useDispatch();
-  const { feed, loading } = useSelector((state) => state.post || {});
   const currentUser = useSelector((state) => state.auth?.user);
+  const navigate = useNavigate();
+  const [quickAiPrompt, setQuickAiPrompt] = useState('');
 
-  useEffect(() => {
-    dispatch(fetchFeed());
-  }, [dispatch]);
-
-  const suggestions = [
-    { username: 'creative_studio', full_name: 'Creative Studio', bio: 'Design & Visual Arts' },
-    { username: 'tech_insider', full_name: 'Tech Insider', bio: 'Innovations & Future' },
-    { username: 'travel_journal', full_name: 'Travel Journal', bio: 'Wanderlust Moments' }
-  ];
+  const handleAiPromptSubmit = (e) => {
+    e.preventDefault();
+    if (!quickAiPrompt.trim()) return;
+    navigate('/chat');
+  };
 
   return (
-    <div style={{ maxWidth: '935px', margin: '30px auto', padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 310px', gap: '32px' }}>
-      
-      {/* Main Feed Content Column */}
-      <div>
-        {/* Real Stories Bar */}
-        <Stories />
-
-        {/* Loading State */}
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-            <Sparkles size={24} className="animate-spin" color="var(--accent-blue)" style={{ marginBottom: '8px' }} />
-            <p style={{ margin: 0 }}>Loading latest updates...</p>
-          </div>
-        )}
-
-        {/* Empty Feed State */}
-        {!loading && (!Array.isArray(feed) || feed.length === 0) && (
-          <div className="glass-card" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
-            <ImageIcon size={48} color="var(--accent-blue)" style={{ marginBottom: '12px' }} />
-            <h3 style={{ color: '#fff', fontSize: '1.2rem', margin: '0 0 8px 0' }}>Welcome to Nipix!</h3>
-            <p style={{ fontSize: '0.9rem', marginBottom: '16px' }}>Follow creators or share your first post to populate your home feed.</p>
-            <Link to="/search" className="btn-primary">
-              <Compass size={16} /> Explore Creators
-            </Link>
-          </div>
-        )}
-
-        {/* Posts Stream */}
-        {!loading && Array.isArray(feed) && feed.length > 0 && (
-          feed.map(post => (
-            <PostCard key={post.id || post._id} post={post} currentUser={currentUser} />
-          ))
-        )}
-      </div>
-
-      {/* Right Sidebar Column: User Info & Suggestions */}
-      <div>
-        {currentUser && (
-          <div className="glass-card" style={{ padding: '20px', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div className="story-ring" style={{ padding: '2px' }}>
-                <div style={{ width: '48px', height: '48px', background: 'var(--accent-purple)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff', fontSize: '1.1rem' }}>
-                  {(currentUser.username || 'U')[0].toUpperCase()}
-                </div>
-              </div>
-              <div>
-                <p style={{ fontWeight: '700', fontSize: '0.95rem', color: '#fff', margin: 0 }}>
-                  @{currentUser.username || 'user'}
-                </p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                  {currentUser.full_name || 'Nipix Creator'}
-                </p>
-              </div>
+    <div className="page-theme-home" style={{ minHeight: '100vh', padding: '30px 20px' }}>
+      <div style={{ maxWidth: '1040px', margin: '0 auto' }}>
+        
+        {/* Welcome Hero / AI Scholar Banner */}
+        <div className="glass-card" style={{
+          padding: '36px 32px',
+          marginBottom: '28px',
+          background: 'linear-gradient(135deg, rgba(19, 21, 29, 0.85) 0%, rgba(11, 12, 16, 0.95) 100%)',
+          border: '1px solid rgba(79, 172, 254, 0.2)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: '640px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: 'var(--radius-full)', background: 'rgba(0, 242, 254, 0.1)', color: 'var(--accent-cyan)', fontSize: '0.78rem', fontWeight: '700', marginBottom: '14px', border: '1px solid rgba(0, 242, 254, 0.25)' }}>
+              <BrainCircuit size={14} /> AI STUDY CO-PILOT ACTIVE
             </div>
-          </div>
-        )}
+            
+            <h1 style={{ fontSize: '2.1rem', fontWeight: '800', color: '#fff', lineHeight: '1.25', margin: '0 0 10px 0' }}>
+              Accelerate Your Studies with <span style={{ background: 'var(--scholar-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Nipix Scholar</span>
+            </h1>
 
-        {/* Suggested Accounts Card */}
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Suggested For You
-            </span>
-            <Link to="/search" style={{ fontSize: '0.8rem', color: '#fff', textDecoration: 'none', fontWeight: '600' }}>
-              See All
-            </Link>
-          </div>
+            <p style={{ fontSize: '0.94rem', color: 'var(--text-muted)', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+              Access peer-reviewed study notes, explore cutting-edge science and tech news, stream university video lectures, and consult the AI study terminal.
+            </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {suggestions.map((item) => (
-              <div key={item.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', background: 'var(--bg-hover)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff', fontSize: '0.85rem', border: '1px solid var(--border-color)' }}>
-                    {item.username[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: '600', fontSize: '0.85rem', color: '#fff', margin: 0 }}>@{item.username}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{item.bio}</p>
-                  </div>
-                </div>
-
-                <button style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <UserPlus size={14} /> Follow
-                </button>
-              </div>
-            ))}
+            {/* Quick AI Study Prompter Form */}
+            <form onSubmit={handleAiPromptSubmit} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Ask AI: Explain Dijkstra's algorithm or summarize quantum qubits..."
+                value={quickAiPrompt}
+                onChange={(e) => setQuickAiPrompt(e.target.value)}
+                className="input-field"
+                style={{ borderRadius: 'var(--radius-full)', padding: '14px 20px', background: 'rgba(26, 29, 38, 0.9)' }}
+              />
+              <button type="submit" className="btn-primary" style={{ borderRadius: 'var(--radius-full)', padding: '14px 24px', flexShrink: 0 }}>
+                <Sparkles size={16} /> Consult AI
+              </button>
+            </form>
           </div>
         </div>
 
-      </div>
+        {/* Dashboard Stats & Quick Navigation Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+          
+          <Link to="/study" className="glass-card glass-card-interactive" style={{ padding: '20px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BookOpen size={22} color="#10b981" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Study Notes</h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>Algorithms & Math Sheets</p>
+            </div>
+          </Link>
 
+          <Link to="/news" className="glass-card glass-card-interactive" style={{ padding: '20px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Newspaper size={22} color="#f59e0b" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Tech News</h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>Daily Science Wire</p>
+            </div>
+          </Link>
+
+          <Link to="/youtube" className="glass-card glass-card-interactive" style={{ padding: '20px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(244, 63, 94, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Film size={22} color="#f43f5e" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Lectures</h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>In-App YouTube Studio</p>
+            </div>
+          </Link>
+
+          <Link to="/chat" className="glass-card glass-card-interactive" style={{ padding: '20px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MessageSquare size={22} color="#818cf8" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Private Chat</h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>Encrypted Vault Channel</p>
+            </div>
+          </Link>
+
+        </div>
+
+        {/* Highlighted Study Tracks */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }} className="theatre-layout">
+          
+          {/* Left Column: Recommended Learning Tracks */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <TrendingUp size={18} color="var(--accent-cyan)" /> Recommended Study Modules
+              </h2>
+              <Link to="/study" style={{ fontSize: '0.82rem', color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: '600' }}>
+                View All
+              </Link>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>COMPUTER SCIENCE</span>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: '4px 0 6px 0' }}>
+                  Deep Learning & Transformer Mechanics
+                </h3>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+                  Detailed mathematical formulations of self-attention matrices, positional encodings, and gradient propagation.
+                </p>
+                <Link to="/study" className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
+                  Open Study Guide <ArrowRight size={12} />
+                </Link>
+              </div>
+
+              <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: '700' }}>MATHEMATICS</span>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: '4px 0 6px 0' }}>
+                  Multivariable Calculus & Green’s Vector Theorem
+                </h3>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+                  Planar vector integrals, divergence theorem, and Maxwell equations visual foundations.
+                </p>
+                <Link to="/study" className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
+                  Open Study Guide <ArrowRight size={12} />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Scholar Progress & Daily Streak */}
+          <div>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Flame size={18} color="#f59e0b" /> Daily Learning Streak
+            </h2>
+
+            <div className="glass-card" style={{ padding: '22px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div>
+                  <span style={{ fontSize: '2rem', fontWeight: '800', color: '#fff' }}>5 Days</span>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>Keep the momentum going!</p>
+                </div>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Flame size={24} color="#f59e0b" />
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '16px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+                  Today's Milestones:
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#34d399', marginBottom: '6px' }}>
+                  <CheckCircle2 size={14} /> 1 Algorithm Review Completed
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-dim)' }}>
+                  <Clock size={14} /> 1 Video Lecture Scheduled
+                </div>
+              </div>
+
+              <Link to="/study" className="btn-primary" style={{ width: '100%', fontSize: '0.84rem' }}>
+                Continue Learning Track
+              </Link>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
     </div>
   );
 };
