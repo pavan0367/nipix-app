@@ -92,7 +92,7 @@ const Explore = () => {
               <Compass size={24} color="#00f2fe" />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff', margin: 0 }}>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Explore Educational Visuals & Science Cards
               </h1>
               <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
@@ -129,7 +129,7 @@ const Explore = () => {
                   <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: '600' }}>
                     {card.author} • {card.category}
                   </span>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: '8px 0 10px 0', lineHeight: '1.4' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: '8px 0 10px 0', lineHeight: '1.4' }}>
                     {card.title}
                   </h3>
                   <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>

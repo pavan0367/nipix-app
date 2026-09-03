@@ -38,17 +38,17 @@ const Home = () => {
         <div className="glass-card" style={{
           padding: '36px 32px',
           marginBottom: '28px',
-          background: 'linear-gradient(135deg, rgba(19, 21, 29, 0.85) 0%, rgba(11, 12, 16, 0.95) 100%)',
-          border: '1px solid rgba(79, 172, 254, 0.2)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
           position: 'relative',
           overflow: 'hidden'
         }}>
           <div style={{ position: 'relative', zIndex: 2, maxWidth: '640px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: 'var(--radius-full)', background: 'rgba(0, 242, 254, 0.1)', color: 'var(--accent-cyan)', fontSize: '0.78rem', fontWeight: '700', marginBottom: '14px', border: '1px solid rgba(0, 242, 254, 0.25)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: 'var(--radius-full)', background: 'rgba(37, 99, 235, 0.1)', color: 'var(--accent-blue)', fontSize: '0.78rem', fontWeight: '700', marginBottom: '14px', border: '1px solid var(--border-color)' }}>
               <BrainCircuit size={14} /> AI STUDY CO-PILOT ACTIVE
             </div>
             
-            <h1 style={{ fontSize: '2.1rem', fontWeight: '800', color: '#fff', lineHeight: '1.25', margin: '0 0 10px 0' }}>
+            <h1 style={{ fontSize: '2.1rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1.25', margin: '0 0 10px 0' }}>
               Accelerate Your Studies with <span style={{ background: 'var(--scholar-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Nipix Scholar</span>
             </h1>
 
@@ -64,7 +64,7 @@ const Home = () => {
                 value={quickAiPrompt}
                 onChange={(e) => setQuickAiPrompt(e.target.value)}
                 className="input-field"
-                style={{ borderRadius: 'var(--radius-full)', padding: '14px 20px', background: 'rgba(26, 29, 38, 0.9)' }}
+                style={{ borderRadius: 'var(--radius-full)', padding: '14px 20px', background: 'var(--bg-input)' }}
               />
               <button type="submit" className="btn-primary" style={{ borderRadius: 'var(--radius-full)', padding: '14px 24px', flexShrink: 0 }}>
                 <Sparkles size={16} /> Consult AI
@@ -81,7 +81,7 @@ const Home = () => {
               <BookOpen size={22} color="#10b981" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Study Notes</h3>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>Study Notes</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>Algorithms & Math Sheets</p>
             </div>
           </Link>
@@ -91,7 +91,7 @@ const Home = () => {
               <Newspaper size={22} color="#f59e0b" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Tech News</h3>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>Tech News</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>Daily Science Wire</p>
             </div>
           </Link>
@@ -101,7 +101,7 @@ const Home = () => {
               <Film size={22} color="#f43f5e" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Lectures</h3>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>Lectures</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>In-App YouTube Studio</p>
             </div>
           </Link>
@@ -111,7 +111,7 @@ const Home = () => {
               <MessageSquare size={22} color="#818cf8" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0 }}>Private Chat</h3>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>Private Chat</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '2px 0 0 0' }}>Encrypted Vault Channel</p>
             </div>
           </Link>
@@ -124,7 +124,7 @@ const Home = () => {
           {/* Left Column: Recommended Learning Tracks */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <TrendingUp size={18} color="var(--accent-cyan)" /> Recommended Study Modules
               </h2>
               <Link to="/study" style={{ fontSize: '0.82rem', color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: '600' }}>
@@ -135,7 +135,7 @@ const Home = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>COMPUTER SCIENCE</span>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: '4px 0 6px 0' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: '4px 0 6px 0' }}>
                   Deep Learning & Transformer Mechanics
                 </h3>
                 <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
@@ -148,7 +148,7 @@ const Home = () => {
 
               <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: '700' }}>MATHEMATICS</span>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: '4px 0 6px 0' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: '4px 0 6px 0' }}>
                   Multivariable Calculus & Green’s Vector Theorem
                 </h3>
                 <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
@@ -163,14 +163,14 @@ const Home = () => {
 
           {/* Right Column: Scholar Progress & Daily Streak */}
           <div>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Flame size={18} color="#f59e0b" /> Daily Learning Streak
             </h2>
 
             <div className="glass-card" style={{ padding: '22px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <div>
-                  <span style={{ fontSize: '2rem', fontWeight: '800', color: '#fff' }}>5 Days</span>
+                  <span style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-main)' }}>5 Days</span>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>Keep the momentum going!</p>
                 </div>
                 <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

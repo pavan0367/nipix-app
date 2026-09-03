@@ -103,7 +103,7 @@ const YouTubeHub = () => {
               <Film size={24} color="#f43f5e" />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff', margin: 0 }}>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Interactive Video Lecture Studio
               </h1>
               <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
@@ -152,11 +152,11 @@ const YouTubeHub = () => {
                   <Clock size={12} /> {activeVideo.duration}
                 </span>
               </div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#fff', marginBottom: '6px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '6px' }}>
                 {activeVideo.title}
               </h2>
               <p style={{ fontSize: '0.84rem', color: 'var(--text-dim)', margin: '0 0 12px 0' }}>
-                Channel: <strong style={{ color: '#e2e8f0' }}>{activeVideo.channel}</strong>
+                Channel: <strong style={{ color: 'var(--text-main)' }}>{activeVideo.channel}</strong>
               </p>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
                 {activeVideo.description}
@@ -167,7 +167,7 @@ const YouTubeHub = () => {
           {/* Quick Study Notepad */}
           <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Edit3 size={16} color="var(--accent-cyan)" /> Lecture Notepad
               </span>
               {savedNotePrompt && (
@@ -260,7 +260,7 @@ const YouTubeHub = () => {
                 <p style={{ fontSize: '0.76rem', color: '#fb7185', fontWeight: '700', margin: '0 0 4px 0' }}>
                   {vid.category}
                 </p>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: '700', color: '#fff', margin: '0 0 6px 0', lineHeight: '1.4' }}>
+                <h4 style={{ fontSize: '0.92rem', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 6px 0', lineHeight: '1.4' }}>
                   {vid.title}
                 </h4>
                 <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>

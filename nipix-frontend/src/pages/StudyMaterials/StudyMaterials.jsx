@@ -192,7 +192,7 @@ const StudyMaterials = () => {
               <BookOpen size={24} color="#10b981" />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff', margin: 0 }}>
+              <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Study Materials & Academic Notes
               </h1>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
@@ -240,7 +240,7 @@ const StudyMaterials = () => {
                     </span>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>• {mat.readTime}</span>
                   </div>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#fff', margin: '0 0 8px 0' }}>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 8px 0' }}>
                     {mat.title}
                   </h2>
                   <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)', margin: '0 0 12px 0' }}>
@@ -255,20 +255,20 @@ const StudyMaterials = () => {
                     style={{ padding: '8px', borderRadius: '50%' }}
                     title={savedNotes[mat.id] ? "Saved" : "Save for study session"}
                   >
-                    <Bookmark size={16} fill={savedNotes[mat.id] ? "var(--accent-amber)" : "none"} color={savedNotes[mat.id] ? "var(--accent-amber)" : "#94a3b8"} />
+                    <Bookmark size={16} fill={savedNotes[mat.id] ? "var(--accent-amber)" : "none"} color={savedNotes[mat.id] ? "var(--accent-amber)" : "var(--text-dim)"} />
                   </button>
                 </div>
               </div>
 
-              <p style={{ fontSize: '0.92rem', color: '#e2e8f0', lineHeight: '1.6', marginBottom: '16px' }}>
+              <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '16px' }}>
                 {mat.description}
               </p>
 
               {/* Code / Formula Snippet Box */}
               {mat.codeSnippet && (
                 <div style={{
-                  background: '#090a0f',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '16px',
                   marginBottom: '16px',
@@ -280,13 +280,13 @@ const StudyMaterials = () => {
                     </span>
                     <button
                       onClick={() => handleCopyCode(mat.id, mat.codeSnippet)}
-                      style={{ background: 'none', border: 'none', color: copiedId === mat.id ? '#34d399' : '#94a3b8', cursor: 'pointer', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ background: 'none', border: 'none', color: copiedId === mat.id ? '#34d399' : 'var(--text-muted)', cursor: 'pointer', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                       {copiedId === mat.id ? <Check size={14} /> : <Copy size={14} />}
                       <span>{copiedId === mat.id ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
-                  <pre style={{ margin: 0, fontSize: '0.84rem', color: '#a5f3fc', overflowX: 'auto', lineHeight: '1.5' }}>
+                  <pre style={{ margin: 0, fontSize: '0.84rem', color: 'var(--code-text)', overflowX: 'auto', lineHeight: '1.5' }}>
                     <code>{mat.codeSnippet}</code>
                   </pre>
                 </div>

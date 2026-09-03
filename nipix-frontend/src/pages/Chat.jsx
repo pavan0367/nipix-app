@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Send,
   Sparkles,
@@ -9,18 +9,16 @@ import {
   KeyRound,
   Shield,
   Eye,
-  EyeOff,
-  AlertCircle,
+  Bot,
+  User as UserIcon,
   HelpCircle,
-  Clock,
+  FileCode,
   CheckCircle2,
   Terminal,
-  Bot
+  Clock
 } from 'lucide-react';
-import { loginUser } from '../store/slices/authSlice';
-import api from '../services/api';
 
-// Bitmoji / Persona avatars for mysterious sample prompts
+// BiteMoji / Character Avatars for mysterious prompts
 const BITMOJI_CHARACTERS = [
   {
     id: 'cipher',
@@ -56,49 +54,71 @@ const BITMOJI_CHARACTERS = [
   }
 ];
 
+// Secret / Hidden Chat Authorized Conversations
+const HIDDEN_VAULT_CONVERSATIONS = [
+  {
+    id: 'h-1',
+    sender: 'Lead Researcher (Dr. K. Vance)',
+    role: 'Quantum Architect',
+    time: '11:45 AM',
+    text: 'Decrypted Channel Active: The topological qubit test benchmarks have matched theoretical parity. Access token for Shard 4 is 0x7F4A92B.',
+    isPrivate: true
+  },
+  {
+    id: 'h-2',
+    sender: 'Cipher_09',
+    role: 'Security Fellow',
+    time: '12:10 PM',
+    text: 'Verified: Multi-agent consensus protocol verified for distributed study graph. All private transcripts are locked to authenticated keys.',
+    isPrivate: true
+  },
+  {
+    id: 'h-3',
+    sender: 'ByteBot Mentor',
+    role: 'AI Core',
+    time: 'Just now',
+    text: 'Welcome to the Secret Vault Channel. You now have privileged access to restricted study datasets and encrypted research discussions.',
+    isPrivate: true
+  }
+];
+
 const Chat = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Chat conversation state
+  // Check if user came from successful login with ?view=hidden
+  const searchParams = new URLSearchParams(location.search);
+  const requestedHiddenView = searchParams.get('view') === 'hidden';
+
+  // Active view: 'normal' | 'hidden'
+  const [activeTab, setActiveTab] = useState(requestedHiddenView ? 'hidden' : 'normal');
+
+  // Messages state
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isAiThinking, setIsAiThinking] = useState(false);
 
-  // Secret Vault Modal State
-  const [showVaultModal, setShowVaultModal] = useState(false);
-  const [vaultPassword, setVaultPassword] = useState('');
-  const [vaultEmail, setVaultEmail] = useState('');
-  const [vaultError, setVaultError] = useState('');
-  const [vaultLoading, setVaultLoading] = useState(false);
-  const [secretVaultUnlocked, setSecretVaultUnlocked] = useState(false);
-  const [secretMessages, setSecretMessages] = useState([
-    {
-      id: 'sec-1',
-      sender: 'Redacted Researcher',
-      text: 'Project Nipix Neural weights v2.4 have been committed to shard 7.',
-      timestamp: 'Classified'
-    },
-    {
-      id: 'sec-2',
-      sender: 'Cipher_09',
-      text: 'Remember to verify the hash before deploying the study graph optimizer.',
-      timestamp: 'Encrypted'
-    }
-  ]);
+  // Hidden chat state
+  const [vaultMessages, setVaultMessages] = useState(HIDDEN_VAULT_CONVERSATIONS);
+  const [vaultInput, setVaultInput] = useState('');
 
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    // If authenticated, load real welcome or user messages
-    if (currentUser) {
+    if (requestedHiddenView && currentUser) {
+      setActiveTab('hidden');
+    }
+  }, [requestedHiddenView, currentUser]);
+
+  useEffect(() => {
+    if (currentUser && messages.length === 0) {
       setMessages([
         {
-          id: 'ai-welcome',
+          id: 'ai-init',
           sender: 'Nipix Study AI',
           isAi: true,
-          text: `Welcome back, Scholar ${currentUser.username || ''}. How can I assist your studies today? You can ask me to explain algorithms, summarize notes, or solve math problems.`,
+          text: `Hello Scholar ${currentUser.username || ''}! I am your AI study mentor. Ask me about algorithms, math proofs, or research topics.`,
           time: 'Online'
         }
       ]);
@@ -107,16 +127,25 @@ const Chat = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isAiThinking]);
+  }, [messages, vaultMessages, isAiThinking]);
 
-  // Handle sending a message
-  const handleSendMessage = async (e) => {
+  // Click Secret Chat / Hidden Chat icon on the side
+  const handleSecretChatClick = () => {
+    if (!currentUser) {
+      // 1. Open login screen, clearly communicating that authentication is required
+      navigate('/login?redirect=hidden-chat');
+    } else {
+      // User is already logged in: toggle or go straight to hidden chat
+      setActiveTab(activeTab === 'hidden' ? 'normal' : 'hidden');
+    }
+  };
+
+  const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
     if (!currentUser) {
-      // Prompt unauthenticated user to log in
-      setShowVaultModal(true);
+      navigate('/login?redirect=hidden-chat');
       return;
     }
 
@@ -128,51 +157,46 @@ const Chat = () => {
       time: 'Just now'
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages(prev => [...prev, userMsg]);
     setInputValue('');
     setIsAiThinking(true);
 
-    // AI Study Assistant simulation response
     setTimeout(() => {
-      let aiResponseText = `I have analyzed your query about: "${userMsg.text}". Here is the study breakdown:\n\n1. Core Principle: Focus on fundamental concepts.\n2. Application: Review practical implementation examples in the Study Materials hub.\n3. Summary: Keep exploring the connected topics!`;
+      let reply = `Here is a study breakdown for: "${userMsg.text}".\n\n• Key Concept: Ensure you grasp the fundamental axioms.\n• Practice: Work through 2-3 sample problems in the Study Materials hub.\n• Inquiry: Feel free to ask for a code sample or formula derivation!`;
       
-      if (userMsg.text.toLowerCase().includes('secret') || userMsg.text.toLowerCase().includes('hidden')) {
-        aiResponseText = "Looking for confidential files? Look closely at the encrypted rune symbol on the sidebar...";
+      if (userMsg.text.toLowerCase().includes('secret') || userMsg.text.toLowerCase().includes('vault')) {
+        reply = "Looking for the hidden conversations? Click the secret keyhole glyph on the top-right side of this terminal.";
       }
 
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'Nipix Study AI',
           isAi: true,
-          text: aiResponseText,
+          text: reply,
           time: 'Just now'
         }
       ]);
       setIsAiThinking(false);
-    }, 900);
+    }, 800);
   };
 
-  // Authenticate from Secret Vault Modal
-  const handleVaultLogin = async (e) => {
+  const handleSendVaultMessage = (e) => {
     e.preventDefault();
-    setVaultLoading(true);
-    setVaultError('');
+    if (!vaultInput.trim()) return;
 
-    try {
-      const result = await dispatch(loginUser({ email: vaultEmail, password: vaultPassword }));
-      if (result.meta.requestStatus === 'fulfilled') {
-        setSecretVaultUnlocked(true);
-        setShowVaultModal(false);
-      } else {
-        setVaultError(result.payload?.message || 'Access Denied: Invalid Security Credentials');
-      }
-    } catch (err) {
-      setVaultError('Failed to access secure channel.');
-    } finally {
-      setVaultLoading(false);
-    }
+    const newVMsg = {
+      id: Date.now().toString(),
+      sender: currentUser?.username || 'Authorized Scholar',
+      role: 'Verified Researcher',
+      time: 'Just now',
+      text: vaultInput,
+      isUser: true
+    };
+
+    setVaultMessages(prev => [...prev, newVMsg]);
+    setVaultInput('');
   };
 
   return (
@@ -186,50 +210,57 @@ const Chat = () => {
         padding: '14px 20px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid var(--border-color)'
+        justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             width: '40px',
             height: '40px',
             borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+            background: activeTab === 'hidden' ? 'var(--vault-gradient)' : 'var(--mystic-gradient)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
-            boxShadow: 'var(--shadow-glow-purple)'
+            boxShadow: 'var(--shadow-sm)'
           }}>
-            <Bot size={22} />
+            {activeTab === 'hidden' ? <Shield size={22} /> : <Bot size={22} />}
           </div>
           <div>
-            <h2 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Nipix AI Scholar Terminal
-              <span style={{ fontSize: '0.72rem', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(34,197,94,0.3)' }}>
-                Online
+            <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {activeTab === 'hidden' ? 'Encrypted Hidden Vault' : 'AI Scholar Study Terminal'}
+              <span style={{
+                fontSize: '0.72rem',
+                background: activeTab === 'hidden' ? 'rgba(5, 150, 105, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                color: activeTab === 'hidden' ? 'var(--accent-emerald)' : '#16a34a',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)',
+                fontWeight: '700'
+              }}>
+                {activeTab === 'hidden' ? 'Classified' : 'Online'}
               </span>
             </h2>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-              Encrypted Study Channel & AI Research Mentor
+              {activeTab === 'hidden' ? 'Authorized private transmissions' : 'AI Study Assistant & Research Companion'}
             </p>
           </div>
         </div>
 
-        {/* Secret Chat Concept: Small, subtle, clearly clickable hidden vault icon on side */}
+        {/* SECRET CHAT / HIDDEN CHAT ICON ON THE SIDE */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
-            onClick={() => setShowVaultModal(true)}
+            onClick={handleSecretChatClick}
             className="secret-glyph-btn"
-            title="Encrypted Secret Vault"
-            aria-label="Secret Vault"
+            title={currentUser ? (activeTab === 'hidden' ? "Switch to Normal AI Chat" : "Open Hidden Secret Chat") : "Secret Chat: Login Required"}
+            aria-label="Secret Chat"
           >
-            {secretVaultUnlocked ? <Unlock size={17} /> : <KeyRound size={17} />}
+            {currentUser && activeTab === 'hidden' ? <Unlock size={17} /> : <KeyRound size={17} />}
           </button>
         </div>
       </div>
 
-      {/* Main Chat Container */}
+      {/* Main Chat Box Container */}
       <div className="glass-card" style={{
         maxWidth: '920px',
         margin: '0 auto',
@@ -238,308 +269,269 @@ const Chat = () => {
         minHeight: '68vh',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
-        border: '1px solid var(--border-color)'
+        overflow: 'hidden'
       }}>
-        
-        {/* Messages Scroll Area */}
-        <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          
-          {/* 1. INITIAL EXPERIENCE FOR UNAUTHENTICATED OR NEW USERS: Bitmoji-Style Mysterious Messages */}
-          {!currentUser && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
-              <div style={{
-                background: 'rgba(99, 102, 241, 0.08)',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
-                borderRadius: 'var(--radius-md)',
-                padding: '12px 18px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                color: '#c7d2fe',
-                fontSize: '0.84rem'
-              }}>
-                <Sparkles size={18} color="#a855f7" />
-                <span>Recent archived transmissions detected in this terminal. Some conversations remain encrypted.</span>
-              </div>
 
-              {/* Bitmoji Character Prompt Bubbles */}
-              {BITMOJI_CHARACTERS.map((char) => (
-                <div
-                  key={char.id}
-                  onClick={() => setShowVaultModal(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    background: 'rgba(255, 255, 255, 0.02)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  className="glass-card-interactive"
-                >
-                  <div className={`avatar-badge ${char.badgeClass}`}>
-                    {char.avatar}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontWeight: '700', fontSize: '0.85rem', color: '#fff' }}>{char.name}</span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{char.time}</span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#e2e8f0', fontStyle: 'italic' }}>
-                      "{char.text}"
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-              {/* 2. CHAT PRIVACY RULE: Locked & Blurred Incoming Messages for Unauthenticated Users */}
-              <div className="message-locked-card">
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '50%',
-                  background: 'rgba(79, 172, 254, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 12px auto'
-                }}>
-                  <Lock size={22} color="var(--accent-cyan)" />
-                </div>
-                <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: '6px' }}>Private Conversations Locked</h4>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', maxWidth: '420px', margin: '0 auto 16px auto' }}>
-                  You have incoming student & AI peer discussions waiting. In accordance with platform privacy, message content is protected until you sign in.
-                </p>
-
-                {/* Blurred Content Preview */}
-                <div className="blur-preview" style={{ marginBottom: '16px', fontSize: '0.85rem', color: '#94a3b8' }}>
-                  “Hey, I left the solutions for the discrete mathematics worksheet in the secret vault...”
-                </div>
-
-                <button
-                  onClick={() => setShowVaultModal(true)}
-                  className="btn-primary"
-                  style={{ padding: '8px 24px' }}
-                >
-                  Unlock & Sign In
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Authenticated Messages Stream */}
-          {currentUser && messages.map((msg) => (
-            <div
-              key={msg.id}
-              style={{
-                display: 'flex',
-                justifyContent: msg.isUser ? 'flex-end' : 'flex-start',
-                alignItems: 'flex-start',
-                gap: '10px'
-              }}
-            >
-              {!msg.isUser && (
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.9rem'
-                }}>
-                  🤖
-                </div>
-              )}
-              <div style={{
-                maxWidth: '75%',
-                padding: '12px 18px',
-                borderRadius: msg.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: msg.isUser ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'rgba(255, 255, 255, 0.05)',
-                border: msg.isUser ? 'none' : '1px solid var(--border-color)',
-                color: '#fff',
-                fontSize: '0.92rem',
-                lineHeight: '1.5',
-                whiteSpace: 'pre-wrap'
-              }}>
-                {msg.text}
-              </div>
-            </div>
-          ))}
-
-          {/* AI Thinking Indicator */}
-          {isAiThinking && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-cyan)', fontSize: '0.84rem' }}>
-              <Sparkles size={16} className="animate-spin" />
-              <span>Nipix AI Scholar is synthesizing response...</span>
-            </div>
-          )}
-
-          {/* Secret Vault Revealed Section (When Unlocked) */}
-          {secretVaultUnlocked && (
+        {/* ========================================================== */}
+        {/* VIEW 1: HIDDEN CHAT / SECRET CHAT (AUTHORIZED USERS ONLY)   */}
+        {/* ========================================================== */}
+        {currentUser && activeTab === 'hidden' ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            
+            {/* Vault Banner */}
             <div style={{
-              marginTop: '20px',
-              padding: '18px',
-              background: 'rgba(16, 185, 129, 0.08)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: 'var(--radius-md)'
+              background: 'rgba(5, 150, 105, 0.12)',
+              borderBottom: '1px solid rgba(5, 150, 105, 0.25)',
+              padding: '12px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: 'var(--text-main)',
+              fontSize: '0.84rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: '700', marginBottom: '12px' }}>
-                <Shield size={18} />
-                <span>SECRET VAULT CHANNEL UNLOCKED</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-emerald)', fontWeight: '700' }}>
+                <Shield size={16} />
+                <span>SECRET CHAT AREA UNLOCKED: Authorized Scholar Access</span>
               </div>
-              {secretMessages.map((sMsg) => (
-                <div key={sMsg.id} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#6ee7b7' }}>
-                    <span>From: {sMsg.sender}</span>
-                    <span>{sMsg.timestamp}</span>
+              <button
+                onClick={() => setActiveTab('normal')}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Return to AI Terminal
+              </button>
+            </div>
+
+            {/* Hidden Messages Stream */}
+            <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {vaultMessages.map((vMsg) => (
+                <div
+                  key={vMsg.id}
+                  style={{
+                    padding: '14px 18px',
+                    borderRadius: 'var(--radius-md)',
+                    background: vMsg.isUser ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.86rem', color: 'var(--text-main)' }}>
+                      {vMsg.sender} <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', marginLeft: '6px' }}>[{vMsg.role}]</span>
+                    </span>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>{vMsg.time}</span>
                   </div>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', color: '#ecfdf5' }}>{sMsg.text}</p>
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
+                    {vMsg.text}
+                  </p>
                 </div>
               ))}
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Bar */}
-        <form onSubmit={handleSendMessage} style={{
-          padding: '14px 20px',
-          borderTop: '1px solid var(--border-color)',
-          background: 'rgba(11, 12, 16, 0.95)',
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center'
-        }}>
-          <input
-            type="text"
-            placeholder={currentUser ? "Ask AI study assistant or chat with peers..." : "Sign in to send messages..."}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            className="input-field"
-            style={{ borderRadius: 'var(--radius-full)', padding: '12px 20px' }}
-          />
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{ borderRadius: 'var(--radius-full)', padding: '12px 20px', flexShrink: 0 }}
-          >
-            <Send size={16} />
-            <span>Send</span>
-          </button>
-        </form>
-      </div>
-
-      {/* ========================================================== */}
-      {/* 3. SECRET CHAT CONCEPT: Protected Vault Login Modal        */}
-      {/* ========================================================== */}
-      {showVaultModal && (
-        <div className="modal-backdrop" onClick={() => setShowVaultModal(false)}>
-          <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{
-            maxWidth: '420px',
-            width: '100%',
-            padding: '32px',
-            background: 'rgba(10, 11, 16, 0.95)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(16, 185, 129, 0.15)'
-          }}>
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '50%',
-                background: 'rgba(16, 185, 129, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 14px auto',
-                border: '1px solid rgba(16, 185, 129, 0.4)'
-              }}>
-                <Lock size={24} color="#34d399" />
-              </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#fff', margin: '0 0 6px 0' }}>
-                Secure Channel Authentication
-              </h3>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
-                Enter your scholar credentials to decrypt private transmissions and access the secret repository.
-              </p>
+              <div ref={messagesEndRef} />
             </div>
 
-            {vaultError && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#f87171',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-sm)',
-                marginBottom: '18px',
-                fontSize: '0.84rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <AlertCircle size={16} />
-                <span>{vaultError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleVaultLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '600' }}>
-                  Email or Scholar ID
-                </label>
-                <input
-                  type="email"
-                  placeholder="scholar@nipix.edu"
-                  value={vaultEmail}
-                  onChange={(e) => setVaultEmail(e.target.value)}
-                  required
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '600' }}>
-                  Passcode / Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={vaultPassword}
-                  onChange={(e) => setVaultPassword(e.target.value)}
-                  required
-                  className="input-field"
-                />
-              </div>
-
+            {/* Hidden Vault Input Bar */}
+            <form onSubmit={handleSendVaultMessage} style={{
+              padding: '14px 20px',
+              borderTop: '1px solid var(--border-color)',
+              background: 'var(--bg-card)',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center'
+            }}>
+              <input
+                type="text"
+                placeholder="Broadcast transmission into the secret channel..."
+                value={vaultInput}
+                onChange={(e) => setVaultInput(e.target.value)}
+                className="input-field"
+                style={{ borderRadius: 'var(--radius-full)', padding: '12px 20px' }}
+              />
               <button
                 type="submit"
-                disabled={vaultLoading}
                 className="btn-vault"
-                style={{ width: '100%', padding: '12px', marginTop: '6px' }}
+                style={{ borderRadius: 'var(--radius-full)', padding: '12px 22px', flexShrink: 0 }}
               >
-                {vaultLoading ? 'Decrypting Credentials...' : 'Authenticate & Access'}
+                <Send size={16} />
+                <span>Send</span>
               </button>
             </form>
-
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <button
-                onClick={() => { setShowVaultModal(false); navigate('/login'); }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Standard Login Page
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        ) : (
 
+          /* ========================================================== */
+          /* VIEW 2: STANDARD AI CHAT / LOCKED PUBLIC PREVIEW          */
+          /* ========================================================== */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* If user is NOT authenticated: Show BiteMoji mysterious prompts & locked privacy indicators */}
+              {!currentUser && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
+                  <div style={{
+                    background: 'rgba(79, 70, 229, 0.08)',
+                    border: '1px solid rgba(79, 70, 229, 0.25)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    color: 'var(--text-main)',
+                    fontSize: '0.84rem'
+                  }}>
+                    <Sparkles size={18} color="var(--accent-purple)" />
+                    <span>Recent archived transmissions detected in this terminal. Some conversations remain encrypted.</span>
+                  </div>
+
+                  {/* Mysterious BiteMoji Character Prompts */}
+                  {BITMOJI_CHARACTERS.map((char) => (
+                    <div
+                      key={char.id}
+                      onClick={() => navigate('/login?redirect=hidden-chat')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '12px',
+                        padding: '12px 16px',
+                        background: 'var(--bg-card)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      className="glass-card-interactive"
+                    >
+                      <div className={`avatar-badge ${char.badgeClass}`}>
+                        {char.avatar}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--text-main)' }}>{char.name}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{char.time}</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          "{char.text}"
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Locked Privacy Card */}
+                  <div className="message-locked-card">
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      background: 'rgba(37, 99, 235, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px auto'
+                    }}>
+                      <Lock size={22} color="var(--accent-blue)" />
+                    </div>
+                    <h4 style={{ color: 'var(--text-main)', fontSize: '1.05rem', marginBottom: '6px' }}>Private Conversations Locked</h4>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', maxWidth: '420px', margin: '0 auto 16px auto' }}>
+                      You have incoming student & AI peer discussions waiting. In accordance with platform privacy, message content is protected until you sign in.
+                    </p>
+
+                    <div className="blur-preview" style={{ marginBottom: '16px', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+                      “Hey, I left the solutions for the discrete mathematics worksheet in the secret vault...”
+                    </div>
+
+                    <button
+                      onClick={() => navigate('/login?redirect=hidden-chat')}
+                      className="btn-primary"
+                      style={{ padding: '8px 24px' }}
+                    >
+                      Unlock & Sign In to Chat
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Authenticated AI Messages */}
+              {currentUser && messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: msg.isUser ? 'flex-end' : 'flex-start',
+                    alignItems: 'flex-start',
+                    gap: '10px'
+                  }}
+                >
+                  {!msg.isUser && (
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: 'var(--mystic-gradient)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.9rem',
+                      color: '#fff'
+                    }}>
+                      🤖
+                    </div>
+                  )}
+                  <div style={{
+                    maxWidth: '75%',
+                    padding: '12px 18px',
+                    borderRadius: msg.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    background: msg.isUser ? 'var(--scholar-gradient)' : 'var(--bg-input)',
+                    border: msg.isUser ? 'none' : '1px solid var(--border-color)',
+                    color: msg.isUser ? '#ffffff' : 'var(--text-main)',
+                    fontSize: '0.92rem',
+                    lineHeight: '1.5',
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+
+              {isAiThinking && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-blue)', fontSize: '0.84rem' }}>
+                  <Sparkles size={16} className="animate-spin" />
+                  <span>Nipix AI Scholar is synthesizing response...</span>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Bar */}
+            <form onSubmit={handleSendMessage} style={{
+              padding: '14px 20px',
+              borderTop: '1px solid var(--border-color)',
+              background: 'var(--bg-card)',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center'
+            }}>
+              <input
+                type="text"
+                placeholder={currentUser ? "Ask AI study assistant or consult research..." : "Sign in to send messages..."}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                className="input-field"
+                style={{ borderRadius: 'var(--radius-full)', padding: '12px 20px' }}
+              />
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ borderRadius: 'var(--radius-full)', padding: '12px 20px', flexShrink: 0 }}
+              >
+                <Send size={16} />
+                <span>Send</span>
+              </button>
+            </form>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

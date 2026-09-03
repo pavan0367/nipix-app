@@ -1,17 +1,31 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, MessageSquare, BookOpen, User, LogIn, Compass, Newspaper, Film } from 'lucide-react';
+import { Sparkles, MessageSquare, BookOpen, User, LogIn, Compass, Newspaper, Film, Sun, Moon, Laptop } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 const Navbar = ({ currentUser }) => {
   const location = useLocation();
+  const { themeMode, activeTheme, changeTheme } = useTheme();
+
+  // Cycle theme: light -> dark -> system -> light
+  const handleCycleTheme = () => {
+    if (themeMode === 'light') changeTheme('dark');
+    else if (themeMode === 'dark') changeTheme('system');
+    else changeTheme('light');
+  };
+
+  const getThemeIcon = () => {
+    if (themeMode === 'system') return <Laptop size={17} title="Theme: Same as Device" />;
+    if (themeMode === 'light') return <Sun size={17} title="Theme: Light Mode" />;
+    return <Moon size={17} title="Theme: Dark Mode" />;
+  };
 
   return (
     <header style={{
       position: 'sticky',
       top: 0,
       zIndex: 80,
-      background: 'rgba(11, 12, 16, 0.85)',
-      backdropFilter: 'blur(16px)',
+      background: 'var(--bg-card)',
       borderBottom: '1px solid var(--border-color)',
       padding: '12px 24px',
       display: 'flex',
@@ -29,11 +43,13 @@ const Navbar = ({ currentUser }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 12px rgba(0, 242, 254, 0.3)'
+            boxShadow: '0 0 12px rgba(37, 99, 235, 0.3)'
           }}>
-            <Sparkles size={18} color="#041421" />
+            <Sparkles size={18} color="#ffffff" />
           </div>
-          <span className="brand-logo" style={{ fontSize: '1.25rem' }}>Nipix <span style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 500 }}>AI Scholar</span></span>
+          <span className="brand-logo" style={{ fontSize: '1.25rem' }}>
+            Nipix <span style={{ fontSize: '0.8rem', opacity: 0.8, fontWeight: 500, color: 'var(--text-dim)' }}>AI Scholar</span>
+          </span>
         </Link>
       </div>
 
@@ -50,8 +66,18 @@ const Navbar = ({ currentUser }) => {
         </Link>
       </div>
 
-      {/* Right Controls: PROMINENT CHAT BUTTON in TOP-RIGHT CORNER */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      {/* Right Controls: THEME TOGGLE & PROMINENT CHAT BUTTON in TOP-RIGHT CORNER */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Quick Theme Toggle Button */}
+        <button
+          onClick={handleCycleTheme}
+          className="theme-toggle-btn"
+          aria-label="Toggle theme (Light, Dark, System)"
+          title={`Current: ${themeMode} mode (Click to cycle)`}
+        >
+          {getThemeIcon()}
+        </button>
+
         {/* Prominent Chat Option */}
         <Link to="/chat" className="top-chat-btn" title="Open AI & Secret Chat">
           <div className="pulse-dot" />
@@ -65,14 +91,14 @@ const Navbar = ({ currentUser }) => {
               width: '34px',
               height: '34px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+              background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#fff',
               fontWeight: 700,
               fontSize: '0.85rem',
-              border: '1px solid rgba(255,255,255,0.2)'
+              border: '1px solid var(--border-color)'
             }}>
               {(currentUser.username || 'U')[0].toUpperCase()}
             </div>

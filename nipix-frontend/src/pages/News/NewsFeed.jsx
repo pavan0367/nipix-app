@@ -114,7 +114,7 @@ const NewsFeed = () => {
               <Newspaper size={24} color="#f59e0b" />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff', margin: 0 }}>
+              <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Science & Technology News Wire
               </h1>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
@@ -170,11 +170,11 @@ const NewsFeed = () => {
               <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                    <span style={{ fontWeight: '600', color: '#cbd5e1' }}>{article.source}</span>
+                    <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{article.source}</span>
                     <span>{article.date}</span>
                   </div>
 
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#fff', lineHeight: '1.4', marginBottom: '10px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.4', marginBottom: '10px' }}>
                     {article.title}
                   </h3>
 
@@ -216,8 +216,8 @@ const NewsFeed = () => {
             maxHeight: '85vh',
             overflowY: 'auto',
             padding: '32px',
-            background: 'rgba(12, 14, 20, 0.98)',
-            border: '1px solid rgba(245, 158, 11, 0.3)'
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
@@ -228,12 +228,12 @@ const NewsFeed = () => {
                   {readingArticle.source} • {readingArticle.date}
                 </span>
               </div>
-              <button onClick={() => setReadingArticle(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+              <button onClick={() => setReadingArticle(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X size={20} />
               </button>
             </div>
 
-            <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', lineHeight: '1.3', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1.3', marginBottom: '16px' }}>
               {readingArticle.title}
             </h2>
 
@@ -243,7 +243,7 @@ const NewsFeed = () => {
               style={{ width: '100%', height: '260px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', marginBottom: '20px' }}
             />
 
-            <div style={{ fontSize: '0.94rem', color: '#e2e8f0', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
+            <div style={{ fontSize: '0.94rem', color: 'var(--text-main)', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
               {readingArticle.fullContent}
             </div>
 

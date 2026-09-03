@@ -114,7 +114,7 @@ const Sidebar = ({ currentUser, onLogout }) => {
                 {(currentUser.username || 'U')[0].toUpperCase()}
               </div>
               <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontWeight: '700', fontSize: '0.88rem', color: '#fff', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                <p style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                   {currentUser.username}
                 </p>
                 <p style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', margin: 0 }}>Active Learner</p>
