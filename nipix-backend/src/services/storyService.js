@@ -6,36 +6,47 @@ class StoryService {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
     return Story.create({
       userId,
-      media_url: mediaUrl,
-      media_type: mediaType,
-      expires_at: expiresAt,
+      mediaUrl,
+      mediaType,
+      expiresAt,
     });
   }
 
   async getActiveStories() {
-    return Story.findAll({
-      where: {
-        expires_at: {
-          [Op.gt]: new Date(),
+    try {
+      const stories = await Story.findAll({
+        where: {
+          expiresAt: {
+            [Op.gt]: new Date(),
+          },
         },
-      },
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'username', 'profile_image'],
-        },
-      ],
-      order: [['created_at', 'DESC']],
-    });
+        include: [
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'username', 'profile_image'],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      });
+      return stories || [];
+    } catch (err) {
+      console.warn('getActiveStories query warning:', err.message);
+      return [];
+    }
   }
 
   async recordStoryView(storyId, userId) {
-    const [view, created] = await StoryView.findOrCreate({
-      where: { story_id: storyId, user_id: userId },
-      defaults: { story_id: storyId, user_id: userId, viewed_at: new Date() },
-    });
-    return { view, created };
+    try {
+      const [view, created] = await StoryView.findOrCreate({
+        where: { story_id: storyId, user_id: userId },
+        defaults: { story_id: storyId, user_id: userId, viewed_at: new Date() },
+      });
+      return { view, created };
+    } catch (err) {
+      console.warn('recordStoryView warning:', err.message);
+      return { view: null, created: false };
+    }
   }
 
   async deleteStory(storyId, userId) {

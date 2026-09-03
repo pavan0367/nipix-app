@@ -17,10 +17,11 @@ const Stories = () => {
     const fetchStories = async () => {
         try {
             const res = await axios.get('/stories/feed');
-            const data = Array.isArray(res.data) ? res.data : [];
-            setStories(data);
+            const data = Array.isArray(res.data) ? res.data : (res.data?.stories || []);
+            setStories(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Fetch stories error:', err);
+            setStories([]);
         }
     };
 
@@ -85,8 +86,8 @@ const Stories = () => {
                     </p>
                 </div>
 
-                {/* Other Stories */}
-                {stories.map((userStory, idx) => {
+                {/* Other Stories with Defensive Check */}
+                {(Array.isArray(stories) ? stories : []).map((userStory, idx) => {
                     const uName = userStory.user?.username || 'user';
                     const uPic = userStory.user?.profilePic || userStory.user?.profile_image;
 

@@ -15,9 +15,11 @@ const Feed = ({ currentUser }) => {
   const fetchFeed = useCallback(async () => {
     try {
       const res = await axios.get('/posts/feed');
-      setPosts(res.data);
+      const rawPosts = res.data?.feed || res.data?.posts || (Array.isArray(res.data) ? res.data : []);
+      setPosts(Array.isArray(rawPosts) ? rawPosts : []);
     } catch (err) {
       console.error('Failed to load feed:', err);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -108,7 +110,7 @@ const Feed = ({ currentUser }) => {
       )}
 
       {/* Feed Posts */}
-      {posts.map((post) => {
+      {(Array.isArray(posts) ? posts : []).map((post) => {
         const isLiked = post.likes?.includes(currentUser?._id || currentUser?.id);
         const isOwner = (post.userId?._id || post.userId?.id || post.userId) === (currentUser?._id || currentUser?.id);
 

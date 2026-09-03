@@ -10,9 +10,12 @@ const postController = {
 
   getFeed: async (req, res) => {
     try {
-      const feed = await postService.getFeed(req.user.id);
-      res.json({ success: true, feed });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+      const feed = await postService.getFeed(req.user?.id);
+      res.json(Array.isArray(feed) ? feed : []);
+    } catch (err) {
+      console.warn('getFeed error:', err.message);
+      res.json([]);
+    }
   },
 
   toggleLike: async (req, res) => {

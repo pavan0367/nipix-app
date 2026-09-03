@@ -38,7 +38,7 @@ const Home = () => {
         )}
 
         {/* Empty Feed State */}
-        {!loading && feed.length === 0 && (
+        {!loading && (!Array.isArray(feed) || feed.length === 0) && (
           <div className="glass-card" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
             <ImageIcon size={48} color="var(--accent-blue)" style={{ marginBottom: '12px' }} />
             <h3 style={{ color: '#fff', fontSize: '1.2rem', margin: '0 0 8px 0' }}>Welcome to Nipix!</h3>
@@ -50,7 +50,7 @@ const Home = () => {
         )}
 
         {/* Posts Stream */}
-        {!loading && feed.length > 0 && (
+        {!loading && Array.isArray(feed) && feed.length > 0 && (
           feed.map(post => (
             <PostCard key={post.id || post._id} post={post} currentUser={currentUser} />
           ))

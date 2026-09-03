@@ -4,13 +4,14 @@ import { getFeed, toggleLike, toggleSave } from '../../services/postService';
 export const fetchFeed = createAsyncThunk('post/fetchFeed', async (_, { rejectWithValue }) => {
   try {
     const res = await getFeed();
-    return Array.isArray(res.data) ? res.data : (res.data?.feed || []);
+    const data = res.data?.feed || res.data?.posts || (Array.isArray(res.data) ? res.data : []);
+    return Array.isArray(data) ? data : [];
   } catch (err) { return rejectWithValue(err.response?.data || { message: err.message }); }
 });
 
 const postSlice = createSlice({
   name: 'post',
-  initialState: { feed: [], loading: false },
+  initialState: { feed: [], loading: false, error: null },
   reducers: {
     updatePostLike: (state, action) => {
       const { postId, action: likeAction } = action.payload;
@@ -26,8 +27,16 @@ const postSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchFeed.pending, (state) => { state.loading = true; })
-      .addCase(fetchFeed.fulfilled, (state, action) => { state.loading = false; state.feed = action.payload; });
+      .addCase(fetchFeed.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchFeed.fulfilled, (state, action) => {
+        state.loading = false;
+        state.feed = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(fetchFeed.rejected, (state, action) => {
+        state.loading = false;
+        state.feed = [];
+        state.error = action.payload;
+      });
   }
 });
 

@@ -26,9 +26,10 @@ class StoryController {
   async getFeedStories(req, res, next) {
     try {
       const stories = await storyService.getActiveStories();
-      res.json(stories);
+      res.json(Array.isArray(stories) ? stories : []);
     } catch (err) {
-      next(err);
+      console.error('getFeedStories error:', err);
+      res.json([]);
     }
   }
 
