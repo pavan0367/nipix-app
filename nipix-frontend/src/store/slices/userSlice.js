@@ -4,15 +4,15 @@ import { getProfile, toggleFollow } from '../../services/userService';
 export const fetchProfile = createAsyncThunk('user/fetchProfile', async (id, { rejectWithValue }) => {
   try {
     const res = await getProfile(id);
-    return res.data.user;
-  } catch (err) { return rejectWithValue(err.response.data); }
+    return res.data?.user || res.data;
+  } catch (err) { return rejectWithValue(err.response?.data || { message: err.message }); }
 });
 
 export const followUser = createAsyncThunk('user/followUser', async (id, { rejectWithValue }) => {
   try {
     const res = await toggleFollow(id);
-    return { id, action: res.data.action };
-  } catch (err) { return rejectWithValue(err.response.data); }
+    return { id, action: res.data?.action };
+  } catch (err) { return rejectWithValue(err.response?.data || { message: err.message }); }
 });
 
 const userSlice = createSlice({

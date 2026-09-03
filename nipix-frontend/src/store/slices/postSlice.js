@@ -4,8 +4,8 @@ import { getFeed, toggleLike, toggleSave } from '../../services/postService';
 export const fetchFeed = createAsyncThunk('post/fetchFeed', async (_, { rejectWithValue }) => {
   try {
     const res = await getFeed();
-    return res.data.feed;
-  } catch (err) { return rejectWithValue(err.response.data); }
+    return Array.isArray(res.data) ? res.data : (res.data?.feed || []);
+  } catch (err) { return rejectWithValue(err.response?.data || { message: err.message }); }
 });
 
 const postSlice = createSlice({
