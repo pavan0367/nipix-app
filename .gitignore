@@ -1,13 +1,21 @@
-   # Ignore Node modules
-   node_modules/
-   
-   # Ignore environment variables (YOUR SECRETS)
-   .env
-   
-   # Ignore build folders
-   frontend/build/
-   backend/uploads/
-   
-   # Ignore OS files
-   .DS_Store
-   Thumbs.db
+# Ignore Node modules everywhere
+node_modules/
+nipix-frontend/node_modules/
+nipix-backend/node_modules/
+
+# Ignore environment variables (YOUR SECRETS)
+.env
+nipix-backend/.env
+nipix-frontend/.env
+
+# Ignore build folders
+build/
+nipix-frontend/build/
+
+# Ignore cache files
+.cache/
+nipix-frontend/node_modules/.cache/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

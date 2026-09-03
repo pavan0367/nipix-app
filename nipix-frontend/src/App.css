@@ -1,0 +1,11 @@
+/* Nipix Application Styles */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex !important;
+  }
+}

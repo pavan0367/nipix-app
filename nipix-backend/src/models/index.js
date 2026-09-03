@@ -1,11 +1,15 @@
 const sequelize = require('../config/database');
 const User = require('./User');
 const Post = require('./Post');
+const PostMedia = require('./PostMedia');
 const Comment = require('./Comment');
 const Like = require('./Like');
 const Follow = require('./Follow');
 const Story = require('./Story');
+const StoryView = require('./StoryView');
 const Reel = require('./Reel');
+const ReelLike = require('./ReelLike');
+const ReelComment = require('./ReelComment');
 const Conversation = require('./Conversation');
 const ConversationMember = require('./ConversationMember');
 const Message = require('./Message');
@@ -19,6 +23,10 @@ const SavedPost = require('./SavedPost');
 // User & Post Associations
 User.hasMany(Post, { foreignKey: 'userId', as: 'posts' });
 Post.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Post Media Associations
+Post.hasMany(PostMedia, { foreignKey: 'postId', as: 'media' });
+PostMedia.belongsTo(Post, { foreignKey: 'postId' });
 
 // Comment Associations
 User.hasMany(Comment, { foreignKey: 'userId', as: 'comments' });
@@ -38,11 +46,22 @@ User.belongsToMany(User, { through: Follow, as: 'following', foreignKey: 'follow
 User.belongsToMany(User, { through: BlockedUser, as: 'blockedUsers', foreignKey: 'blockedId' });
 User.belongsToMany(User, { through: BlockedUser, as: 'blockedBy', foreignKey: 'blockerId' });
 
-// Story & Reel Associations
+// Story Associations
 User.hasMany(Story, { foreignKey: 'userId', as: 'stories' });
 Story.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Story.hasMany(StoryView, { foreignKey: 'storyId', as: 'views' });
+StoryView.belongsTo(Story, { foreignKey: 'storyId' });
+StoryView.belongsTo(User, { foreignKey: 'userId', as: 'viewer' });
+
+// Reel Associations
 User.hasMany(Reel, { foreignKey: 'userId', as: 'reels' });
 Reel.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Reel.hasMany(ReelLike, { foreignKey: 'reelId', as: 'likes' });
+ReelLike.belongsTo(Reel, { foreignKey: 'reelId' });
+ReelLike.belongsTo(User, { foreignKey: 'userId' });
+Reel.hasMany(ReelComment, { foreignKey: 'reelId', as: 'comments' });
+ReelComment.belongsTo(Reel, { foreignKey: 'reelId' });
+ReelComment.belongsTo(User, { foreignKey: 'userId', as: 'commenter' });
 
 // Saved Post Associations
 User.hasMany(SavedPost, { foreignKey: 'userId', as: 'savedPosts' });
@@ -78,11 +97,15 @@ module.exports = {
   sequelize,
   User,
   Post,
+  PostMedia,
   Comment,
   Like,
   Follow,
   Story,
+  StoryView,
   Reel,
+  ReelLike,
+  ReelComment,
   Conversation,
   ConversationMember,
   Message,

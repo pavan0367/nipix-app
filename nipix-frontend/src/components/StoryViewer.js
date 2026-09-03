@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const StoryViewer = ({ stories, user, currentIndex, onClose }) => {
+const API_BASE = process.env.REACT_APP_SOCKET_URL || (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000');
+
+const StoryViewer = ({ stories = [], user = {}, currentIndex = 0, onClose }) => {
     const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
     const [progress, setProgress] = useState(0);
 
     useEffect(() => {
+        if (!stories || stories.length === 0) return;
+
         const timer = setInterval(() => {
             setProgress((prev) => {
                 if (prev >= 100) {
@@ -17,9 +22,9 @@ const StoryViewer = ({ stories, user, currentIndex, onClose }) => {
                         return 100;
                     }
                 }
-                return prev + 2; // Progress bar speed
+                return prev + 2;
             });
-        }, 100); // Update every 100ms (5 seconds total)
+        }, 100);
 
         return () => clearInterval(timer);
     }, [currentStoryIndex, stories.length, onClose]);
@@ -40,6 +45,19 @@ const StoryViewer = ({ stories, user, currentIndex, onClose }) => {
         }
     };
 
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return '';
+        if (imagePath.startsWith('http')) return imagePath;
+        const cleanPath = imagePath.replace(/\\/g, '/');
+        return `${API_BASE}/${cleanPath}`;
+    };
+
+    if (!stories || stories.length === 0) return null;
+
+    const currentStory = stories[currentStoryIndex];
+    const username = user?.username || 'user';
+    const profilePic = user?.profilePic || user?.profile_image;
+
     return (
         <div style={{
             position: 'fixed',
@@ -47,27 +65,31 @@ const StoryViewer = ({ stories, user, currentIndex, onClose }) => {
             left: 0,
             width: '100vw',
             height: '100vh',
-            background: '#000',
+            background: 'rgba(0, 0, 0, 0.95)',
+            backdropFilter: 'blur(12px)',
             zIndex: 1000,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center'
         }}>
-            {/* Progress bars */}
+            {/* Progress segment bars */}
             <div style={{
                 position: 'absolute',
-                top: '10px',
-                left: '10px',
-                right: '10px',
+                top: '16px',
+                left: '16px',
+                right: '16px',
                 display: 'flex',
-                gap: '5px'
+                gap: '6px',
+                maxWidth: '520px',
+                margin: '0 auto',
+                zIndex: 10
             }}>
                 {stories.map((_, idx) => (
                     <div key={idx} style={{
                         flex: 1,
                         height: '3px',
-                        background: 'rgba(255,255,255,0.3)',
+                        background: 'rgba(255,255,255,0.25)',
                         borderRadius: '3px',
                         overflow: 'hidden'
                     }}>
@@ -81,76 +103,99 @@ const StoryViewer = ({ stories, user, currentIndex, onClose }) => {
                 ))}
             </div>
 
-            {/* User info */}
+            {/* User Info Header */}
             <div style={{
                 position: 'absolute',
-                top: '30px',
-                left: '20px',
+                top: '32px',
+                left: '24px',
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px'
+                gap: '12px',
+                zIndex: 10
             }}>
-                <img
-                    src={user.profilePic || 'https://via.placeholder.com/150'}
-                    alt={user.username}
-                    style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-                />
-                <span style={{ fontWeight: '600' }}>{user.username}</span>
+                {profilePic ? (
+                    <img
+                        src={getImageUrl(profilePic)}
+                        alt={username}
+                        style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid var(--accent-blue)', objectFit: 'cover' }}
+                    />
+                ) : (
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-purple)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff' }}>
+                        {username[0].toUpperCase()}
+                    </div>
+                )}
+                <div>
+                    <span style={{ fontWeight: '700', fontSize: '0.95rem' }}>{username}</span>
+                    <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', margin: 0 }}>Story</p>
+                </div>
             </div>
 
-            {/* Close button */}
+            {/* Close Button */}
             <button
                 onClick={onClose}
                 style={{
                     position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    background: 'none',
+                    top: '28px',
+                    right: '24px',
+                    background: 'rgba(255,255,255,0.1)',
                     border: 'none',
                     color: '#fff',
-                    fontSize: '30px',
-                    cursor: 'pointer'
+                    borderRadius: '50%',
+                    padding: '8px',
+                    cursor: 'pointer',
+                    zIndex: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}
             >
-                ×
+                <X size={24} />
             </button>
 
-            {/* Story image */}
-            <img
-                src={`http://localhost:5000/${stories[currentStoryIndex].image}`}
-                alt="Story"
-                style={{
-                    maxWidth: '100%',
-                    maxHeight: '80vh',
-                    objectFit: 'contain'
-                }}
-                onClick={nextStory}
-            />
+            {/* Story Image Container */}
+            <div style={{
+                maxWidth: '480px',
+                width: '100%',
+                maxHeight: '82vh',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                position: 'relative'
+            }}>
+                <img
+                    src={getImageUrl(currentStory?.image || currentStory?.mediaUrl || currentStory)}
+                    alt="Story"
+                    style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        objectFit: 'contain',
+                        borderRadius: '16px'
+                    }}
+                />
+            </div>
 
-            {/* Navigation areas */}
-            <div
-                onClick={prevStory}
-                style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: '30%',
-                    cursor: 'pointer'
-                }}
-            />
-            <div
-                onClick={nextStory}
-                style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: '30%',
-                    cursor: 'pointer'
-                }}
-            />
+            {/* Chevron Navigation Buttons */}
+            {currentStoryIndex > 0 && (
+                <button
+                    onClick={prevStory}
+                    style={{ position: 'absolute', left: '20px', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: '50%', padding: '12px', cursor: 'pointer' }}
+                >
+                    <ChevronLeft size={24} />
+                </button>
+            )}
+
+            {currentStoryIndex < stories.length - 1 && (
+                <button
+                    onClick={nextStory}
+                    style={{ position: 'absolute', right: '20px', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: '50%', padding: '12px', cursor: 'pointer' }}
+                >
+                    <ChevronRight size={24} />
+                </button>
+            )}
         </div>
     );
 };

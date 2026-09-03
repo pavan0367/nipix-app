@@ -4,7 +4,7 @@ import axios from 'axios';
 import Stories from '../components/Stories'; // Real Stories Component
 import { Heart, MessageCircle, Send, Trash2, User, Image as ImageIcon } from 'lucide-react';
 
-const API_BASE = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000';
+const API_BASE = process.env.REACT_APP_SOCKET_URL || (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000');
 
 const Feed = ({ currentUser }) => {
   const [posts, setPosts] = useState([]);
