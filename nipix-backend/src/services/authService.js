@@ -1,17 +1,23 @@
+const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const authService = {
   register: async ({ username, email, password, full_name }) => {
-    const existingUser = await User.findOne({ where: { $or: [{ email }, { username }] } });
+    const existingUser = await User.findOne({
+      where: {
+        [Op.or]: [{ email }, { username }],
+      },
+    });
     if (existingUser) throw new Error('Username or email already exists');
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const user = await User.create({ username, email, password: hashedPassword, full_name });
-    return user;
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'nipix_super_secret_key_2024', { expiresIn: '7d' });
+    return { user, token };
   },
 
   login: async ({ email, password }) => {
