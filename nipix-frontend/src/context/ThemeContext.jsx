@@ -9,7 +9,12 @@ export const ThemeProvider = ({ children }) => {
   });
 
   // Effective active theme: 'light' | 'dark'
-  const [activeTheme, setActiveTheme] = useState('dark');
+  const [activeTheme, setActiveTheme] = useState(() => {
+    if (themeMode === 'system') {
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return themeMode;
+  });
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -20,7 +25,12 @@ export const ThemeProvider = ({ children }) => {
         resolvedTheme = mediaQuery.matches ? 'dark' : 'light';
       }
       setActiveTheme(resolvedTheme);
+      
+      // Apply theme to both html (documentElement) and body for 100% CSS coverage
       document.documentElement.setAttribute('data-theme', resolvedTheme);
+      document.body.setAttribute('data-theme', resolvedTheme);
+      document.documentElement.className = `theme-${resolvedTheme}`;
+      document.body.className = `theme-${resolvedTheme}`;
     };
 
     applyTheme();
@@ -30,6 +40,9 @@ export const ThemeProvider = ({ children }) => {
         const newTheme = e.matches ? 'dark' : 'light';
         setActiveTheme(newTheme);
         document.documentElement.setAttribute('data-theme', newTheme);
+        document.body.setAttribute('data-theme', newTheme);
+        document.documentElement.className = `theme-${newTheme}`;
+        document.body.className = `theme-${newTheme}`;
       }
     };
 

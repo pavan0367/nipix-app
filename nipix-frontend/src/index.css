@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ========================================================== */
-/* DUAL THEME TOKENS: LIGHT & DARK WITH HIGH READABILITY      */
+/* DUAL THEME TOKENS: LIGHT & DARK WITH MAXIMUM READABILITY   */
 /* ========================================================== */
 
 :root {
@@ -20,26 +20,28 @@
   --vault-gradient: linear-gradient(135deg, #059669 0%, #047857 100%);
   --editorial-gradient: linear-gradient(135deg, #d97706 0%, #b45309 100%);
 
-  /* Dimensions & Radius */
+  /* Radius */
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-full: 9999px;
 }
 
-/* 1. DARK MODE PALETTE (Default) */
-[data-theme="dark"], :root:not([data-theme]) {
-  --bg-primary: #0b0c10;
-  --bg-secondary: #13151b;
-  --bg-card: rgba(19, 21, 29, 0.85);
-  --bg-input: #161922;
-  --bg-hover: #222634;
-  --border-color: rgba(255, 255, 255, 0.08);
+/* 1. DARK THEME PALETTE (Default) */
+html[data-theme="dark"], body[data-theme="dark"], .theme-dark, :root:not([data-theme="light"]) {
+  --bg-primary: #0e0f17;
+  --bg-secondary: #141724;
+  --bg-card: #181b28;
+  --bg-input: #1f2334;
+  --bg-hover: #272d42;
+  --border-color: rgba(255, 255, 255, 0.1);
   --border-focus: rgba(79, 172, 254, 0.5);
 
   /* Typography: Basic White & Light Gray */
   --text-main: #ffffff;
+  --text-primary: #ffffff;
   --text-muted: #94a3b8;
+  --text-secondary: #94a3b8;
   --text-dim: #64748b;
 
   --accent-cyan: #00f2fe;
@@ -49,29 +51,33 @@
   --accent-rose: #f43f5e;
 
   --scholar-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-  --glass-bg: rgba(19, 21, 29, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(24, 27, 40, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.1);
   --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.5);
-  --shadow-glow-cyan: 0 0 25px rgba(0, 242, 254, 0.2);
 
   --code-bg: #090a0f;
   --code-text: #a5f3fc;
+
+  --chat-bubble-ai: #1f2334;
+  --chat-bubble-user: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
-/* 2. LIGHT MODE PALETTE (Solid Dark/Black Text for High Readability) */
-[data-theme="light"] {
+/* 2. LIGHT THEME PALETTE (Clean Bright Surfaces + Solid Black Text) */
+html[data-theme="light"], body[data-theme="light"], .theme-light {
   --bg-primary: #f8fafc;
   --bg-secondary: #f1f5f9;
   --bg-card: #ffffff;
-  --bg-input: #f8fafc;
+  --bg-input: #ffffff;
   --bg-hover: #e2e8f0;
   --border-color: #cbd5e1;
   --border-focus: rgba(37, 99, 235, 0.4);
 
-  /* Typography: Solid Dark Text for Study Readability */
+  /* Typography: Basic Black & Dark Gray (100% Readable) */
   --text-main: #0f172a;
+  --text-primary: #0f172a;
   --text-muted: #334155;
+  --text-secondary: #334155;
   --text-dim: #64748b;
 
   --accent-cyan: #0284c7;
@@ -81,14 +87,16 @@
   --accent-rose: #e11d48;
 
   --scholar-gradient: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
-  --glass-bg: rgba(255, 255, 255, 0.96);
+  --glass-bg: #ffffff;
   --glass-border: #cbd5e1;
   --shadow-sm: 0 4px 16px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
-  --shadow-glow-cyan: 0 0 20px rgba(2, 132, 199, 0.15);
 
-  --code-bg: #1e293b;
-  --code-text: #38bdf8;
+  --code-bg: #f1f5f9;
+  --code-text: #0369a1;
+
+  --chat-bubble-ai: #f1f5f9;
+  --chat-bubble-user: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
 * {
@@ -97,10 +105,10 @@
   padding: 0;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
 }
 
-body {
+html, body {
   background-color: var(--bg-primary);
   color: var(--text-main);
   min-height: 100vh;
@@ -138,7 +146,7 @@ code, pre {
   gap: 8px;
 }
 
-/* Glassmorphism / Academic Cards */
+/* Cards */
 .glass-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -149,6 +157,10 @@ code, pre {
 
 .glass-card:hover {
   border-color: var(--border-focus);
+}
+
+.glass-card-interactive {
+  cursor: pointer;
 }
 
 .glass-card-interactive:hover {
@@ -196,7 +208,6 @@ code, pre {
 .btn-primary:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-glow-cyan);
 }
 
 .btn-secondary {
@@ -234,13 +245,13 @@ code, pre {
 
 .btn-vault:hover {
   filter: brightness(1.1);
-  box-shadow: 0 0 20px rgba(5, 150, 105, 0.3);
 }
 
 /* App Layout Structure */
 .app-container {
   display: flex;
   min-height: 100vh;
+  background-color: var(--bg-primary);
 }
 
 .sidebar {
@@ -263,6 +274,7 @@ code, pre {
   flex: 1;
   min-height: 100vh;
   padding-bottom: 80px;
+  background-color: var(--bg-primary);
 }
 
 .nav-item {
@@ -352,83 +364,102 @@ code, pre {
 }
 
 /* ========================================================== */
+/* CHAT SEARCH BAR & SECRET WAND ACTION ICON                  */
+/* ========================================================== */
+.chat-search-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 280px;
+  transition: width 0.3s ease;
+}
+
+.chat-search-input {
+  width: 100%;
+  padding: 8px 14px 8px 36px;
+  border-radius: var(--radius-full);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 0.86rem;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.chat-search-input:focus {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  background: var(--bg-card);
+}
+
+.chat-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+/* Secret Wand Icon Button */
+.secret-wand-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.secret-wand-btn:hover {
+  transform: scale(1.08) rotate(6deg);
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.35);
+  background: var(--bg-card);
+}
+
+.secret-wand-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  transition: filter 0.2s ease;
+}
+
+/* In light mode, invert or blend the black icon background */
+html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand-img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* ========================================================== */
 /* SUBTLE PAGE-SPECIFIC BACKGROUNDS (THEME ADAPTIVE)          */
 /* ========================================================== */
 
-/* 1. Home / Feed Background */
-[data-theme="dark"] .page-theme-home {
-  background-color: #0b0c10;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(79, 172, 254, 0.05) 0%, transparent 40%),
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 100% 100%, 36px 36px, 36px 36px;
-}
-[data-theme="light"] .page-theme-home {
-  background-color: #f8fafc;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.04) 0%, transparent 40%),
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 100% 100%, 36px 36px, 36px 36px;
-}
-
-/* 2. Study Materials: Notebook Micro-Grid */
-[data-theme="dark"] .page-theme-study {
-  background-color: #0c0e14;
-  background-image: 
-    radial-gradient(circle at 80% 15%, rgba(16, 185, 129, 0.05) 0%, transparent 45%),
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 100% 100%, 28px 28px, 28px 28px;
-}
-[data-theme="light"] .page-theme-study {
-  background-color: #f1f5f9;
-  background-image: 
-    radial-gradient(circle at 80% 15%, rgba(5, 150, 105, 0.04) 0%, transparent 45%),
-    linear-gradient(rgba(148, 163, 184, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px);
-  background-size: 100% 100%, 28px 28px, 28px 28px;
-}
-
-/* 3. News Feed: Editorial Background */
-[data-theme="dark"] .page-theme-news {
-  background-color: #0e0f14;
-  background-image: radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
-}
-[data-theme="light"] .page-theme-news {
-  background-color: #f8fafc;
-  background-image: radial-gradient(circle at 20% 80%, rgba(217, 119, 6, 0.04) 0%, transparent 50%);
-}
-
-/* 4. YouTube: Media Studio */
-[data-theme="dark"] .page-theme-youtube {
-  background-color: #0a0b0e;
-  background-image: radial-gradient(circle at 50% 10%, rgba(239, 68, 68, 0.05) 0%, transparent 50%);
-}
-[data-theme="light"] .page-theme-youtube {
-  background-color: #f1f5f9;
-  background-image: radial-gradient(circle at 50% 10%, rgba(225, 29, 72, 0.03) 0%, transparent 50%);
-}
-
-/* 5. Chat Page: Mysterious Indigo */
-[data-theme="dark"] .page-theme-chat {
-  background-color: #0a0b12;
-  background-image: 
-    radial-gradient(circle at 75% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 25% 75%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
-}
-[data-theme="light"] .page-theme-chat {
-  background-color: #f8fafc;
-  background-image: 
-    radial-gradient(circle at 75% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 45%),
-    radial-gradient(circle at 25% 75%, rgba(124, 58, 237, 0.04) 0%, transparent 50%);
-}
-
-/* 6. Settings Page Theme */
-.page-theme-settings {
+.page-theme-chat {
   background-color: var(--bg-primary);
   min-height: 100vh;
+}
+
+html[data-theme="dark"] .page-theme-chat, body[data-theme="dark"] .page-theme-chat {
+  background-image: 
+    radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px;
+}
+
+html[data-theme="light"] .page-theme-chat, body[data-theme="light"] .page-theme-chat {
+  background-image: 
+    radial-gradient(circle at 80% 20%, rgba(79, 70, 229, 0.04) 0%, transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.03) 0%, transparent 50%),
+    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px;
 }
 
 /* Message Blurs & Locked Privacy */
@@ -449,57 +480,24 @@ code, pre {
   pointer-events: none;
 }
 
-/* Secret Vault Glyph Key on Chat Side */
-.secret-glyph-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: rgba(5, 150, 105, 0.1);
-  border: 1px solid rgba(5, 150, 105, 0.3);
-  color: var(--accent-emerald);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.secret-glyph-btn:hover {
-  background: rgba(5, 150, 105, 0.25);
-  box-shadow: 0 0 15px rgba(5, 150, 105, 0.3);
-  transform: rotate(45deg);
-}
-
-/* BiteMoji Character Badges */
+/* BiteMoji / AI Character Badges */
 .avatar-badge {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
   border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .badge-bytebot { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
 .badge-cipher { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
 .badge-spark { background: linear-gradient(135deg, #d97706, #b45309); }
 .badge-mentor { background: linear-gradient(135deg, #059669, #047857); }
-
-/* Modal Backdrop */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
 
 /* Category Filter Pill */
 .category-pill {
@@ -531,5 +529,8 @@ code, pre {
   }
   .main-content {
     margin-left: 0;
+  }
+  .chat-search-container {
+    width: 170px;
   }
 }
