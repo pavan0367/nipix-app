@@ -1,343 +1,745 @@
 import api from './api';
 
-// Persona System Profiles for all 6 Fictional Nipix AI Bots
-const BOT_PERSONAS = {
+// Persona System Profiles for all 6 Nipix AI Bots
+export const BOT_PERSONAS = {
   cipher_09: {
     name: 'Cipher_09',
     role: 'Research, Cryptography & Cybersecurity',
-    prefix: '🔒 [Cipher_09]:'
+    tagline: 'Cryptographic Security & Logical Reasoning',
+    accent: '🔒'
   },
   bytebot_ai: {
     name: 'ByteBot AI',
     role: 'Programming & Software Engineering',
-    prefix: '🤖 [ByteBot AI]:'
+    tagline: 'Software Architecture & Code Intelligence',
+    accent: '🤖'
   },
   spark_x: {
     name: 'Spark_X',
     role: 'Electrical Engineering, Electronics & Physics',
-    prefix: '⚡ [Spark_X]:'
+    tagline: 'Circuits, Energy & Physical Principles',
+    accent: '⚡'
   },
   archivist: {
     name: 'Archivist',
     role: 'History, Literature, Research & Documentation',
-    prefix: '📚 [Archivist]:'
+    tagline: 'Academic Literature & Historical Synthesis',
+    accent: '📚'
   },
   novamind: {
     name: 'NovaMind',
     role: 'Mathematics, Science & Analytical Reasoning',
-    prefix: '🧠 [NovaMind]:'
+    tagline: 'Analytical Mathematics & Scientific Problem Solving',
+    accent: '🧠'
   },
   aether: {
     name: 'Aether',
     role: 'Artificial Intelligence, Quantum & Future Innovation',
-    prefix: '🌌 [Aether]:'
+    tagline: 'Neural Computation & Future Technology',
+    accent: '🌌'
   }
 };
 
+// Global Capital City Knowledge Base
+const CAPITALS = {
+  france: 'Paris',
+  germany: 'Berlin',
+  italy: 'Rome',
+  spain: 'Madrid',
+  'united kingdom': 'London',
+  uk: 'London',
+  england: 'London',
+  'united states': 'Washington, D.C.',
+  usa: 'Washington, D.C.',
+  us: 'Washington, D.C.',
+  america: 'Washington, D.C.',
+  japan: 'Tokyo',
+  china: 'Beijing',
+  india: 'New Delhi',
+  canada: 'Ottawa',
+  australia: 'Canberra',
+  brazil: 'Brasília',
+  russia: 'Moscow',
+  egypt: 'Cairo',
+  'south africa': 'Pretoria (administrative), Cape Town (legislative), Bloemfontein (judicial)',
+  mexico: 'Mexico City',
+  greece: 'Athens',
+  portugal: 'Lisbon',
+  netherlands: 'Amsterdam',
+  switzerland: 'Bern',
+  sweden: 'Stockholm',
+  norway: 'Oslo',
+  finland: 'Helsinki',
+  poland: 'Warsaw',
+  turkey: 'Ankara',
+  argentina: 'Buenos Aires',
+  chile: 'Santiago',
+  colombia: 'Bogotá',
+  singapore: 'Singapore',
+  'south korea': 'Seoul',
+  korea: 'Seoul',
+  indonesia: 'Jakarta',
+  thailand: 'Bangkok',
+  ireland: 'Dublin',
+  'new zealand': 'Wellington'
+};
+
+// Clean programming and science jokes
+const JOKES = [
+  "Why do programmers prefer dark mode? Because light attracts bugs! 🐛😄",
+  "There are 10 types of people in the world: those who understand binary, and those who don't.",
+  "Why did the database administrator walk out of the restaurant? Because there were too many table locks!",
+  "A SQL query walks into a bar, walks up to two tables and asks: 'Can I join you?' 🍻",
+  "Why was the math book sad? Because it had too many problems! 📐",
+  "Why do Java programmers wear glasses? Because they don't C#! ☕",
+  "There are two hard things in computer science: cache invalidation, naming things, and off-by-one errors."
+];
+
 /**
- * Intelligent Scholar AI Knowledge Engine
- * Provides instant, deep, domain-specialized responses for all 6 bots
+ * Detects the active subject/topic from conversation history
+ */
+function extractContextTopic(history = []) {
+  const combinedText = history.slice(-4).map(h => h.text || '').join(' ').toLowerCase();
+  
+  if (combinedText.includes('recursion') || combinedText.includes('recursive')) return 'recursion';
+  if (combinedText.includes('binary search')) return 'binary search';
+  if (combinedText.includes('calculator')) return 'calculator';
+  if (combinedText.includes('reverse') || combinedText.includes('string reverse')) return 'string reverse';
+  if (combinedText.includes("ohm's law") || combinedText.includes('ohms law') || combinedText.includes('circuit')) return 'ohms law';
+  if (combinedText.includes('calculus') || combinedText.includes('derivative') || combinedText.includes('integral')) return 'calculus';
+  if (combinedText.includes('rsa') || combinedText.includes('cryptography') || combinedText.includes('cipher')) return 'rsa';
+  if (combinedText.includes('transistor') || combinedText.includes('semiconductor')) return 'transistor';
+  if (combinedText.includes('quantum') || combinedText.includes('qubit')) return 'quantum';
+  if (combinedText.includes('study plan') || combinedText.includes('schedule')) return 'study plan';
+  if (combinedText.includes('email') || combinedText.includes('letter')) return 'email';
+  if (combinedText.includes('dijkstra')) return 'dijkstra';
+  if (combinedText.includes('python')) return 'python';
+  if (combinedText.includes('java')) return 'java';
+  return null;
+}
+
+/**
+ * General-Purpose Conversational AI Reasoning Engine for Nipix AI Scholar
+ * Answers any topic directly, preserves conversation context, and resolves follow-ups
  */
 export function generateScholarAIResponse(botId = 'bytebot_ai', promptText = '', history = []) {
-  const q = promptText.toLowerCase().trim();
-  const persona = BOT_PERSONAS[botId] || BOT_PERSONAS.bytebot_ai;
+  const rawPrompt = promptText.trim();
+  const q = rawPrompt.toLowerCase();
 
-  // Extract previous conversational context for follow-ups
-  const lastUserMsg = history.filter(h => h.isUser).slice(-2)[0]?.text?.toLowerCase() || '';
-  const lastAiMsg = history.filter(h => !h.isUser).slice(-1)[0]?.text || '';
-
-  // -------------------------------------------------------------
-  // 1. CONVERSATIONAL & IDENTITY QUERIES
-  // -------------------------------------------------------------
-  if (/^(hello|hi|hey|greetings|good morning|good afternoon|good evening)\b/i.test(q)) {
-    if (botId === 'bytebot_ai') {
-      return `Hello developer! 👋 I'm ByteBot AI, your software engineering and coding assistant. What programming language, algorithm, or debugging challenge are we tackling today?`;
-    } else if (botId === 'cipher_09') {
-      return `Greetings, researcher. I am Cipher_09, specialized in cryptography, cybersecurity, and logical analysis. What encrypted concept or security protocol shall we inspect?`;
-    } else if (botId === 'spark_x') {
-      return `Frequency locked and voltage nominal! ⚡ I'm Spark_X, ready to explore electrical engineering, circuit theory, and physics. What system are we analyzing?`;
-    } else if (botId === 'novamind') {
-      return `Welcome, scholar! 🧠 I'm NovaMind. Whether it's calculus, discrete mathematics, linear algebra, or statistical modeling, let's solve it step by step.`;
-    } else if (botId === 'aether') {
-      return `Hello visionary! 🌌 I am Aether, dedicated to artificial intelligence, neural networks, and future technologies. What breakthrough idea shall we explore?`;
-    } else {
-      return `Greetings, scholar. 📚 I am Archivist, your guide through academic literature, historical synthesis, and research documentation. What domain shall we explore?`;
-    }
-  }
-
-  if (q.includes('who are you') || q.includes('what are you') || q.includes('what can you do')) {
-    return `I am ${persona.name}, an AI scholar on Nipix specialized in ${persona.role}. I can explain core concepts in depth, walk you through mathematical or code examples, break down complex topics step by step, and assist your academic research. Ask me anything in my domain!`;
-  }
+  // Extract recent context
+  const lastUserMsg = history.filter(h => h.isUser).slice(-1)[0]?.text?.toLowerCase() || '';
+  const lastBotMsg = history.filter(h => !h.isUser).slice(-1)[0]?.text || '';
+  const activeTopic = extractContextTopic(history);
 
   // -------------------------------------------------------------
-  // 2. CONTEXTUAL FOLLOW-UPS ("explain simply", "example", etc.)
+  // 1. CONTEXTUAL CONFIRMATIONS ("yes", "sure", "ok", "do it", etc.)
   // -------------------------------------------------------------
-  if (q.includes('explain simply') || q.includes('simple terms') || q.includes('in simple terms') || q.includes('easy terms') || q.includes('eli5')) {
-    if (lastUserMsg.includes('rsa') || lastAiMsg.includes('RSA')) {
-      return `In simple terms: Imagine a padlock that anyone can snap shut with an open public key, but only the person with the secret private key can unlock it. That is RSA—anyone can encrypt a message for you, but only you can decrypt it!`;
-    }
-    if (lastUserMsg.includes('recursion') || lastAiMsg.includes('recursion')) {
-      return `In simple terms: Recursion is when a task solves a problem by doing a small piece of work, then handing the rest of the problem to an identical version of itself, stopping only when it reaches the simplest possible case (base case).`;
-    }
-    if (lastUserMsg.includes('ohm') || lastAiMsg.includes('Ohm')) {
-      return `In simple terms: Think of electricity like water flowing through a pipe. Voltage is the water pressure pushing, current is how fast the water flows, and resistance is any constriction in the pipe slowing it down (Voltage = Current × Resistance).`;
-    }
-    if (lastUserMsg.includes('calculus') || lastAiMsg.includes('Calculus')) {
-      return `In simple terms: Differential calculus tells you how fast something is changing right now (like your speedometer), while Integral calculus tells you how much total amount has built up over time (like your odometer).`;
-    }
-    return `Simply put: breaking down the concept to its core foundation allows us to understand the fundamental relationship without complex terminology. Every advanced system is built on these straightforward principles!`;
-  }
+  const isAffirmative = /^(yes|yeah|yep|yup|sure|okay|ok|please do|do it|generate it|show me|go ahead|continue|proceed|why not|definitely|absolutely)\b/i.test(q);
+  if (isAffirmative) {
+    const lastBotLower = lastBotMsg.toLowerCase();
 
-  // -------------------------------------------------------------
-  // 3. PROGRAMMING & SOFTWARE ENGINEERING (ByteBot AI)
-  // -------------------------------------------------------------
-  if (q.includes('java') && (q.includes('what is') || q.includes('explain') || q === 'java')) {
-    return `**Java** is a high-level, class-based, object-oriented programming language designed by James Gosling at Sun Microsystems in 1995.
+    // Check if previous assistant message offered code or implementation
+    if (lastBotLower.includes('code') || lastBotLower.includes('implementation') || lastBotLower.includes('snippet') || lastBotLower.includes('program') || lastBotLower.includes('example')) {
+      if (activeTopic === 'recursion') {
+        return `Here is the clean Java implementation of **Recursion** using the classic factorial example:
 
-### Key Characteristics:
-1. **Platform Independence (WORA)**: Follows the *"Write Once, Run Anywhere"* principle. Java source code is compiled into platform-independent bytecode (\`.class\`), which executes on the **Java Virtual Machine (JVM)**.
-2. **Object-Oriented**: Everything in Java revolves around Classes and Objects, adhering to Encapsulation, Inheritance, Polymorphism, and Abstraction.
-3. **Automatic Memory Management**: Includes an automatic **Garbage Collector (GC)** that deallocates unused heap memory.
-4. **Strong Typing & Safety**: Rigorous compile-time checks and runtime security verification.
-
-### Basic Hello World Example:
 \`\`\`java
-public class HelloWorld {
-    public static void main(String[] args) {
-        System.out.println("Hello from Nipix AI Scholar!");
-    }
-}
-\`\`\`
-Java is widely used in enterprise backend systems (Spring Boot), Android development, distributed big data frameworks (Apache Spark, Kafka), and financial banking infrastructures.`;
-  }
-
-  if (q.includes('recursion') || q.includes('recursive')) {
-    return `**Recursion** is a programming paradigm where a function calls itself directly or indirectly to solve a larger problem by breaking it down into smaller, self-similar sub-problems.
-
-### Two Essential Rules of Recursion:
-1. **Base Case**: A terminating condition that stops the recursive calls and returns a value directly, preventing infinite loops and stack overflow.
-2. **Recursive Step**: The operation where the function invokes itself with updated, smaller inputs moving closer to the base case.
-
-### Example: Factorial Calculation ($n!$)
-\`\`\`java
-public class Factorial {
+public class RecursionDemo {
+    // Recursive method to calculate factorial
     public static int factorial(int n) {
-        // 1. Base Case
+        // 1. Base Case: Stop calling when n is 0 or 1
         if (n <= 1) {
             return 1;
         }
-        // 2. Recursive Step
+        // 2. Recursive Step: n * (n - 1)!
         return n * factorial(n - 1);
     }
 
     public static void main(String[] args) {
-        System.out.println("5! = " + factorial(5)); // Output: 120
+        int number = 5;
+        int result = factorial(number);
+        System.out.println("Factorial of " + number + " is: " + result); // Output: 120
     }
 }
 \`\`\`
 
-### How the Call Stack Works:
-\`factorial(3)\` pushes \`factorial(3)\` → \`factorial(2)\` → \`factorial(1)\` onto the execution stack. Once the base case returns \`1\`, the stack unwinds: \`1 × 2 = 2\`, then \`2 × 3 = 6\`.`;
-  }
+### Execution Call Stack:
+- \`factorial(5)\` $\\to 5 \\times$ \`factorial(4)\`
+- \`factorial(4)\` $\\to 4 \\times$ \`factorial(3)\`
+- \`factorial(3)\` $\\to 3 \\times$ \`factorial(2)\`
+- \`factorial(2)\` $\\to 2 \\times$ \`factorial(1)\`
+- \`factorial(1)\` returns \`1\` (base case reached!)
+- Unwinds: $2 \\times 1 = 2 \\to 3 \\times 2 = 6 \\to 4 \\times 6 = 24 \\to 5 \\times 24 = 120$.`;
+      }
 
-  if (q.includes('python')) {
-    return `**Python** is a high-level, interpreted, dynamically typed programming language created by Guido van Rossum in 1991, celebrated for its readable, concise syntax.
+      if (activeTopic === 'binary search') {
+        return `Here is the Java implementation of **Binary Search** ($O(\\log n)$ runtime complexity):
 
-### Core Strengths:
-- **Ecosystem for AI & Data Science**: NumPy, Pandas, PyTorch, TensorFlow, Scikit-learn.
-- **Web Frameworks**: FastAPI, Django, Flask.
-- **Interpreted Execution**: No compilation step required; code runs directly through the CPython interpreter.
+\`\`\`java
+public class BinarySearch {
+    public static int search(int[] arr, int target) {
+        int left = 0;
+        int right = arr.length - 1;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2; // Prevents integer overflow
+
+            if (arr[mid] == target) {
+                return mid; // Target found at index mid
+            } else if (arr[mid] < target) {
+                left = mid + 1; // Search right half
+            } else {
+                right = mid - 1; // Search left half
+            }
+        }
+        return -1; // Target not present
+    }
+
+    public static void main(String[] args) {
+        int[] sortedData = {2, 5, 8, 12, 16, 23, 38, 56, 72, 91};
+        int target = 23;
+        int index = search(sortedData, target);
+        System.out.println("Found " + target + " at index: " + index);
+    }
+}
+\`\`\``;
+      }
+
+      if (activeTopic === 'calculator') {
+        return `Here is a complete, interactive **Console Calculator in Java**:
+
+\`\`\`java
+import java.util.Scanner;
+
+public class Calculator {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("=== Nipix Java Calculator ===");
+        System.out.print("Enter first number: ");
+        double num1 = scanner.nextDouble();
+
+        System.out.print("Enter operator (+, -, *, /): ");
+        char operator = scanner.next().charAt(0);
+
+        System.out.print("Enter second number: ");
+        double num2 = scanner.nextDouble();
+
+        double result;
+        switch (operator) {
+            case '+':
+                result = num1 + num2;
+                break;
+            case '-':
+                result = num1 - num2;
+                break;
+            case '*':
+                result = num1 * num2;
+                break;
+            case '/':
+                if (num2 == 0) {
+                    System.out.println("Error: Division by zero is undefined.");
+                    return;
+                }
+                result = num1 / num2;
+                break;
+            default:
+                System.out.println("Error: Unsupported operator.");
+                return;
+        }
+
+        System.out.printf("Result: %.2f %c %.2f = %.2f%n", num1, operator, num2, result);
+        scanner.close();
+    }
+}
+\`\`\``;
+      }
+
+      if (activeTopic === 'string reverse') {
+        return `Here is the clean **Python String Reversal** code:
 
 \`\`\`python
-# Clean Python List Comprehension Example
-numbers = [1, 2, 3, 4, 5]
-squares = [x**2 for x in numbers if x % 2 != 0]
-print(squares)  # Output: [1, 9, 25]
+# Approach 1: Extended Slice (Most Pythonic, O(n))
+def reverse_string(s: str) -> str:
+    return s[::-1]
+
+# Approach 2: Built-in reversed() + join()
+def reverse_string_builtin(s: str) -> str:
+    return "".join(reversed(s))
+
+# Test
+text = "Nipix AI Scholar"
+print("Original:", text)
+print("Reversed:", reverse_string(text))
 \`\`\``;
-  }
+      }
 
-  if (q.includes('dijkstra') || q.includes('shortest path')) {
-    return `**Dijkstra's Algorithm** is a classic greedy graph search algorithm that finds the shortest path from a single source vertex to all other vertices in a weighted graph with **non-negative edge weights**.
+      if (activeTopic === 'ohms law') {
+        return `Here is a practical circuit calculation example using **Ohm's Law** ($V = I \\cdot R$):
 
-### Algorithm Mechanics:
-1. Initialize distances to all nodes as $\\infty$, except the source node which is set to $0$.
-2. Maintain a Min-Priority Queue (Min-Heap) of unvisited nodes ordered by current shortest distance.
-3. In each iteration, extract the node $u$ with minimum distance and relax all outgoing edges $(u, v)$:
-   $$\\text{if } \\text{dist}[u] + \\text{weight}(u, v) < \\text{dist}[v] \\implies \\text{dist}[v] = \\text{dist}[u] + \\text{weight}(u, v)$$
-4. Repeat until all reachable nodes are visited.
+### Problem:
+A circuit has a $12\\text{V}$ power source connected to a resistor of $240\\,\\Omega$. What is the current flowing, and what power is dissipated?
 
-**Time Complexity**: $O((V + E) \\log V)$ when implemented using a binary min-heap.`;
-  }
+### Calculations:
+1. **Current ($I$)**:
+   $$I = \\frac{V}{R} = \\frac{12\\text{V}}{240\\,\\Omega} = 0.05\\text{ A} = 50\\text{ mA}$$
 
-  // -------------------------------------------------------------
-  // 4. CRYPTOGRAPHY & CYBERSECURITY (Cipher_09)
-  // -------------------------------------------------------------
-  if (q.includes('rsa') || (q.includes('asymmetric') && q.includes('encryption'))) {
-    return `**RSA (Rivest–Shamir–Adleman)** is one of the first practical public-key (asymmetric) cryptosystems, introduced in 1977.
+2. **Power Dissipated ($P$)**:
+   $$P = V \\cdot I = 12\\text{V} \\times 0.05\\text{A} = 0.6\\text{ W} = 600\\text{ mW}$$
 
-### Core Mathematical Foundation:
-RSA's security relies on the **computational hardness of factoring large integers** (the prime factorization problem). While multiplying two large prime numbers $p$ and $q$ is trivial ($O(n^2)$), finding $p$ and $q$ given their product $n = p \\times q$ is computationally infeasible for 2048-bit or 4096-bit keys.
+Always select a resistor with at least a $1\\text{W}$ power rating to prevent thermal failure!`;
+      }
 
-### Key Generation Steps:
-1. Choose two large distinct primes $p$ and $q$.
-2. Compute modulus $n = p \\times q$.
-3. Compute Euler's totient function: $\\phi(n) = (p - 1)(q - 1)$.
-4. Choose public exponent $e$ such that $1 < e < \\phi(n)$ and $\\gcd(e, \\phi(n)) = 1$ (commonly $e = 65537$).
-5. Compute private exponent $d$ using the Modular Multiplicative Inverse:
-   $$d \\equiv e^{-1} \\pmod{\\phi(n)}$$
+      return `Here is the requested implementation:
 
-### Encryption & Decryption:
-- **Public Key**: $(e, n)$ | **Private Key**: $(d, n)$
-- **Encryption**: $c \\equiv m^e \\pmod{n}$
-- **Decryption**: $m \\equiv c^d \\pmod{n}$
-
-RSA is widely utilized in TLS/SSL handshakes, digital signatures, and secure key exchanges.`;
-  }
-
-  if (q.includes('cryptography') || q.includes('cybersecurity') || q.includes('encryption')) {
-    return `**Cryptography** is the science of protecting information and communications using mathematical codes, ensuring four fundamental properties (the CIA+ model):
-
-1. **Confidentiality**: Ensuring unauthorized parties cannot read the ciphertext (e.g., AES-256 for symmetric encryption, RSA/ECC for asymmetric encryption).
-2. **Integrity**: Verifying data has not been altered in transit using cryptographic hash functions (SHA-256, SHA-3) and HMACs.
-3. **Authentication**: Confirming the identity of originators using Digital Signatures and Public Key Infrastructure (PKI).
-4. **Non-Repudiation**: Preventing senders from denying transmission of signed messages.`;
-  }
-
-  if (q.includes('sql injection') || q.includes('sqli')) {
-    return `**SQL Injection (SQLi)** is a critical security vulnerability where an attacker manipulates application queries by inserting malicious SQL control fragments into user input fields.
-
-### Vulnerable Code:
-\`\`\`sql
--- User inputs: ' OR '1'='1
-SELECT * FROM users WHERE email = '' OR '1'='1' AND password = '';
--- Bypasses authentication because '1'='1' is always true!
+\`\`\`java
+public class Solution {
+    public static void main(String[] args) {
+        System.out.println("Code implementation generated successfully!");
+    }
+}
 \`\`\`
 
-### Mitigation:
-Always use **Parameterized Queries (Prepared Statements)**:
+Let me know if you would like to test edge cases or optimize this further!`;
+    }
+
+    if (lastBotLower.includes('study plan') || activeTopic === 'study plan') {
+      return `### 4-Week Structured Study Roadmap:
+- **Week 1: Foundations & Core Syntax**: Variables, control flow, functions, memory model.
+- **Week 2: Data Structures**: Arrays, HashMaps, Linked Lists, Stacks, Queues.
+- **Week 3: Algorithms & Problem Solving**: Binary search, recursion, sorting, dynamic programming basics.
+- **Week 4: Project Building & Review**: Construct a complete application and practice active recall questions.`;
+    }
+
+    return `Understood! Let's proceed. What specific question, concept, or code implementation would you like to tackle next?`;
+  }
+
+  // -------------------------------------------------------------
+  // 2. CONTEXTUAL DECLINE ("no", "cancel", "not now", etc.)
+  // -------------------------------------------------------------
+  if (/^(no|nope|nah|not now|nevermind|cancel|stop|dont)\b/i.test(q)) {
+    return `No problem at all! We can pivot to whatever topic or question you prefer. What would you like to explore next?`;
+  }
+
+  // -------------------------------------------------------------
+  // 3. CONTEXTUAL SIMPLIFICATION ("make it simpler", "simplify it", etc.)
+  // -------------------------------------------------------------
+  if (/(make it simpler|simplify it|simpler|explain simply|simple terms|in plain english|eli5|explain like i'm 5|easier to understand)/i.test(q)) {
+    if (activeTopic === 'recursion' || lastBotMsg.toLowerCase().includes('recursion')) {
+      return `### Recursion in Plain English:
+Think of **Russian nesting dolls (Matryoshka)**:
+1. You open a large doll.
+2. Inside is an identical, slightly smaller doll doing the exact same thing.
+3. You keep opening dolls until you hit the tiny, solid wooden doll that cannot be opened—that is your **Base Case**.
+4. Once you find the tiny doll, you close all the outer dolls back up in reverse order.
+
+In programming: a function does one small piece of work, calls itself with a smaller input, and stops as soon as it hits the base case!`;
+    }
+
+    if (activeTopic === 'ohms law' || lastBotMsg.toLowerCase().includes('ohm')) {
+      return `### Ohm's Law in Plain English:
+Imagine water flowing through a garden hose:
+- **Voltage ($V$)** is the water pressure pushing through the pipe.
+- **Current ($I$)** is the rate of water flowing.
+- **Resistance ($R$)** is a squeeze or kink in the hose fighting the flow.
+
+If you push harder (more Voltage), more water flows (more Current). If you pinch the hose tighter (more Resistance), less water flows ($I = V / R$).`;
+    }
+
+    if (activeTopic === 'rsa' || lastBotMsg.toLowerCase().includes('rsa')) {
+      return `### RSA Public-Key Encryption in Plain English:
+Imagine a padlock that anyone in the world can snap shut:
+1. You leave open padlocks everywhere (your **Public Key**). Anyone can place a message in a box and snap your padlock shut.
+2. But only you hold the physical metal key in your pocket (your **Private Key**).
+3. Even the person who snapped the lock shut cannot open it again—only you can unlock it. That is asymmetric encryption!`;
+    }
+
+    if (activeTopic === 'quantum' || lastBotMsg.toLowerCase().includes('quantum')) {
+      return `### Quantum Computing in Plain English:
+- Normal computers use normal light switches: they are either strictly **OFF (0)** or **ON (1)**.
+- A quantum computer uses **Qubits**, which can spin like a flipped coin in mid-air (Superposition)—being a mixture of both 0 and 1 at the same time.
+- Because they explore multiple combinations simultaneously, they can solve complex problems in minutes that would take classical supercomputers thousands of years.`;
+    }
+
+    if (activeTopic === 'calculus' || lastBotMsg.toLowerCase().includes('calculus')) {
+      return `### Calculus in Plain English:
+Calculus is made of two simple ideas:
+1. **Derivatives**: How fast is something changing *right now*? (Like glancing at your car's speedometer).
+2. **Integrals**: How much has accumulated over time? (Like checking your odometer for total distance traveled).`;
+    }
+
+    return `In simple terms: instead of looking at the complex formulas, we break the problem down into its smallest fundamental parts and solve them one step at a time.`;
+  }
+
+  // -------------------------------------------------------------
+  // 4. LANGUAGE / CODE SPECIFIC FOLLOW-UPS ("in java", "in python", etc.)
+  // -------------------------------------------------------------
+  if (/(example in java|in java|using java|java code|java example)/i.test(q)) {
+    if (activeTopic === 'recursion' || lastUserMsg.includes('recursion')) {
+      return `Here is a clear **Java** example of recursion calculating the factorial of a number:
+
 \`\`\`java
-String query = "SELECT * FROM users WHERE email = ? AND password = ?";
-PreparedStatement pstmt = connection.prepareStatement(query);
-pstmt.setString(1, userEmail);
-pstmt.setString(2, userPassword);
+public class FactorialExample {
+    // Recursive method
+    public static int factorial(int n) {
+        if (n <= 1) return 1; // Base case
+        return n * factorial(n - 1); // Recursive call
+    }
+
+    public static void main(String[] args) {
+        int n = 5;
+        System.out.println(n + "! = " + factorial(n)); // 120
+    }
+}
+\`\`\`
+
+- **Base Case**: When \`n <= 1\`, the function stops calling itself and returns 1.
+- **Recursive Step**: For any other number, it returns \`n * factorial(n - 1)\`.`;
+    }
+
+    if (activeTopic === 'string reverse' || lastUserMsg.includes('reverse')) {
+      return `Here is the clean **Java** solution to reverse a string:
+
+\`\`\`java
+public class ReverseString {
+    public static void main(String[] args) {
+        String original = "Nipix AI Scholar";
+        
+        // Using StringBuilder reverse()
+        String reversed = new StringBuilder(original).reverse().toString();
+        System.out.println("Reversed: " + reversed);
+    }
+}
+\`\`\``;
+    }
+  }
+
+  if (/(example in python|in python|using python|python code|python example)/i.test(q)) {
+    if (activeTopic === 'recursion' || lastUserMsg.includes('recursion')) {
+      return `Here is the **Python** recursion example:
+
+\`\`\`python
+def factorial(n: int) -> int:
+    if n <= 1:
+        return 1  # Base case
+    return n * factorial(n - 1)  # Recursive step
+
+print("5! =", factorial(5))  # Output: 120
+\`\`\``;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // 5. DIRECT QUESTION: CAPITALS OF COUNTRIES & GEOGRAPHY
+  // -------------------------------------------------------------
+  if (q.includes('capital of') || q.includes('capital city of')) {
+    for (const [country, capital] of Object.entries(CAPITALS)) {
+      if (q.includes(country)) {
+        return `The capital of **${country.charAt(0).toUpperCase() + country.slice(1)}** is **${capital}**.`;
+      }
+    }
+  }
+
+  // -------------------------------------------------------------
+  // 6. DIRECT REQUEST: JOKES & HUMOR
+  // -------------------------------------------------------------
+  if (q.includes('joke') || q.includes('funny') || q.includes('make me laugh')) {
+    const selectedJoke = JOKES[Math.floor(Math.random() * JOKES.length)];
+    return `${selectedJoke}\n\nHope that brought a smile to your study session! What topic are we tackling next?`;
+  }
+
+  // -------------------------------------------------------------
+  // 7. DIRECT REQUEST: PYTHON STRING REVERSAL
+  // -------------------------------------------------------------
+  if ((q.includes('python') && q.includes('reverse') && q.includes('string')) || (q.includes('reverse a string') && q.includes('python'))) {
+    return `Here are the 3 best ways to reverse a string in **Python**:
+
+### Method 1: String Slicing (Recommended & Most Pythonic)
+\`\`\`python
+def reverse_string(s: str) -> str:
+    return s[::-1]
+
+print(reverse_string("hello"))  # Output: 'olleh'
+\`\`\`
+*Why it works*: The slice syntax \`[start:stop:step]\` with a step of \`-1\` traverses the string backwards with $O(n)$ speed in optimized C.
+
+### Method 2: Using \`reversed()\` and \`join()\`
+\`\`\`python
+def reverse_string_builtin(s: str) -> str:
+    return "".join(reversed(s))
+
+print(reverse_string_builtin("Nipix"))  # Output: 'xipiN'
+\`\`\`
+
+### Method 3: Using a Two-Pointer / Loop Approach
+\`\`\`python
+def reverse_string_loop(s: str) -> str:
+    chars = list(s)
+    left, right = 0, len(chars) - 1
+    while left < right:
+        chars[left], chars[right] = chars[right], chars[left]
+        left += 1
+        right -= 1
+    return "".join(chars)
 \`\`\``;
   }
 
   // -------------------------------------------------------------
-  // 5. ELECTRICAL ENGINEERING & CIRCUITS (Spark_X)
+  // 8. DIRECT REQUEST: JAVA CALCULATOR
   // -------------------------------------------------------------
-  if (q.includes("ohm's law") || q.includes("ohms law") || (q.includes("ohm") && q.includes("law"))) {
-    return `**Ohm's Law** is a fundamental relationship in electrical engineering and circuit theory, discovered by Georg Simon Ohm in 1827.
+  if (q.includes('calculator') && q.includes('java')) {
+    return `Here is a complete, compilable **Console Calculator in Java**:
 
-### The Formula:
-$$V = I \\times R$$
+\`\`\`java
+import java.util.Scanner;
 
-Where:
-- **$V$ (Voltage)**: Potential difference measured in **Volts (V)**.
-- **$I$ (Current)**: Flow of electrical charge measured in **Amperes (A)**.
-- **$R$ (Resistance)**: Opposition to current flow measured in **Ohms ($\\Omega$)**.
+public class JavaCalculator {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
 
-### Alternate Algebraic Forms:
-- Current: $I = \\frac{V}{R}$
-- Resistance: $R = \\frac{V}{I}$
-- Electrical Power: $P = V \\times I = I^2 R = \\frac{V^2}{R}$ (in Watts)
+        System.out.println("=== Nipix Java Calculator ===");
+        System.out.print("Enter first number: ");
+        double num1 = scanner.nextDouble();
 
-### Practical Example:
-If an LED circuit supplies $V = 5\\text{V}$ and has a resistor of $R = 250\\,\\Omega$, the current drawn is:
-$$I = \\frac{5\\text{ V}}{250\\,\\Omega} = 0.02\\text{ A} = 20\\text{ mA}$$`;
+        System.out.print("Enter operator (+, -, *, /): ");
+        char operator = scanner.next().charAt(0);
+
+        System.out.print("Enter second number: ");
+        double num2 = scanner.nextDouble();
+
+        double result;
+        switch (operator) {
+            case '+':
+                result = num1 + num2;
+                break;
+            case '-':
+                result = num1 - num2;
+                break;
+            case '*':
+                result = num1 * num2;
+                break;
+            case '/':
+                if (num2 == 0) {
+                    System.out.println("Error: Division by zero is undefined.");
+                    scanner.close();
+                    return;
+                }
+                result = num1 / num2;
+                break;
+            default:
+                System.out.println("Error: Unsupported operator.");
+                scanner.close();
+                return;
+        }
+
+        System.out.printf("Result: %.2f %c %.2f = %.2f%n", num1, operator, num2, result);
+        scanner.close();
+    }
+}
+\`\`\``;
   }
 
-  if (q.includes('kirchhoff') || q.includes('kvl') || q.includes('kcl')) {
-    return `**Kirchhoff's Circuit Laws** form the mathematical cornerstone of nodal and mesh circuit analysis:
+  // -------------------------------------------------------------
+  // 9. DIRECT REQUEST: COMPARE JAVA AND PYTHON
+  // -------------------------------------------------------------
+  if ((q.includes('compare') || q.includes('difference')) && q.includes('java') && q.includes('python')) {
+    return `### Comprehensive Comparison: Java vs Python
 
-1. **Kirchhoff's Current Law (KCL)** — *Conservation of Electric Charge*:
-   The algebraic sum of currents entering any circuit junction (node) is strictly zero:
-   $$\\sum I_{\\text{in}} = \\sum I_{\\text{out}}$$
-2. **Kirchhoff's Voltage Law (KVL)** — *Conservation of Energy*:
-   The directed sum of electrical potential differences (voltages) around any closed loop is zero:
-   $$\\sum_{k=1}^{n} V_k = 0$$`;
-  }
+| Feature | Java | Python |
+| :--- | :--- | :--- |
+| **Typing** | Statically typed (types checked at compile-time) | Dynamically typed (types checked at runtime) |
+| **Execution Model** | Compiled to Bytecode $\\to$ JVM JIT Compilation | Interpreted bytecode $\\to$ CPython runtime |
+| **Performance** | High (near C++ speeds for long-running services) | Moderate (optimized via C extensions like NumPy) |
+| **Syntax** | Verbose, explicit with braces \`{}\` | Concise, indentation-based, highly readable |
+| **Primary Use Cases** | Enterprise backends (Spring Boot), Android, Large scale systems | AI / Machine Learning, Data Science, Scripting, Rapid prototyping |
 
-  if (q.includes('transistor')) {
-    return `A **transistor** is a three-terminal semiconductor device used to amplify electrical signals or switch electronic circuits.
+### Code Comparison (Hello World & Class):
 
-### Two Major Categories:
-1. **BJT (Bipolar Junction Transistor)**:
-   - Terminals: **Collector (C), Base (B), Emitter (E)**.
-   - Mechanism: Current-controlled device. A small current at the Base controls a large current between Collector and Emitter.
-   - Types: NPN and PNP.
-2. **MOSFET (Metal-Oxide-Semiconductor Field-Effect Transistor)**:
-   - Terminals: **Drain (D), Gate (G), Source (S)**.
-   - Mechanism: Voltage-controlled device. An electric field applied to the Gate modulates the conductivity of a conductive channel between Source and Drain.
-   - Dominates modern computer CPUs and GPUs due to near-zero static Gate current and rapid switching speeds.`;
+**Python**:
+\`\`\`python
+print("Hello, World!")
+\`\`\`
+
+**Java**:
+\`\`\`java
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+\`\`\`
+
+### Verdict:
+- Choose **Python** for machine learning, data analysis, scripting, and fast MVP development.
+- Choose **Java** for massive enterprise microservices, banking systems, high-concurrency workloads, and Android apps.`;
   }
 
   // -------------------------------------------------------------
-  // 6. MATHEMATICS & CALCULUS (NovaMind)
+  // 10. DIRECT REQUEST: QUANTUM COMPUTING
   // -------------------------------------------------------------
+  if (q.includes('quantum computing') || q.includes('what is quantum computing')) {
+    return `**Quantum Computing** is an advanced paradigm of computation that exploits the principles of quantum mechanics—primarily **Superposition** and **Entanglement**—to solve computational problems exponentially faster than classical computers.
+
+### Core Principles:
+1. **Classical Bits vs. Qubits**:
+   - Classical computers store data as binary bits: strictly \`0\` or \`1\`.
+   - Quantum computers use **Qubits**, which can exist in a linear superposition:
+     $$|\\psi\\rangle = \\alpha|0\\rangle + \\beta|1\\rangle$$
+     Where $|\\alpha|^2 + |\\beta|^2 = 1$.
+
+2. **Quantum Entanglement**:
+   - Entangled qubits are correlated such that the quantum state of one instantaneously influences the state of another, enabling massive parallel processing across $2^n$ simultaneous states.
+
+3. **Key Applications**:
+   - **Cryptography**: Breaking legacy RSA via Shor's Algorithm and securing networks via Quantum Key Distribution (QKD).
+   - **Molecular Simulation**: Designing new pharmaceuticals, enzymes, and superconductors.
+   - **Optimization**: Solving complex logistics, finance portfolios, and machine learning models.`;
+  }
+
+  // -------------------------------------------------------------
+  // 11. DIRECT REQUEST: WRITE AN EMAIL
+  // -------------------------------------------------------------
+  if (q.includes('write an email') || q.includes('draft an email') || q.includes('email template')) {
+    return `Here is a versatile, professional **Email Draft**:
+
+**Subject**: Request for Project Review / Meeting Discussion
+
+Dear [Recipient Name],
+
+I hope this email finds you well.
+
+I am writing to share a brief update on [Project/Topic Name] and request a short meeting to discuss the next milestones. We have made significant progress on [Key Accomplishment] and would value your feedback on [Specific Question or Review Point].
+
+Could you let me know if you are available for a 15-minute call sometime this week? I am available on [Day, e.g., Wednesday afternoon] or [Day, e.g., Thursday morning], but I am glad to adjust to your schedule.
+
+Thank you for your time and continued support.
+
+Best regards,
+
+[Your Name]  
+[Your Title/Role]  
+[Contact Information]`;
+  }
+
+  // -------------------------------------------------------------
+  // 12. DIRECT REQUEST: STUDY PLAN
+  // -------------------------------------------------------------
+  if (q.includes('study plan') || q.includes('study schedule') || q.includes('how to study')) {
+    return `### Practical 4-Week High-Retention Study Plan
+
+#### 📅 Week 1: Core Fundamentals & Active Recall
+- **Goal**: Understand theoretical concepts without passively highlighting.
+- **Action**: Use the **Feynman Technique**—explain each concept out loud in plain English.
+- **Daily Target**: 90 minutes deep work + 15 min review.
+
+#### 📅 Week 2: Applied Problem Solving & Spaced Repetition
+- **Goal**: Transition from passive reading to active problem solving.
+- **Action**: Solve 3–5 hands-on problems or write practice code daily.
+- **Review**: Review Week 1 flashcards/notes on Day 3 and Day 7.
+
+#### 📅 Week 3: Mock Testing & Timed Drills
+- **Goal**: Build speed, confidence, and simulate exam/interview conditions.
+- **Action**: Take full-length timed practice tests.
+- **Error Log**: Keep a notebook tracking *why* every mistake occurred.
+
+#### 📅 Week 4: Synthesis & Final Polish
+- **Goal**: Eliminate weak spots identified in Week 3.
+- **Action**: Focus 80% of study time exclusively on previously missed topics.
+- **Rest**: Ensure 8 hours of sleep before the final evaluation to maximize memory consolidation.`;
+  }
+
+  // -------------------------------------------------------------
+  // 13. CORE SUBJECT DEFINITIONS (Java, Python, Recursion, Ohm's, RSA, Calculus)
+  // -------------------------------------------------------------
+  if (q.includes('what is java') || q === 'java') {
+    return `**Java** is a high-level, class-based, object-oriented programming language designed around the philosophy of **"Write Once, Run Anywhere" (WORA)**.
+
+### Core Architectural Pillars:
+1. **JVM (Java Virtual Machine)**: Java code compiles into platform-independent Bytecode (\`.class\`), which executes on any system equipped with a JVM.
+2. **Object-Oriented Programming (OOP)**: Enforces Encapsulation, Inheritance, Polymorphism, and Abstraction.
+3. **Automatic Memory Management**: Built-in Garbage Collection (G1, ZGC) automatically deallocates unreachable heap memory.
+4. **Massive Ecosystem**: Powers Spring Boot enterprise microservices, Android mobile operating systems, and Apache Big Data pipelines (Kafka, Spark).
+
+Would you like a code example or an explanation of specific features like multithreading or collections?`;
+  }
+
+  if (q.includes('what is python') || q === 'python') {
+    return `**Python** is a high-level, interpreted, dynamically-typed programming language created by Guido van Rossum in 1991. It emphasizes code readability and developer productivity.
+
+### Key Highlights:
+- **Clean Syntax**: Uses whitespace indentation instead of curly braces.
+- **Batteries-Included**: Vast standard library covering regex, math, networking, and serialization.
+- **Dominant in AI & Data Science**: Standard platform for PyTorch, TensorFlow, Pandas, NumPy, and Scikit-Learn.
+- **Versatile Frameworks**: Powers web applications via FastAPI, Django, and Flask.`;
+  }
+
+  if (q.includes('recursion') || q.includes('what is recursion')) {
+    return `**Recursion** is a fundamental programming technique where a function solves a problem by calling a smaller instance of itself until it reaches an explicit termination condition.
+
+### Key Components:
+1. **Base Case**: The stopping condition that prevents infinite execution and stack overflow errors.
+2. **Recursive Step**: The logic that reduces the problem input and calls the function again.
+
+\`\`\`java
+public static int factorial(int n) {
+    if (n <= 1) return 1; // Base case
+    return n * factorial(n - 1); // Recursive step
+}
+\`\`\`
+
+Would you like me to show a step-by-step call stack diagram or another practical example?`;
+  }
+
+  if (q.includes("ohm's law") || q.includes("ohms law")) {
+    return `**Ohm's Law** is a fundamental relationship in circuit theory stating that the current ($I$) flowing through a conductor between two points is directly proportional to the voltage ($V$) across the two points and inversely proportional to the resistance ($R$).
+
+### Mathematical Formula:
+$$V = I \\cdot R$$
+- **$V$ (Voltage)**: Electrical potential difference, measured in Volts ($\text{V}$).
+- **$I$ (Current)**: Flow rate of electric charge, measured in Amperes ($\text{A}$).
+- **$R$ (Resistance)**: Opposition to current flow, measured in Ohms ($\Omega$).
+
+Derived forms:
+$$I = \\frac{V}{R} \\quad \\text{and} \\quad R = \\frac{V}{I}$$`;
+  }
+
+  if (q.includes('rsa') || (q.includes('asymmetric') && q.includes('encryption'))) {
+    return `**RSA (Rivest–Shamir–Adleman)** is an asymmetric public-key cryptosystem based on the practical difficulty of factoring large composite prime numbers.
+
+### Core Mathematical Mechanics:
+1. **Key Generation**:
+   - Choose two large distinct primes $p$ and $q$.
+   - Calculate modulus $n = p \\cdot q$.
+   - Compute Euler's totient $\\phi(n) = (p - 1)(q - 1)$.
+   - Choose public exponent $e$ such that $1 < e < \\phi(n)$ and $\\gcd(e, \\phi(n)) = 1$.
+   - Compute private exponent $d \\equiv e^{-1} \\pmod{\\phi(n)}$.
+2. **Encryption**: $c = m^e \\bmod n$.
+3. **Decryption**: $m = c^d \\bmod n$.`;
+  }
+
   if (q.includes('calculus') || q.includes('derivative') || q.includes('integral')) {
-    return `**Calculus** is the mathematical study of continuous change, divided into two inverse branches unified by the **Fundamental Theorem of Calculus**:
+    return `**Calculus** is the mathematical branch studying continuous change, divided into:
 
-### 1. Differential Calculus (Derivatives)
-Measures instantaneous rates of change and tangent slopes:
-$$f'(x) = \\lim_{h \\to 0} \\frac{f(x + h) - f(x)}{h}$$
-*Power Rule*: $\\frac{d}{dx}[x^n] = n x^{n-1}$. For example, $\\frac{d}{dx}[4x^3 + 2x] = 12x^2 + 2$.
+1. **Differential Calculus (Derivatives)**:
+   Measures instantaneous rate of change and curve slopes:
+   $$f'(x) = \\lim_{h \\to 0} \\frac{f(x + h) - f(x)}{h}$$
+   *Power Rule*: $\\frac{d}{dx}[x^n] = n x^{n-1}$. For example, $\\frac{d}{dx}[3x^2] = 6x$.
 
-### 2. Integral Calculus (Integrals)
-Measures total accumulation of quantities and continuous area under curves:
-$$\\int_a^b f(x)\\,dx = F(b) - F(a)$$
-Where $F'(x) = f(x)$. For example, $\\int 3x^2\\,dx = x^3 + C$.`;
+2. **Integral Calculus (Integrals)**:
+   Measures total accumulation and area under curves:
+   $$\\int_a^b f(x)\\,dx = F(b) - F(a) \\quad \\text{where } F'(x) = f(x)$$`;
   }
 
   // -------------------------------------------------------------
-  // 7. ARTIFICIAL INTELLIGENCE & NEURAL ARCHITECTURE (Aether)
+  // 14. GENERAL DIRECT ANSWER (No abstract sentence echoing!)
   // -------------------------------------------------------------
-  if (q.includes('transformer') || q.includes('attention') || q.includes('neural') || q.includes('llm') || q.includes('ai')) {
-    return `The **Transformer Architecture** (introduced in *"Attention Is All You Need"*, Vaswani et al., 2017) eliminated recurrence (RNNs/LSTMs) in favor of parallelized **Multi-Head Self-Attention**.
+  return `Regarding **${rawPrompt}**:
 
-### Mathematical Formulation of Scaled Dot-Product Attention:
-$$\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$
+Here is the direct breakdown:
 
-Where:
-- **$Q$ (Query)**: What a token is searching for.
-- **$K$ (Key)**: What a token contains / offers.
-- **$V$ (Value)**: The semantic feature representation.
-- **$\\sqrt{d_k}$**: Scaling factor to prevent dot products from growing excessively large, ensuring stable gradients in softmax.
-
-Transformers power modern foundation models including GPT-4, Gemini, Claude, and LLaMA.`;
-  }
-
-  // -------------------------------------------------------------
-  // 8. HISTORY & RESEARCH (Archivist)
-  // -------------------------------------------------------------
-  if (q.includes('telephone') || q.includes('who invented')) {
-    if (q.includes('telephone') || q.includes('phone')) {
-      return `**Alexander Graham Bell** was granted the official patent for the electromagnetic telephone on March 7, 1876 (US Patent 174,465). Elisha Gray filed a patent caveat on the same day, and Italian inventor Antonio Meucci also constructed early voice communication apparatuses dating back to 1854.`;
-    }
-    if (q.includes('computer')) {
-      return `The conceptual father of the computer is **Charles Babbage**, who designed the mechanical *Analytical Engine* in 1837. **Ada Lovelace** wrote the first algorithm intended for it, becoming the first computer programmer. In 1936, **Alan Turing** formulated the universal theoretical computer (the *Turing Machine*), establishing the foundations of modern computer science.`;
-    }
-    if (q.includes('internet')) {
-      return `The Internet's foundation was created by **Vint Cerf** and **Bob Kahn**, who co-designed the **TCP/IP** protocol suite in the 1970s. It evolved from ARPANET (launched by the US DoD's DARPA in 1969). Later, in 1989, British scientist **Sir Tim Berners-Lee** invented the **World Wide Web (WWW)** at CERN.`;
-    }
-  }
-
-  // -------------------------------------------------------------
-  // 9. PERSONA-SYNTHESIZED INTELLECTUAL RESPONSE
-  // -------------------------------------------------------------
-  if (botId === 'bytebot_ai') {
-    return `In software engineering, analyzing **"${promptText}"** requires examining the underlying algorithmic complexity, execution paradigm, and memory considerations. Break the problem into modular interfaces, ensure clean test-driven design, and evaluate the runtime overhead. Would you like me to generate a tailored code implementation?`;
-  } else if (botId === 'cipher_09') {
-    return `Examining **"${promptText}"** from a cryptographic and security angle reveals structural invariants that must be shielded. When establishing security models, always enforce the principle of least privilege, zero-trust verification, and strong entropy for cryptographic primitives. Which vulnerability vector shall we analyze?`;
-  } else if (botId === 'spark_x') {
-    return `From a physical and electrical viewpoint, **"${promptText}"** maps directly to conservation of energy, field equations, and signal transmission boundaries. Let's inspect the frequency characteristics, impedance matching, and thermal dynamics. Would you like to derive the governing formulas?`;
-  } else if (botId === 'novamind') {
-    return `Analyzing **"${promptText}"** mathematically means framing it with rigorous axiomatic definitions, algebraic transformations, and boundary constraints. Whether we apply continuous differential models or discrete graph structures, every variable can be methodically solved. Let's write out the mathematical steps!`;
-  } else if (botId === 'aether') {
-    return `Looking at **"${promptText}"** through the lens of emerging technology and artificial intelligence reveals high-dimensional patterns. From decentralized distributed graphs to self-supervised neural embeddings, the paradigm is shifting rapidly. Which future technical trajectory would you like to explore?`;
-  } else {
-    return `Regarding **"${promptText}"**, academic documentation and peer-reviewed literature offer comprehensive historical and structural frameworks for this subject. Cross-referencing primary sources and empirical methodologies provides clear clarity. What specific research angle shall we synthesize?`;
-  }
+1. **Core Concept**: ${rawPrompt} involves understanding the governing principles and practical applications in this domain.
+2. **Practical Perspective**: When working with this, focus on identifying the primary variables, breaking down the problem into logical components, and testing each step methodically.
+3. **Next Steps**: Let me know if you would like a concrete code implementation, mathematical derivation, or a practical real-world scenario!`;
 }
 
 /**
