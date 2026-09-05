@@ -45,8 +45,18 @@ function generateContextualAIResponse(botId, promptText, history = []) {
   const lastUserMsg = history.filter(h => h.isUser).slice(-2)[0]?.text?.toLowerCase() || '';
   const lastAiMsg = history.filter(h => !h.isUser).slice(-1)[0]?.text || '';
 
-  // 1. Follow-ups ("explain simply", "simple terms", etc.)
-  if (q.includes('explain it simply') || q.includes('simple terms') || q.includes('simply') || q.includes('easier')) {
+  // 1. Conversational greetings
+  if (/^(hello|hi|hey|greetings|good morning|good evening)\b/i.test(q)) {
+    if (botId === 'bytebot_ai') return `Hello developer! 👋 I am ByteBot AI, your software engineering assistant. What code, algorithm, or framework shall we study today?`;
+    if (botId === 'cipher_09') return `Greetings, researcher. I am Cipher_09, specialized in cryptography and cybersecurity. What security concept or protocol are we inspecting?`;
+    if (botId === 'spark_x') return `Voltage nominal and circuit ready! ⚡ I am Spark_X, your electrical engineering and physics co-pilot. What question do you have?`;
+    if (botId === 'novamind') return `Welcome! 🧠 I am NovaMind, your mathematics tutor. Let's solve equations, calculus, or analytical problems together.`;
+    if (botId === 'aether') return `Greetings visionary! 🌌 I am Aether, exploring artificial intelligence and future technology. What frontier shall we explore?`;
+    return `Welcome scholar. 📚 I am Archivist, your research guide across history, books, and literature. What topic shall we research?`;
+  }
+
+  // 2. Follow-ups ("explain simply", "simple terms", etc.)
+  if (q.includes('explain simply') || q.includes('simple terms') || q.includes('simply') || q.includes('easier')) {
     if (lastUserMsg.includes('calculus') || lastAiMsg.includes('Calculus')) {
       return `Simply put: Differential calculus is about finding how fast things change at an exact instant (like a car's speedometer), while Integral calculus is about adding up tiny pieces to find a total accumulation (like total distance traveled).`;
     }
@@ -59,13 +69,16 @@ function generateContextualAIResponse(botId, promptText, history = []) {
     if (lastUserMsg.includes('recursion') || lastAiMsg.includes('recursion')) {
       return `Recursion is like looking into two facing mirrors: a process calls a smaller version of itself again and again until it hits a stopping condition (base case).`;
     }
-    return `In simple terms: ${lastAiMsg ? `building on what we discussed—the core concept boils down to breaking the problem into clear, fundamental steps so every component functions predictably.` : `it's about understanding the core principle without complex jargon.`}`;
+    if (lastUserMsg.includes('rsa') || lastAiMsg.includes('RSA')) {
+      return `In simple terms: Imagine a padlock anyone can snap shut with an open public key, but only the person holding the secret private key can unlock it. That is RSA public-key encryption!`;
+    }
+    return `In simple terms: breaking the problem down into clear fundamental steps allows every component to be evaluated predictably and intuitively.`;
   }
 
-  // 2. Mathematics & Calculus Questions (NovaMind focus)
+  // 3. Mathematics & Calculus Questions (NovaMind focus)
   if (q.includes('calculus') || q.includes('derivative') || q.includes('integral') || q.includes('math')) {
     if (q.includes('calculus')) {
-      return `Calculus is the mathematical study of continuous change. It is split into two major branches:
+      return `Calculus is the mathematical study of continuous change, divided into:
 1. Differential Calculus: Studies rates of change and slopes of curves using derivatives (e.g., f'(x) = d/dx [f(x)]).
 2. Integral Calculus: Studies accumulation of quantities and areas under curves using integrals (e.g., ∫ f(x) dx).
 
@@ -79,141 +92,106 @@ d/dx [x^n] = n * x^(n-1)
 
 For example, the derivative of f(x) = 3x^2 + 5x - 4 is f'(x) = 6x + 5.`;
     }
-    return `Mathematics is the universal language of logical structures. Whether you're working with linear algebra, calculus, or discrete mathematics, breaking expressions down into step-by-step transformations yields clear solutions.`;
+    return `Mathematics is the universal language of logical structures. Breaking expressions into step-by-step transformations reveals the underlying proof.`;
   }
 
-  // 3. AI & Neural Network Questions (Aether focus)
-  if (q.includes('artificial intelligence') || q.includes('ai') || q.includes('neural network') || q.includes('machine learning')) {
-    if (q.includes('neural network') || q.includes('deep learning')) {
-      return `Artificial Neural Networks (ANNs) are computational models inspired by biological brain structures. They consist of:
-1. Input Layer: Receives feature vectors.
-2. Hidden Layers: Apply weighted linear transformations (W * x + b) followed by non-linear activation functions (ReLU, Sigmoid, GELU).
-3. Output Layer: Produces predictions or classification logits.
+  // 4. Cryptography & Cybersecurity (Cipher_09 focus)
+  if (q.includes('rsa') || (q.includes('asymmetric') && q.includes('encryption'))) {
+    return `RSA (Rivest–Shamir–Adleman) is a widely used public-key cryptosystem based on the mathematical difficulty of factoring large composite prime numbers.
 
-Training uses Backpropagation with Gradient Descent to optimize weights via loss minimization.`;
+Core Mechanics:
+1. Modulus: n = p * q (p and q are large distinct primes).
+2. Totient: φ(n) = (p - 1)(q - 1).
+3. Public exponent: e coprime to φ(n). Public key = (e, n).
+4. Private exponent: d ≡ e^(-1) (mod φ(n)). Private key = (d, n).
+5. Encryption: c = m^e mod n. Decryption: m = c^d mod n.`;
+  }
+
+  if (q.includes('cryptography') || q.includes('cybersecurity')) {
+    return `Cryptography protects information through encryption, hashing, and digital signatures. It guarantees Confidentiality (AES, RSA), Integrity (SHA-256), Authentication, and Non-Repudiation.`;
+  }
+
+  // 5. AI & Neural Network Questions (Aether focus)
+  if (q.includes('artificial intelligence') || q.includes('ai') || q.includes('neural network') || q.includes('transformer')) {
+    if (q.includes('transformer')) {
+      return `The Transformer architecture uses Multi-Head Self-Attention mechanisms: Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V, allowing massive parallelization over sequences compared to traditional RNNs.`;
     }
-    return `Artificial Intelligence encompasses machine learning, deep learning, and natural language processing. Modern LLMs (Large Language Models) rely on Transformer architectures using Self-Attention mechanisms to process and generate natural text contextually.`;
+    return `Artificial Intelligence encompasses machine learning, deep learning, and natural language processing. Modern foundation models rely on Transformer architectures to process context and generate responses.`;
   }
 
-  // 4. Transistor & Semiconductor Questions (Spark_X focus)
-  if (q.includes('transistor')) {
-    if (q.includes('type') || q.includes('kind') || q.includes('category')) {
-      return `Transistors are primarily categorized into two main families:
-1. Bipolar Junction Transistors (BJTs): NPN and PNP types (current-controlled).
-2. Field-Effect Transistors (FETs): MOSFETs (Metal-Oxide-Semiconductor FETs, enhanced/depletion modes) and JFETs (voltage-controlled).
-
-MOSFETs are the most widely used transistors in modern digital integrated circuits and microprocessors due to their high switching speed and low power consumption.`;
-    }
-    return `A transistor is a fundamental semiconductor device used to amplify or switch electrical signals and power. It consists of semiconductor material (usually silicon) with at least three terminals: Collector, Base, and Emitter (in BJTs) or Drain, Gate, and Source (in MOSFETs).`;
-  }
-
-  // 5. Ohm's Law (Spark_X focus)
+  // 6. Transistor & Circuits (Spark_X focus)
   if (q.includes("ohm's law") || q.includes("ohms law")) {
-    return `Ohm's law states that the electrical current (I) flowing through a conductor between two points is directly proportional to the voltage (V) across the two points, and inversely proportional to the resistance (R).
+    return `Ohm's law states that current (I) is directly proportional to voltage (V) and inversely proportional to resistance (R):
 
-Mathematical formula: V = I × R (or I = V / R, R = V / I)
+Formula: V = I * R (or I = V / R, R = V / I)
 
-Where:
-• V = Voltage in Volts (V)
-• I = Current in Amperes (A)
-• R = Resistance in Ohms (Ω)`;
+Where V is in Volts, I is in Amperes, and R is in Ohms (Ω).`;
   }
 
-  // 6. Kirchhoff's Laws (KVL / KCL)
+  if (q.includes('transistor')) {
+    return `A transistor is a semiconductor device used to amplify or switch electrical signals. The two main types are BJTs (current-controlled: Collector, Base, Emitter) and MOSFETs (voltage-controlled: Drain, Gate, Source).`;
+  }
+
   if (q.includes('kirchhoff') || q.includes('kvl') || q.includes('kcl')) {
-    return `Kirchhoff's Circuit Laws consist of two fundamental principles:
-1. Kirchhoff's Voltage Law (KVL): The directed sum of electrical potential differences (voltages) around any closed circuit loop is zero (Σ V = 0). This expresses conservation of energy.
-2. Kirchhoff's Current Law (KCL): The total current entering a junction or node equals the total current leaving that node (Σ I_in = Σ I_out). This expresses conservation of electric charge.`;
+    return `Kirchhoff's Circuit Laws:
+1. KCL (Current Law): The algebraic sum of currents entering any node is zero (Σ I = 0, charge conservation).
+2. KVL (Voltage Law): The sum of potential differences around any closed loop is zero (Σ V = 0, energy conservation).`;
   }
 
-  // 7. Telephone Invention / History (Archivist focus)
-  if (q.includes('telephone') || (q.includes('phone') && (q.includes('invent') || q.includes('who')))) {
-    return `Alexander Graham Bell is officially credited with inventing the first practical telephone, receiving the US patent for it in March 1876. Elisha Gray and Antonio Meucci also made significant early contributions to electromagnetic voice transmission technology.`;
-  }
-
-  // 8. Python Questions (ByteBot AI focus)
-  if (q.includes('python')) {
-    return `Python is a high-level, interpreted, general-purpose programming language known for its clear, readable syntax and versatile ecosystem. It is widely used in artificial intelligence, machine learning, data science, web development (Django/Flask), automation scripting, and scientific computing.`;
-  }
-
-  // 9. Java String Reversal Code & Java Questions
+  // 7. Java & Programming Questions (ByteBot AI focus)
   if (q.includes('java')) {
+    if (q.includes('what is') || q.includes('explain') || q === 'java') {
+      return `Java is a high-level, class-based, object-oriented programming language designed for platform independence ("Write Once, Run Anywhere"). It compiles to bytecode that runs on the Java Virtual Machine (JVM) with automatic garbage collection.`;
+    }
     if (q.includes('reverse') || q.includes('string')) {
-      return `Here is a clean Java program to reverse a String using StringBuilder:
-
+      return `Java String Reversal using StringBuilder:
 \`\`\`java
-public class StringReverser {
-    public static void main(String[] args) {
-        String original = "Nipix AI Scholar";
-        
-        // Approach 1: Using StringBuilder
-        String reversed = new StringBuilder(original).reverse().toString();
-        System.out.println("Reversed: " + reversed);
-        
-        // Approach 2: Using a char array loop
-        char[] characters = original.toCharArray();
-        String customReversed = "";
-        for (int i = characters.length - 1; i >= 0; i--) {
-            customReversed += characters[i];
-        }
-        System.out.println("Custom Loop Reversed: " + customReversed);
-    }
-}
+String original = "Nipix";
+String reversed = new StringBuilder(original).reverse().toString();
 \`\`\``;
     }
-    if (q.includes('prime')) {
-      return `Here is a Java program to check if a number is prime:
-
-\`\`\`java
-public class PrimeChecker {
-    public static boolean isPrime(int n) {
-        if (n <= 1) return false;
-        for (int i = 2; i <= Math.sqrt(n); i++) {
-            if (n % i == 0) return false;
-        }
-        return true;
-    }
-
-    public static void main(String[] args) {
-        int number = 29;
-        System.out.println(number + " is prime? " + isPrime(number));
-    }
-}
-\`\`\``;
-    }
-    return `Java is a class-based, object-oriented programming language designed to follow the "Write Once, Run Anywhere" (WORA) principle via the Java Virtual Machine (JVM).`;
+    return `Java is an object-oriented language emphasizing Encapsulation, Inheritance, Polymorphism, and Abstraction, widely used in Spring Boot enterprise backends and Android development.`;
   }
 
-  // 10. Recursion Questions
-  if (q.includes('recursion') || q.includes('recursive')) {
-    return `Recursion is a programming technique where a function calls itself directly or indirectly to solve a problem by breaking it down into smaller sub-problems.
+  if (q.includes('recursion')) {
+    return `Recursion is a programming technique where a function calls itself to solve a smaller version of the problem until reaching a base case.
 
-Key Components:
-1. Base Case: The condition under which the function stops calling itself to prevent infinite recursion.
-2. Recursive Step: The part where the function calls itself with a reduced input.
-
-Example (Factorial in JavaScript):
-\`\`\`js
-function factorial(n) {
-  if (n <= 1) return 1; // Base case
-  return n * factorial(n - 1); // Recursive step
+Example (Factorial in Java):
+\`\`\`java
+public static int factorial(int n) {
+    if (n <= 1) return 1; // Base case
+    return n * factorial(n - 1); // Recursive step
 }
 \`\`\``;
   }
 
-  // 11. Default Persona-Tuned Knowledge Synthesis
+  if (q.includes('dijkstra')) {
+    return `Dijkstra's algorithm finds the shortest paths from a source node to all other nodes in a graph with non-negative edge weights using a priority queue (min-heap) in O((V + E) log V) time.`;
+  }
+
+  // 8. History & Research (Archivist focus)
+  if (q.includes('telephone') || q.includes('who invented')) {
+    if (q.includes('telephone') || q.includes('phone')) {
+      return `Alexander Graham Bell received the official US patent for the telephone in March 1876. Antonio Meucci and Elisha Gray also developed notable early voice transmission apparatuses.`;
+    }
+    if (q.includes('computer')) {
+      return `Charles Babbage conceptualized the mechanical Analytical Engine in 1837, Ada Lovelace created the first algorithm for it, and Alan Turing formulated universal computation in 1936.`;
+    }
+  }
+
+  // 9. Default Persona-Tuned Knowledge Synthesis
   if (botId === 'novamind') {
     return `Regarding "${promptText}": Analytical problem-solving requires breaking this down into foundational mathematical axioms and algebraic steps. Let's solve it step by step!`;
   } else if (botId === 'aether') {
     return `Regarding "${promptText}": Emerging technologies and neural architectures are reshaping how we model this domain. Let's analyze its futuristic implications and computational design!`;
   } else if (botId === 'bytebot_ai') {
-    return `Regarding "${promptText}": In software engineering and computer science, analyzing this requires evaluating the underlying data structures, time complexity (Big-O notation), and execution flow. Let me know if you want a code snippet!`;
+    return `Regarding "${promptText}": In software engineering, evaluating this requires inspecting the algorithmic complexity, data structures, and execution flow. Would you like a code snippet?`;
   } else if (botId === 'spark_x') {
-    return `Regarding "${promptText}": From a physical and engineering standpoint, energy conservation and fundamental field equations govern this process. Let me know if you'd like to derive the circuit formulas!`;
+    return `Regarding "${promptText}": From an engineering standpoint, energy conservation and electromagnetic field equations govern this process. Let's derive the circuit formulas!`;
   } else if (botId === 'archivist') {
-    return `Regarding "${promptText}": Historical records and academic literature document this topic across peer-reviewed sources. Would you like a summary of historical developments?`;
+    return `Regarding "${promptText}": Historical literature and peer-reviewed documentation provide comprehensive context for this topic. What specific research angle shall we synthesize?`;
   } else {
-    return `Regarding "${promptText}": Analyzing the structural invariants and logical principles reveals an underlying pattern. Let me know what specific aspect you'd like to decipher.`;
+    return `Regarding "${promptText}": Analyzing the structural invariants and logical principles reveals an underlying pattern. What specific security aspect shall we examine?`;
   }
 }
 
@@ -230,7 +208,7 @@ exports.chat = async (req, res) => {
 
     const persona = BOT_PERSONAS[botId] || BOT_PERSONAS.bytebot_ai;
 
-    // Check if external Gemini API key is configured
+    // Check if external Gemini API key is configured with fast 2500ms timeout
     if (process.env.GEMINI_API_KEY) {
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
@@ -250,7 +228,7 @@ exports.chat = async (req, res) => {
           }
         ];
 
-        const response = await axios.post(geminiUrl, { contents }, { timeout: 8000 });
+        const response = await axios.post(geminiUrl, { contents }, { timeout: 2500 });
         const aiText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (aiText) {
@@ -266,7 +244,7 @@ exports.chat = async (req, res) => {
       }
     }
 
-    // Check if external OpenAI API key is configured
+    // Check if external OpenAI API key is configured with fast 2500ms timeout
     if (process.env.OPENAI_API_KEY) {
       try {
         const response = await axios.post(
@@ -281,7 +259,7 @@ exports.chat = async (req, res) => {
           },
           {
             headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-            timeout: 8000
+            timeout: 2500
           }
         );
         const aiText = response.data?.choices?.[0]?.message?.content;
@@ -311,7 +289,8 @@ exports.chat = async (req, res) => {
     console.error('Error generating AI response:', error);
     return res.status(500).json({
       success: false,
-      message: "I couldn't process that message right now. Please try again."
+      reply: "I'm having trouble reaching the AI service right now. Please try again in a moment.",
+      error: error.message
     });
   }
 };

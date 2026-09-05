@@ -175,7 +175,27 @@ const Chat = () => {
   // Active Chat & UI States
   const [activeBot, setActiveBot] = useState(AI_BOTS[1]); // Default to ByteBot AI
   const [searchQuery, setSearchQuery] = useState('');
-  const [chatMessages, setChatMessages] = useState({});
+  
+  // Persistent chat history across bot switching and page navigation
+  const [chatMessages, setChatMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nipix_scholar_chat_history_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load cached chat messages:', err);
+    }
+    const initialMap = {};
+    AI_BOTS.forEach((bot) => {
+      initialMap[bot.id] = [...bot.initialMessages];
+    });
+    return initialMap;
+  });
+
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
@@ -189,14 +209,16 @@ const Chat = () => {
   const messagesContainerRef = useRef(null);
   const vaultContainerRef = useRef(null);
 
-  // Initialize messages state for all 6 bots
+  // Keep localStorage in sync whenever messages update
   useEffect(() => {
-    const initialMap = {};
-    AI_BOTS.forEach((bot) => {
-      initialMap[bot.id] = [...bot.initialMessages];
-    });
-    setChatMessages(initialMap);
-  }, []);
+    try {
+      if (chatMessages && Object.keys(chatMessages).length > 0) {
+        localStorage.setItem('nipix_scholar_chat_history_v2', JSON.stringify(chatMessages));
+      }
+    } catch (err) {
+      console.warn('Could not persist chat messages to localStorage:', err);
+    }
+  }, [chatMessages]);
 
   // Handle URL route params (/chat/:botId and /hidden-chat)
   useEffect(() => {
@@ -281,29 +303,44 @@ const Chat = () => {
     setUserInput('');
     setIsTyping(true);
 
-    // Call Backend Real AI Endpoint (/api/ai/chat)
-    const response = await sendAiChatMessage({
-      botId,
-      message: userText,
-      history: [...currentHistory, newUserMsg]
-    });
+    try {
+      // Call Backend / Intelligent AI Service
+      const response = await sendAiChatMessage({
+        botId,
+        message: userText,
+        history: [...currentHistory, newUserMsg]
+      });
 
-    const aiReplyText = response.reply || "I couldn't process that message right now. Please try again.";
+      const aiReplyText = response.reply || "I'm having trouble reaching the AI service right now. Please try again in a moment.";
 
-    const newAiMsg = {
-      id: (Date.now() + 1).toString(),
-      sender: activeBot.name,
-      isUser: false,
-      text: aiReplyText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+      const newAiMsg = {
+        id: (Date.now() + 1).toString(),
+        sender: activeBot.name,
+        isUser: false,
+        text: aiReplyText,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
 
-    setChatMessages((prev) => ({
-      ...prev,
-      [botId]: [...(prev[botId] || []), newAiMsg]
-    }));
-
-    setIsTyping(false);
+      setChatMessages((prev) => ({
+        ...prev,
+        [botId]: [...(prev[botId] || []), newAiMsg]
+      }));
+    } catch (err) {
+      console.error('[Nipix Chat] Error during message processing:', err);
+      const fallbackMsg = {
+        id: (Date.now() + 1).toString(),
+        sender: activeBot.name,
+        isUser: false,
+        text: "I'm having trouble reaching the AI service right now. Please try again in a moment.",
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatMessages((prev) => ({
+        ...prev,
+        [botId]: [...(prev[botId] || []), fallbackMsg]
+      }));
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   // Support Shift+Enter for newline, Enter to send
