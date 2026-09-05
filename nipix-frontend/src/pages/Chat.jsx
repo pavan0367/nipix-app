@@ -531,18 +531,10 @@ const Chat = () => {
             </div>
           ) : activeBot ? (
             /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+            <div className="chat-conversation">
               
               {/* Conversation Header: ← [Avatar ●] Bot Name (Active status ONLY as small green dot) */}
-              <div style={{
-                padding: '10px 16px',
-                borderBottom: '1px solid var(--border-color)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                background: 'var(--bg-card)',
-                flexShrink: 0
-              }}>
+              <div className="chat-header">
                 <button
                   type="button"
                   onClick={() => setShowMobileChat(false)}
@@ -560,30 +552,30 @@ const Chat = () => {
                   <div className="active-dot-badge" />
                 </div>
 
-                <div>
-                  <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {activeBot.name}
                   </h3>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0 }}>
+                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {activeBot.role}
                   </p>
                 </div>
               </div>
 
               {/* Chat Messages Workspace (Independently Scrollable via container ref) */}
-              <div ref={messagesContainerRef} className="chat-messages" style={{ flex: 1, minHeight: 0, padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div ref={messagesContainerRef} className="chat-messages">
                 {(chatMessages[activeBot.id] || []).map((msg) => (
                   <div
                     key={msg.id}
                     style={{
                       display: 'flex',
-                      justify: msg.isUser ? 'flex-end' : 'flex-start',
+                      justifyContent: msg.isUser ? 'flex-end' : 'flex-start',
                       alignItems: 'flex-start',
                       gap: '8px'
                     }}
                   >
                     {!msg.isUser && (
-                      <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '30px', height: '30px', fontSize: '0.95rem' }}>
+                      <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '30px', height: '30px', fontSize: '0.95rem', flexShrink: 0 }}>
                         {activeBot.avatar}
                       </div>
                     )}
@@ -627,23 +619,15 @@ const Chat = () => {
                 )}
               </div>
 
-              {/* FIXED BOTTOM COMPOSER: [ 😊 Ask Bot Name anything... 📎 ➤ ] */}
-              <form onSubmit={handleSendMessage} style={{
-                padding: '10px 16px',
-                borderTop: '1px solid var(--border-color)',
-                background: 'var(--bg-card)',
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'center',
-                flexShrink: 0
-              }}>
+              {/* ALWAYS VISIBLE FIXED BOTTOM COMPOSER: [ 😊 Ask Bot Name anything... 📎 ➤ ] */}
+              <form onSubmit={handleSendMessage} className="chat-composer">
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'transparent', color: 'var(--text-muted)', flexShrink: 0 }}
+                  style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'transparent', color: 'var(--text-muted)', flexShrink: 0, cursor: 'pointer' }}
                   title="Emoji"
                 >
-                  <Smile size={18} />
+                  <Smile size={20} />
                 </button>
 
                 <textarea
@@ -654,22 +638,26 @@ const Chat = () => {
                   onKeyDown={handleKeyDown}
                   className="input-field"
                   style={{
-                    borderRadius: '18px',
-                    padding: '9px 16px',
+                    flex: 1,
+                    borderRadius: '20px',
+                    padding: '10px 16px',
                     resize: 'none',
-                    maxHeight: '90px',
+                    maxHeight: '100px',
                     fontSize: '0.88rem',
-                    lineHeight: '1.4'
+                    lineHeight: '1.4',
+                    background: 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-main)'
                   }}
                 />
 
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'transparent', color: 'var(--text-muted)', flexShrink: 0 }}
+                  style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'transparent', color: 'var(--text-muted)', flexShrink: 0, cursor: 'pointer' }}
                   title="Attach file"
                 >
-                  <Paperclip size={18} />
+                  <Paperclip size={20} />
                 </button>
 
                 <button
@@ -685,8 +673,10 @@ const Chat = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    opacity: (!userInput.trim() || isTyping) ? 0.5 : 1,
-                    cursor: (!userInput.trim() || isTyping) ? 'not-allowed' : 'pointer'
+                    opacity: (!userInput.trim() || isTyping) ? 0.45 : 1,
+                    cursor: (!userInput.trim() || isTyping) ? 'not-allowed' : 'pointer',
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.35)'
                   }}
                   title="Send Message"
                 >
