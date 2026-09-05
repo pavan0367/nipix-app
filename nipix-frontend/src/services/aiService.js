@@ -72,7 +72,7 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
 
     return {
       success: false,
-      reply: "Sorry, I couldn't get a response right now. Please try again.",
+      reply: "I'm having trouble connecting right now. Please try again.",
       error: "Invalid response format"
     };
   } catch (error) {
@@ -88,7 +88,7 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
 
     return {
       success: false,
-      reply: "Sorry, I couldn't get a response right now. Please try again.",
+      reply: "I'm having trouble connecting right now. Please try again.",
       error: error.message
     };
   }

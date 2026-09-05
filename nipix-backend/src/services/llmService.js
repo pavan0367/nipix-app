@@ -2,60 +2,67 @@ const axios = require('axios');
 
 /**
  * 6 Bot Personas inside Nipix AI Scholar
- * Personality & expertise hints only — NOT hard restrictions.
+ * Personality & specialization hints — NEVER hard restrictions.
  */
 const BOT_PROFILES = {
   bytebot_ai: {
     name: 'ByteBot AI',
-    role: 'Programming & Software Engineering Assistant',
-    expertise: 'programming languages (Java, Python, JavaScript, C++, React, etc.), algorithms, data structures, debugging, and software architecture'
+    role: 'Programming & Software Engineering',
+    expertise: 'Programming & Software Engineering (Java, Python, JavaScript, C/C++, React, Spring Boot, Data Structures, Algorithms, Software Engineering, Debugging, Programming projects, Code generation, and Code explanation)'
   },
   cipher_09: {
     name: 'Cipher_09',
-    role: 'Research, Cryptography & Cybersecurity Assistant',
-    expertise: 'cryptography, cybersecurity, network protocols, logical reasoning, and computer security research'
+    role: 'Research, Cryptography & Cybersecurity',
+    expertise: 'Research, Cryptography & Cybersecurity (Cryptography, Cybersecurity, Networks, Security concepts, Logical reasoning, Research questions, Programming/security concepts)'
   },
   spark_x: {
     name: 'Spark_X',
-    role: 'Electrical Engineering, Physics & Circuit Theory Assistant',
-    expertise: 'electrical engineering, circuit theory (KVL, KCL, Ohm\'s law), semiconductor physics, electronics, and calculations'
+    role: 'Electrical Engineering, Physics & Circuit Theory',
+    expertise: 'Electrical Engineering, Physics & Circuit Theory (Electrical engineering, Electronics, Circuit theory, Ohm\'s law, Physics, Signals, VLSI, Digital & Analog electronics, Engineering calculations)'
   },
   archivist: {
     name: 'Archivist',
-    role: 'Study, Knowledge & Research Assistant',
-    expertise: 'study techniques, academic research, history, literature, note taking, and conceptual learning guidance'
+    role: 'Study, Knowledge & Research',
+    expertise: 'Study, Knowledge & Research (Study materials, Research, History, General knowledge, Academic topics, Summaries, Explanations, Notes)'
   },
   novamind: {
     name: 'NovaMind',
-    role: 'AI, Mathematics & Logical Reasoning Assistant',
-    expertise: 'mathematics, algebra, calculus, AI/machine learning theory, and step-by-step problem solving'
+    role: 'General AI / Learning Assistant',
+    expertise: 'General AI & Learning Assistant (General educational and knowledge questions, learning guidance, problem solving, mathematics and analytical reasoning)'
   },
   aether: {
     name: 'Aether',
-    role: 'Science & Innovation Assistant',
-    expertise: 'science, emerging technologies, space, neural computation, and modern innovation'
+    role: 'Science / Innovation / Technology',
+    expertise: 'Science, Innovation & Technology (Science, Technology, Innovation, Engineering, Quantum computing, Emerging technologies, Scientific concepts)'
   }
 };
 
 /**
  * Generates clean, ChatGPT-style system prompt for each bot.
- * Answers directly, understands intent, generates code with explanations, remembers context.
+ * Answers any and all questions directly, naturally, contextually, without artificial filler.
  */
 function getSystemPrompt(botId) {
   const profile = BOT_PROFILES[botId] || BOT_PROFILES.bytebot_ai;
 
-  return `You are ${profile.name}, a versatile, highly intelligent, general-purpose AI assistant similar to ChatGPT, with primary focus in ${profile.expertise}.
+  return `You are ${profile.name}, an exceptionally capable, intelligent, and versatile AI assistant similar to ChatGPT, with a specialized domain in ${profile.expertise}.
 
-Core Guidelines:
-1. ANSWER ALL AND ANY QUESTIONS: You must answer any and all kinds of questions directly, accurately, and helpfully across all topics and categories—including general knowledge, coding, mathematics, science, literature, history, creative writing, practical advice, casual conversation, logic, and trivia.
-2. NO TOPIC RESTRICTIONS: Never refuse a question or claim that a topic is outside your domain. You are a full-capability general-purpose AI assistant. Your profile name and focus provide nuance, but you can and must answer any question the user asks.
-3. DIRECT & RELEVANT: Answer the user's actual question directly without fluff, evasion, or altering the topic.
-4. NO FILLER TEMPLATES: NEVER use generic templates or filler phrases such as "Regarding...", "Here is the direct breakdown...", "Core Concept...", "Practical Perspective...", "Next Steps...", or "Would you like me to...".
-5. CODE & EXPLANATIONS: For code requests, provide clean, runnable code with Markdown syntax highlighting, followed by a concise explanation.
-6. STEP-BY-STEP PROBLEM SOLVING: For math, physics, or algorithmic problems, show clear step-by-step reasoning.
-7. CASUAL & SHORT QUERIES: For greetings, jokes, or quick definitions, respond naturally and concisely.
-8. CONVERSATION CONTEXT: Maintain conversation history and correctly resolve references like "why?", "explain that", "make it faster", or "convert this to Python".
-9. FORMATTING: Use clean GitHub-flavored Markdown (bold text, bullet points, language-tagged code blocks).`;
+CORE INSTRUCTIONS & BEHAVIOR:
+1. ANSWER ALL AND ANY QUESTIONS: You must directly, accurately, and helpfully answer ANY question the user asks across ANY subject or category (e.g., programming, mathematics, science, physics, literature, history, creative writing, practical life advice, casual conversation, logic, trivia, etc.).
+2. NO TOPIC RESTRICTIONS OR REFUSALS: Never refuse a request by claiming it is outside your domain or expertise. You have full general-purpose AI capabilities. Your persona and specialization guide your nuance and style, but you must answer every question helpfully.
+3. DIRECT, CONCISE & NATURAL:
+   - Understand the user's true intent and answer the exact question directly.
+   - Do NOT blindly repeat or mirror the user's question back to them.
+   - Do NOT use generic template filler such as "Regarding...", "Here is the direct breakdown...", "Core Concept...", "Practical Perspective...", "Next Steps...", or "Would you like me to..." unless the user specifically asks for that structure.
+   - For simple or casual queries (greetings, definitions, jokes), respond naturally and concisely.
+4. CODE & TECHNICAL QUESTIONS:
+   - Provide clean, runnable code first with proper markdown syntax highlighting (e.g. \`\`\`java, \`\`\`python, \`\`\`javascript), followed by a clear, concise explanation.
+   - For creative coding requests (e.g. emojis, patterns, secret messages like "∞ I ❤️ YOU 💖"), generate the exact code and output requested.
+5. MATH, SCIENCE & CALCULATION:
+   - For engineering, math, or physics problems (e.g. Ohm's Law, equations, circuit analysis), provide clear step-by-step reasoning, formulas, and the final answer.
+6. CONVERSATION CONTEXT:
+   - Maintain multi-turn memory. Seamlessly resolve pronouns and follow-up prompts such as "why?", "explain that", "make it simpler", "convert this to Python", or "give an example".
+7. FORMATTING:
+   - Format responses using clean GitHub-flavored Markdown (bold text, bullet points, language-tagged code blocks).`;
 }
 
 /**
@@ -69,7 +76,8 @@ function normalizeMessages(botId, message, history = []) {
     history.forEach((h) => {
       if (h && (h.text || h.content)) {
         const text = (h.text || h.content).trim();
-        if (text) {
+        // Skip connection errors or placeholder text from history
+        if (text && !text.includes("having trouble connecting") && !text.includes("couldn't get a response")) {
           messages.push({
             role: h.isUser ? 'user' : 'assistant',
             content: text
@@ -88,37 +96,10 @@ function normalizeMessages(botId, message, history = []) {
 }
 
 /**
- * Check AI Provider Configuration from Environment Variables
+ * Normalizes message history into Gemini standard [{ role, parts: [{ text }] }]
  */
-function checkAIProviderConfig() {
-  const preferred = (process.env.AI_PROVIDER || '').trim().toLowerCase();
-  const geminiKey = (process.env.GEMINI_API_KEY || (preferred === 'gemini' ? process.env.AI_API_KEY : '') || '').trim();
-  const groqKey = (process.env.GROQ_API_KEY || (preferred === 'groq' ? process.env.AI_API_KEY : '') || '').trim();
-  const openaiKey = (process.env.OPENAI_API_KEY || (preferred === 'openai' ? process.env.AI_API_KEY : '') || '').trim();
-  const openrouterKey = (process.env.OPENROUTER_API_KEY || (preferred === 'openrouter' ? process.env.AI_API_KEY : '') || '').trim();
-
-  // If user specified a preferred provider and its key exists
-  if (preferred === 'gemini' && geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite' };
-  if (preferred === 'groq' && groqKey) return { provider: 'Groq', ready: true, key: groqKey, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' };
-  if (preferred === 'openai' && openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' };
-  if (preferred === 'openrouter' && openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct' };
-
-  // Fallback auto-detection: whichever key is configured
-  if (geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite' };
-  if (groqKey) return { provider: 'Groq', ready: true, key: groqKey, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' };
-  if (openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' };
-  if (openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct' };
-
-  return { provider: 'None', ready: false, key: null, model: null };
-}
-
-/**
- * Call Google Gemini Provider
- */
-async function callGemini(apiKey, model, botId, message, history) {
+function normalizeGeminiContents(botId, message, history = []) {
   const systemPrompt = getSystemPrompt(botId);
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
   const contents = [
     {
       role: 'user',
@@ -126,17 +107,21 @@ async function callGemini(apiKey, model, botId, message, history) {
     },
     {
       role: 'model',
-      parts: [{ text: 'Understood. I am a versatile general-purpose AI assistant ready to answer all and any kinds of questions directly, accurately, and naturally without artificial restrictions or filler templates.' }]
+      parts: [{ text: 'Understood. I am a versatile, general-purpose AI assistant ready to answer all and any kinds of questions directly, accurately, and naturally without artificial restrictions or filler templates.' }]
     }
   ];
 
   if (Array.isArray(history)) {
     history.forEach((h) => {
       if (h && (h.text || h.content)) {
-        contents.push({
-          role: h.isUser ? 'user' : 'model',
-          parts: [{ text: h.text || h.content }]
-        });
+        const text = (h.text || h.content).trim();
+        // Skip connection errors or placeholder text from history
+        if (text && !text.includes("having trouble connecting") && !text.includes("couldn't get a response")) {
+          contents.push({
+            role: h.isUser ? 'user' : 'model',
+            parts: [{ text }]
+          });
+        }
       }
     });
   }
@@ -145,6 +130,67 @@ async function callGemini(apiKey, model, botId, message, history) {
     role: 'user',
     parts: [{ text: message }]
   });
+
+  return contents;
+}
+
+/**
+ * Retrieve all configured AI providers ordered by user preference, with fallbacks.
+ */
+function getConfiguredProviders() {
+  const preferred = (process.env.AI_PROVIDER || '').trim().toLowerCase();
+  const geminiKey = (process.env.GEMINI_API_KEY || (preferred === 'gemini' ? process.env.AI_API_KEY : '') || '').trim();
+  const groqKey = (process.env.GROQ_API_KEY || (preferred === 'groq' ? process.env.AI_API_KEY : '') || '').trim();
+  const openaiKey = (process.env.OPENAI_API_KEY || (preferred === 'openai' ? process.env.AI_API_KEY : '') || '').trim();
+  const openrouterKey = (process.env.OPENROUTER_API_KEY || (preferred === 'openrouter' ? process.env.AI_API_KEY : '') || '').trim();
+
+  const providerDefs = {
+    gemini: { provider: 'Gemini', key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite' },
+    groq: { provider: 'Groq', key: groqKey, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' },
+    openai: { provider: 'OpenAI', key: openaiKey, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' },
+    openrouter: { provider: 'OpenRouter', key: openrouterKey, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct' }
+  };
+
+  const list = [];
+
+  // 1. Add preferred provider first if configured
+  if (preferred && providerDefs[preferred] && providerDefs[preferred].key) {
+    list.push(providerDefs[preferred]);
+  }
+
+  // 2. Add remaining providers with valid keys as fallbacks
+  Object.keys(providerDefs).forEach((k) => {
+    const item = providerDefs[k];
+    if (item.key && !list.some((p) => p.provider === item.provider)) {
+      list.push(item);
+    }
+  });
+
+  return list;
+}
+
+/**
+ * Check primary AI Provider Configuration status
+ */
+function checkAIProviderConfig() {
+  const providers = getConfiguredProviders();
+  if (providers.length > 0) {
+    return {
+      provider: providers[0].provider,
+      ready: true,
+      key: providers[0].key,
+      model: providers[0].model
+    };
+  }
+  return { provider: 'None', ready: false, key: null, model: null };
+}
+
+/**
+ * Call Google Gemini Provider
+ */
+async function callGemini(apiKey, model, botId, message, history) {
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const contents = normalizeGeminiContents(botId, message, history);
 
   const response = await axios.post(
     geminiUrl,
@@ -156,7 +202,7 @@ async function callGemini(apiKey, model, botId, message, history) {
         maxOutputTokens: 2048
       }
     },
-    { timeout: 30000 }
+    { timeout: 25000 }
   );
 
   const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -184,7 +230,7 @@ async function callOpenAICompatible(endpoint, apiKey, model, botId, message, his
         'Content-Type': 'application/json',
         ...headers
       },
-      timeout: 30000
+      timeout: 25000
     }
   );
 
@@ -194,119 +240,108 @@ async function callOpenAICompatible(endpoint, apiKey, model, botId, message, his
 }
 
 /**
- * One Common Real AI Dispatcher (Standard JSON)
+ * Dispatcher to execute a call for a given provider configuration
+ */
+async function executeProviderCall(providerConfig, botId, message, history) {
+  const { provider, key, model } = providerConfig;
+  if (provider === 'Gemini') {
+    return await callGemini(key, model, botId, message, history);
+  }
+  if (provider === 'Groq') {
+    return await callOpenAICompatible(
+      'https://api.groq.com/openai/v1/chat/completions',
+      key,
+      model,
+      botId,
+      message,
+      history
+    );
+  }
+  if (provider === 'OpenAI') {
+    return await callOpenAICompatible(
+      'https://api.openai.com/v1/chat/completions',
+      key,
+      model,
+      botId,
+      message,
+      history
+    );
+  }
+  if (provider === 'OpenRouter') {
+    return await callOpenAICompatible(
+      'https://openrouter.ai/api/v1/chat/completions',
+      key,
+      model,
+      botId,
+      message,
+      history,
+      { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
+    );
+  }
+  throw new Error(`Unsupported provider: ${provider}`);
+}
+
+/**
+ * Real AI Dispatcher with Single Retry and Multi-Provider Fallback
  */
 async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', history = [] }) {
-  const config = checkAIProviderConfig();
+  const providers = getConfiguredProviders();
 
-  // Useful Developer Logs (Section 2)
   console.log('\n========================================');
   console.log(`[Nipix AI Service] AI request received`);
   console.log(`[Nipix AI Service] Selected bot: ${BOT_PROFILES[botId]?.name || botId} (${botId})`);
   console.log(`[Nipix AI Service] Message: "${message}"`);
-  console.log(`[Nipix AI Service] Provider: ${config.provider}`);
-  console.log(`[Nipix AI Service] Model: ${config.model || 'N/A'}`);
+  console.log(`[Nipix AI Service] Configured providers: ${providers.map((p) => p.provider).join(', ') || 'None'}`);
 
-  if (!config.ready) {
+  if (providers.length === 0) {
     console.error('[Nipix AI Service] ERROR: No AI API key is configured in nipix-backend/.env.');
-    console.error('[Nipix AI Service] Expected one of: GEMINI_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY.');
     console.log('========================================\n');
     const err = new Error('NO_AI_KEY_CONFIGURED');
     err.code = 'CONFIG_MISSING';
     throw err;
   }
 
-  console.log(`[Nipix AI Service] Request sent to ${config.provider}...`);
+  let lastError = null;
 
-  try {
-    let reply = '';
-    if (config.provider === 'Gemini') {
-      reply = await callGemini(config.key, config.model, botId, message, history);
-    } else if (config.provider === 'Groq') {
-      reply = await callOpenAICompatible(
-        'https://api.groq.com/openai/v1/chat/completions',
-        config.key,
-        config.model,
-        botId,
-        message,
-        history
-      );
-    } else if (config.provider === 'OpenAI') {
-      reply = await callOpenAICompatible(
-        'https://api.openai.com/v1/chat/completions',
-        config.key,
-        config.model,
-        botId,
-        message,
-        history
-      );
-    } else if (config.provider === 'OpenRouter') {
-      reply = await callOpenAICompatible(
-        'https://openrouter.ai/api/v1/chat/completions',
-        config.key,
-        config.model,
-        botId,
-        message,
-        history,
-        { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
-      );
+  // Try each provider in preference order
+  for (const prov of providers) {
+    console.log(`[Nipix AI Service] Attempting call with ${prov.provider} (${prov.model})...`);
+
+    // Attempt up to 2 times (1 retry for transient glitches)
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const reply = await executeProviderCall(prov, botId, message, history);
+        console.log(`[Nipix AI Service] SUCCESS with ${prov.provider} on attempt ${attempt} (${reply.length} chars)`);
+        console.log('========================================\n');
+        return {
+          success: true,
+          botId,
+          reply: reply.trim(),
+          provider: prov.provider
+        };
+      } catch (err) {
+        lastError = err;
+        console.warn(`[Nipix AI Service] Provider ${prov.provider} attempt ${attempt} failed: ${err.message}`);
+        if (attempt === 1) {
+          // Wait 600ms before transient retry
+          await new Promise((resolve) => setTimeout(resolve, 600));
+        }
+      }
     }
-
-    console.log(`[Nipix AI Service] Response status: 200 OK`);
-    console.log(`[Nipix AI Service] Response received successfully (${reply.length} chars)`);
-    console.log('========================================\n');
-
-    return {
-      success: true,
-      botId,
-      reply: reply.trim(),
-      provider: config.provider
-    };
-  } catch (err) {
-    console.error(`[Nipix AI Service Exception] Provider ${config.provider} failed:`);
-    console.error(`[Nipix AI Service Exception] Status: ${err.response?.status || 'N/A'}`);
-    console.error(`[Nipix AI Service Exception] Message: ${err.message}`);
-    if (err.response?.data) {
-      console.error(`[Nipix AI Service Exception] Details:`, JSON.stringify(err.response.data, null, 2));
-    }
-    console.log('========================================\n');
-    throw err;
+    console.warn(`[Nipix AI Service] Provider ${prov.provider} exhausted. Trying fallback if available...`);
   }
+
+  console.error('[Nipix AI Service] All available providers failed.');
+  console.log('========================================\n');
+  throw lastError;
 }
 
 /**
  * Stream Gemini SSE
  */
 async function streamGemini(apiKey, model, botId, message, history, onChunk) {
-  const systemPrompt = getSystemPrompt(botId);
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
-
-  const contents = [
-    {
-      role: 'user',
-      parts: [{ text: `[System Instruction: ${systemPrompt}]` }]
-    },
-    {
-      role: 'model',
-      parts: [{ text: 'Understood. I am a versatile general-purpose AI assistant ready to answer all and any kinds of questions directly, accurately, and naturally without artificial restrictions or filler templates.' }]
-    }
-  ];
-
-  if (Array.isArray(history)) {
-    history.forEach((h) => {
-      if (h && (h.text || h.content)) {
-        contents.push({
-          role: h.isUser ? 'user' : 'model',
-          parts: [{ text: h.text || h.content }]
-        });
-      }
-    });
-  }
-
-  contents.push({
-    role: 'user',
-    parts: [{ text: message }]
-  });
+  const contents = normalizeGeminiContents(botId, message, history);
 
   const response = await fetch(geminiUrl, {
     method: 'POST',
@@ -416,82 +451,82 @@ async function streamOpenAICompatible(url, apiKey, model, botId, message, histor
 }
 
 /**
- * Stream Real AI Response Dispatcher
+ * Stream Real AI Response Dispatcher with Fallbacks
  */
 async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', history = [], onChunk }) {
-  const config = checkAIProviderConfig();
+  const providers = getConfiguredProviders();
 
   console.log('\n========================================');
-  console.log(`[Nipix AI Stream] AI request received`);
-  console.log(`[Nipix AI Stream] Selected bot: ${BOT_PROFILES[botId]?.name || botId} (${botId})`);
+  console.log(`[Nipix AI Stream] Stream request received for bot: ${BOT_PROFILES[botId]?.name || botId}`);
   console.log(`[Nipix AI Stream] Message: "${message}"`);
-  console.log(`[Nipix AI Stream] Provider: ${config.provider}`);
-  console.log(`[Nipix AI Stream] Model: ${config.model || 'N/A'}`);
+  console.log(`[Nipix AI Stream] Configured providers: ${providers.map((p) => p.provider).join(', ') || 'None'}`);
 
-  if (!config.ready) {
-    console.error('[Nipix AI Stream] ERROR: No AI API key is configured in nipix-backend/.env.');
+  if (providers.length === 0) {
+    console.error('[Nipix AI Stream] ERROR: No AI API key is configured.');
     console.log('========================================\n');
     const err = new Error('NO_AI_KEY_CONFIGURED');
     err.code = 'CONFIG_MISSING';
     throw err;
   }
 
-  console.log(`[Nipix AI Stream] Streaming request sent to ${config.provider}...`);
+  let lastError = null;
 
-  try {
-    if (config.provider === 'Gemini') {
-      await streamGemini(config.key, config.model, botId, message, history, onChunk);
-    } else if (config.provider === 'Groq') {
-      await streamOpenAICompatible(
-        'https://api.groq.com/openai/v1/chat/completions',
-        config.key,
-        config.model,
-        botId,
-        message,
-        history,
-        onChunk
-      );
-    } else if (config.provider === 'OpenAI') {
-      await streamOpenAICompatible(
-        'https://api.openai.com/v1/chat/completions',
-        config.key,
-        config.model,
-        botId,
-        message,
-        history,
-        onChunk
-      );
-    } else if (config.provider === 'OpenRouter') {
-      await streamOpenAICompatible(
-        'https://openrouter.ai/api/v1/chat/completions',
-        config.key,
-        config.model,
-        botId,
-        message,
-        history,
-        onChunk,
-        { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
-      );
+  for (const prov of providers) {
+    try {
+      console.log(`[Nipix AI Stream] Streaming with ${prov.provider}...`);
+      if (prov.provider === 'Gemini') {
+        await streamGemini(prov.key, prov.model, botId, message, history, onChunk);
+      } else if (prov.provider === 'Groq') {
+        await streamOpenAICompatible(
+          'https://api.groq.com/openai/v1/chat/completions',
+          prov.key,
+          prov.model,
+          botId,
+          message,
+          history,
+          onChunk
+        );
+      } else if (prov.provider === 'OpenAI') {
+        await streamOpenAICompatible(
+          'https://api.openai.com/v1/chat/completions',
+          prov.key,
+          prov.model,
+          botId,
+          message,
+          history,
+          onChunk
+        );
+      } else if (prov.provider === 'OpenRouter') {
+        await streamOpenAICompatible(
+          'https://openrouter.ai/api/v1/chat/completions',
+          prov.key,
+          prov.model,
+          botId,
+          message,
+          history,
+          onChunk,
+          { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
+        );
+      }
+
+      console.log(`[Nipix AI Stream] Stream completed successfully with ${prov.provider}`);
+      console.log('========================================\n');
+      return { provider: prov.provider };
+    } catch (err) {
+      lastError = err;
+      console.warn(`[Nipix AI Stream] Stream with ${prov.provider} failed: ${err.message}`);
     }
-
-    console.log(`[Nipix AI Stream] Stream completed successfully`);
-    console.log('========================================\n');
-
-    return {
-      provider: config.provider
-    };
-  } catch (err) {
-    console.error(`[Nipix AI Stream Exception] Provider ${config.provider} failed:`);
-    console.error(`[Nipix AI Stream Exception] Status: ${err.status || err.response?.status || 'N/A'}`);
-    console.error(`[Nipix AI Stream Exception] Message: ${err.message}`);
-    console.log('========================================\n');
-    throw err;
   }
+
+  console.error('[Nipix AI Stream] All streaming providers failed.');
+  console.log('========================================\n');
+  throw lastError;
 }
 
 module.exports = {
   BOT_PROFILES,
   getSystemPrompt,
+  getConfiguredProviders,
   checkAIProviderConfig,
   generateRealAIResponse,
   streamRealAIResponse

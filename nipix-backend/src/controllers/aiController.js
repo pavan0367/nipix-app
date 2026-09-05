@@ -3,7 +3,7 @@ const {
   streamRealAIResponse
 } = require('../services/llmService');
 
-const USER_FRIENDLY_ERROR = "Sorry, I couldn't get a response right now. Please try again.";
+const USER_FRIENDLY_ERROR = "I'm having trouble connecting right now. Please try again.";
 
 /**
  * Controller endpoint: POST /api/ai/chat

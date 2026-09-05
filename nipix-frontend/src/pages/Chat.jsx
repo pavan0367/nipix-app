@@ -8,34 +8,28 @@ import {
   Shield,
   Lock,
   Smile,
-  Paperclip
+  Paperclip,
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
-import { sendAiChatMessage, sendAiChatMessageStream } from '../services/aiService';
+import { sendAiChatMessageStream } from '../services/aiService';
 import MarkdownMessage from '../components/chat/MarkdownMessage';
 
-// Exactly 6 Fictional Nipix AI Bot Personas with Unique Specialties & Timestamps
+// Helper to identify error messages that should not be saved or previewed
+const isErrorMessage = (text) => {
+  if (!text || typeof text !== 'string') return true;
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("couldn't get a response") ||
+    lower.includes("trouble connecting right now") ||
+    lower.includes("temporarily unavailable") ||
+    lower.includes("not configured") ||
+    lower.includes("no ai api key")
+  );
+};
+
+// Exactly 6 Nipix AI Bot Personas with original roles, personalities, and welcome messages
 const AI_BOTS = [
-  {
-    id: 'cipher_09',
-    name: 'Cipher_09',
-    role: 'Research, Cryptography & Cybersecurity',
-    avatar: '🔮',
-    badgeClass: 'badge-cipher',
-    accentColor: '#8b5cf6',
-    specialty: 'Research, Cryptography & Cybersecurity',
-    previewText: 'Someone left an encrypted note in the vault...',
-    ageText: '12 min ago',
-    lastTime: '03:14 AM',
-    initialMessages: [
-      {
-        id: 'c-1',
-        sender: 'Cipher_09',
-        isUser: false,
-        text: 'Greetings, seeker of secrets. I specialize in cryptography, cybersecurity, and logical reasoning. Ask me any research question!',
-        time: '03:14 AM'
-      }
-    ]
-  },
   {
     id: 'bytebot_ai',
     name: 'ByteBot AI',
@@ -43,29 +37,50 @@ const AI_BOTS = [
     avatar: '🤖',
     badgeClass: 'badge-bytebot',
     accentColor: '#3b82f6',
-    specialty: 'Programming, Software & Computer Science',
-    previewText: 'Can you help me debug this algorithm?',
-    ageText: '8 min ago',
+    specialty: 'Programming, Software Engineering & Code Intelligence',
+    previewText: 'Hello developer! Ask me any programming question.',
+    ageText: 'Just now',
     lastTime: '08:42 AM',
     initialMessages: [
       {
         id: 'b-1',
         sender: 'ByteBot AI',
         isUser: false,
-        text: 'Hello developer! 👋 I am ByteBot AI, your software engineering assistant. Ask me questions in Python, JavaScript, Java, C++, React, or data structures.',
+        text: 'Hello developer! 👋 I am ByteBot AI, your software engineering assistant. Ask me questions in Python, JavaScript, Java, C++, React, Spring Boot, or data structures & algorithms.',
         time: '08:42 AM'
+      }
+    ]
+  },
+  {
+    id: 'cipher_09',
+    name: 'Cipher_09',
+    role: 'Research, Cryptography & Cybersecurity',
+    avatar: '🔮',
+    badgeClass: 'badge-cipher',
+    accentColor: '#8b5cf6',
+    specialty: 'Research, Cryptography, Security & Logic',
+    previewText: 'Greetings, seeker of secrets. Ask me any research question!',
+    ageText: '12 min ago',
+    lastTime: '03:14 AM',
+    initialMessages: [
+      {
+        id: 'c-1',
+        sender: 'Cipher_09',
+        isUser: false,
+        text: 'Greetings, seeker of secrets. I specialize in cryptography, cybersecurity, networks, and logical reasoning. Ask me any research or security question!',
+        time: '03:14 AM'
       }
     ]
   },
   {
     id: 'spark_x',
     name: 'Spark_X',
-    role: 'Electrical Engineering & Physics',
+    role: 'Electrical Engineering, Physics & Circuit Theory',
     avatar: '⚡',
     badgeClass: 'badge-spark',
     accentColor: '#f59e0b',
-    specialty: 'Electrical Engineering, Electronics & Physics',
-    previewText: "Let's explore this circuit frequency...",
+    specialty: 'Electrical Engineering, Electronics, Circuits & Physics',
+    previewText: 'Frequency locked! Ask me any science or engineering question!',
     ageText: '25 min ago',
     lastTime: '10:15 AM',
     initialMessages: [
@@ -73,7 +88,7 @@ const AI_BOTS = [
         id: 's-1',
         sender: 'Spark_X',
         isUser: false,
-        text: 'Frequency locked! I am Spark_X, dedicated to electrical engineering, physics, and circuit theory. Ask me any science or engineering question!',
+        text: 'Frequency locked! I am Spark_X, dedicated to electrical engineering, physics, and circuit theory. Ask me any engineering or physical science question!',
         time: '10:15 AM'
       }
     ]
@@ -81,12 +96,12 @@ const AI_BOTS = [
   {
     id: 'archivist',
     name: 'Archivist',
-    role: 'History, Books & General Knowledge',
+    role: 'Study, Knowledge & Research',
     avatar: '📚',
     badgeClass: 'badge-mentor',
     accentColor: '#10b981',
-    specialty: 'History, Literature & General Knowledge',
-    previewText: 'I found an interesting historical fact...',
+    specialty: 'Study Materials, History, Literature & General Knowledge',
+    previewText: 'Welcome scholar. What topic shall we explore today?',
     ageText: '1 hr ago',
     lastTime: '11:30 AM',
     initialMessages: [
@@ -94,7 +109,7 @@ const AI_BOTS = [
         id: 'a-1',
         sender: 'Archivist',
         isUser: false,
-        text: 'Welcome scholar. I catalog literature, history, research synthesis, and general knowledge. What domain shall we study today?',
+        text: 'Welcome scholar. I catalog literature, history, research synthesis, academic study materials, and general knowledge. What topic shall we explore today?',
         time: '11:30 AM'
       }
     ]
@@ -102,12 +117,12 @@ const AI_BOTS = [
   {
     id: 'novamind',
     name: 'NovaMind',
-    role: 'Mathematics & Analytical Science',
+    role: 'General AI / Learning Assistant',
     avatar: '🧠',
     badgeClass: 'badge-cipher',
     accentColor: '#ec4899',
-    specialty: 'Calculus, Algebra & Problem Solving',
-    previewText: 'Ready for a math challenge today?',
+    specialty: 'General Learning, Educational Guidance & Logical Reasoning',
+    previewText: 'Greetings! Ask me any general education or knowledge question!',
     ageText: '15 min ago',
     lastTime: '01:05 PM',
     initialMessages: [
@@ -115,7 +130,7 @@ const AI_BOTS = [
         id: 'n-1',
         sender: 'NovaMind',
         isUser: false,
-        text: 'Greetings! I am NovaMind, your mathematics and analytical tutor. Ask me about calculus, algebra, statistics, or scientific logic.',
+        text: 'Greetings! I am NovaMind, your general AI and learning companion. Ask me any general education, conceptual, or knowledge question!',
         time: '01:05 PM'
       }
     ]
@@ -123,12 +138,12 @@ const AI_BOTS = [
   {
     id: 'aether',
     name: 'Aether',
-    role: 'Artificial Intelligence & Future Tech',
+    role: 'Science / Innovation / Technology',
     avatar: '🌌',
     badgeClass: 'badge-spark',
     accentColor: '#06b6d4',
-    specialty: 'AI, Emerging Tech & Future Science',
-    previewText: "There's something new in neural tech...",
+    specialty: 'Science, Innovation, Emerging Tech & Future Engineering',
+    previewText: 'Hello visionary! What idea shall we explore?',
     ageText: '5 min ago',
     lastTime: '02:20 PM',
     initialMessages: [
@@ -136,7 +151,7 @@ const AI_BOTS = [
         id: 'ae-1',
         sender: 'Aether',
         isUser: false,
-        text: 'Hello visionary! I am Aether, dedicated to emerging technologies, AI architectures, and future innovation. What idea shall we explore?',
+        text: 'Hello visionary! I am Aether, dedicated to science, innovation, and emerging technologies. What idea shall we explore?',
         time: '02:20 PM'
       }
     ]
@@ -173,25 +188,40 @@ const Chat = () => {
   const searchParams = new URLSearchParams(location.search);
   const requestedHiddenView = searchParams.get('view') === 'hidden' || location.pathname === '/hidden-chat';
 
-  // Active Chat & UI States
-  const [activeBot, setActiveBot] = useState(AI_BOTS[1]); // Default to ByteBot AI
+  // Active Chat & UI States (Default to ByteBot AI)
+  const [activeBot, setActiveBot] = useState(AI_BOTS[0]);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Clean reset: purge old legacy cached messages and start fresh
+  // Clean initialization: purge stale caches and initialize all 6 bots cleanly
   const [chatMessages, setChatMessages] = useState(() => {
     try {
       localStorage.removeItem('nipix_scholar_chat_history');
       localStorage.removeItem('nipix_scholar_chat_history_v2');
-      const saved = localStorage.getItem('nipix_chat_messages_v3');
+      localStorage.removeItem('nipix_chat_messages_v3');
+      localStorage.removeItem('nipix_chat_messages_v4');
+
+      const saved = localStorage.getItem('nipix_chat_messages_v5');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
-          return parsed;
+          const sanitized = {};
+          AI_BOTS.forEach((bot) => {
+            const list = parsed[bot.id];
+            if (Array.isArray(list)) {
+              // Filter out any stored error messages
+              const cleanList = list.filter((m) => m && m.text && !isErrorMessage(m.text));
+              sanitized[bot.id] = cleanList.length > 0 ? cleanList : [...bot.initialMessages];
+            } else {
+              sanitized[bot.id] = [...bot.initialMessages];
+            }
+          });
+          return sanitized;
         }
       }
     } catch (err) {
       console.warn('Could not load cached chat messages:', err);
     }
+
     const initialMap = {};
     AI_BOTS.forEach((bot) => {
       initialMap[bot.id] = [...bot.initialMessages];
@@ -202,6 +232,7 @@ const Chat = () => {
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [chatError, setChatError] = useState(null);
 
   // Hidden Vault State
   const [isVaultView, setIsVaultView] = useState(requestedHiddenView);
@@ -212,11 +243,11 @@ const Chat = () => {
   const messagesContainerRef = useRef(null);
   const vaultContainerRef = useRef(null);
 
-  // Keep localStorage in sync whenever messages update
+  // Keep localStorage in sync whenever clean messages update
   useEffect(() => {
     try {
       if (chatMessages && Object.keys(chatMessages).length > 0) {
-        localStorage.setItem('nipix_chat_messages_v3', JSON.stringify(chatMessages));
+        localStorage.setItem('nipix_chat_messages_v5', JSON.stringify(chatMessages));
       }
     } catch (err) {
       console.warn('Could not persist chat messages to localStorage:', err);
@@ -263,7 +294,7 @@ const Chat = () => {
     }
   }, [vaultMessages, isVaultView]);
 
-  // Select an AI Bot (No login required, does NOT scroll the browser page)
+  // Select an AI Bot (No login required, strictly preserves page position)
   const handleSelectBot = (bot, e) => {
     if (e) {
       e.preventDefault();
@@ -272,6 +303,19 @@ const Chat = () => {
     setIsVaultView(false);
     setActiveBot(bot);
     setShowMobileChat(true);
+    setChatError(null);
+  };
+
+  // Reset active bot's conversation to clean initial state
+  const handleResetActiveBot = (e) => {
+    if (e) e.preventDefault();
+    if (!activeBot) return;
+    const botId = activeBot.id;
+    setChatMessages((prev) => ({
+      ...prev,
+      [botId]: [...activeBot.initialMessages]
+    }));
+    setChatError(null);
   };
 
   // Magic Wand Icon 🪄 Action: Entry point to Hidden Chat
@@ -284,14 +328,16 @@ const Chat = () => {
     }
   };
 
-  // Real AI Message Handler with Streaming Support
+  // Real AI Message Handler with Streaming Support & Safe Non-Persistent Errors
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!userInput.trim() || !activeBot || isTyping) return;
 
     const userText = userInput.trim();
     const botId = activeBot.id;
-    const currentHistory = chatMessages[botId] || [];
+    const currentHistory = (chatMessages[botId] || []).filter(
+      (m) => m && m.text && !isErrorMessage(m.text)
+    );
 
     const newUserMsg = {
       id: Date.now().toString(),
@@ -309,6 +355,9 @@ const Chat = () => {
       text: '',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
+
+    // Clear previous transient errors
+    setChatError(null);
 
     // Immediately display user message and prepare placeholder
     setChatMessages((prev) => ({
@@ -343,7 +392,11 @@ const Chat = () => {
         }
       });
 
-      const finalReply = response.reply || "Sorry, I couldn't get a response right now. Please try again.";
+      const finalReply = response.reply;
+
+      if (!finalReply || isErrorMessage(finalReply)) {
+        throw new Error(finalReply || 'Connection failed');
+      }
 
       setChatMessages((prev) => {
         const list = prev[botId] || [];
@@ -357,16 +410,16 @@ const Chat = () => {
 
     } catch (err) {
       console.error('[Nipix Chat] Error during message processing:', err);
-      const fallbackText = "Sorry, I couldn't get a response right now. Please try again.";
+      // Remove empty placeholder so the error is NOT saved as the bot's message
       setChatMessages((prev) => {
         const list = prev[botId] || [];
         return {
           ...prev,
-          [botId]: list.map((msg) =>
-            msg.id === botMsgId ? { ...msg, text: fallbackText } : msg
-          )
+          [botId]: list.filter((msg) => msg.id !== botMsgId)
         };
       });
+      // Show short user-friendly transient error banner
+      setChatError("I'm having trouble connecting right now. Please try again.");
     } finally {
       setIsTyping(false);
     }
@@ -403,7 +456,7 @@ const Chat = () => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
     const botMsgs = chatMessages[bot.id] || [];
-    const hasMatchingMsg = botMsgs.some(m => m.text.toLowerCase().includes(query));
+    const hasMatchingMsg = botMsgs.some((m) => m && m.text && m.text.toLowerCase().includes(query));
     return (
       bot.name.toLowerCase().includes(query) ||
       bot.role.toLowerCase().includes(query) ||
@@ -451,8 +504,13 @@ const Chat = () => {
           <div className="chat-bot-scroll-list">
             {filteredBots.map((bot) => {
               const isSelected = activeBot?.id === bot.id && !isVaultView;
-              const lastMsg = (chatMessages[bot.id] || []).slice(-1)[0];
+              // Ensure preview text only displays clean meaningful messages, never error strings
+              const cleanMsgs = (chatMessages[bot.id] || []).filter(
+                (m) => m && m.text && !isErrorMessage(m.text)
+              );
+              const lastMsg = cleanMsgs.slice(-1)[0];
               const previewText = lastMsg ? lastMsg.text : bot.previewText;
+              const lastTime = lastMsg ? lastMsg.time : bot.lastTime;
 
               return (
                 <div
@@ -486,7 +544,7 @@ const Chat = () => {
 
                   {/* Far Right Chat Timestamp */}
                   <div className="bot-meta-right">
-                    {bot.lastTime}
+                    {lastTime}
                   </div>
                 </div>
               );
@@ -514,7 +572,7 @@ const Chat = () => {
         </div>
 
         {/* -------------------------------------------------------- */}
-        {/* RIGHT PANEL: SELECTED AI CONVERSATION VIEW               */}
+        {/* RIGHT PANEL: SELECTED AI CONVERSATION WORKSPACE           */}
         {/* -------------------------------------------------------- */}
         <div className={`chat-active-workspace ${!showMobileChat ? 'hidden-mobile' : ''}`}>
           {isVaultView ? (
@@ -599,7 +657,7 @@ const Chat = () => {
             /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
             <div className="chat-conversation">
               
-              {/* Conversation Header: ← [Avatar ●] Bot Name (Active status ONLY as small green dot) */}
+              {/* Conversation Header: [Avatar ●] Bot Name + Role + Reset Chat */}
               <div className="chat-header">
                 <button
                   type="button"
@@ -626,12 +684,24 @@ const Chat = () => {
                     {activeBot.role}
                   </p>
                 </div>
+
+                {/* Quick Clean Reset Action for Current Bot */}
+                <button
+                  type="button"
+                  onClick={handleResetActiveBot}
+                  className="btn-secondary"
+                  style={{ padding: '6px 12px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                  title="Reset conversation to initial welcome message"
+                >
+                  <RotateCcw size={12} />
+                  <span>Reset Chat</span>
+                </button>
               </div>
 
               {/* Chat Messages Workspace (Independently Scrollable via container ref) */}
               <div ref={messagesContainerRef} className="chat-messages">
                 {(chatMessages[activeBot.id] || [])
-                  .filter((msg) => msg.text && msg.text.trim().length > 0)
+                  .filter((msg) => msg && msg.text && msg.text.trim().length > 0 && !isErrorMessage(msg.text))
                   .map((msg) => (
                   <div
                     key={msg.id}
@@ -682,6 +752,25 @@ const Chat = () => {
                       <div className="typing-dot" />
                     </div>
                     <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{activeBot.name} is typing...</span>
+                  </div>
+                )}
+
+                {/* TRANSIENT CONNECTION ERROR BANNER (Not saved to permanent history) */}
+                {chatError && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#f87171',
+                    fontSize: '0.82rem',
+                    margin: '6px 0'
+                  }}>
+                    <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                    <span style={{ flex: 1 }}>{chatError}</span>
                   </div>
                 )}
               </div>
