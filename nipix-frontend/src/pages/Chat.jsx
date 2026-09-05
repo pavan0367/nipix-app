@@ -177,10 +177,12 @@ const Chat = () => {
   const [activeBot, setActiveBot] = useState(AI_BOTS[1]); // Default to ByteBot AI
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Persistent chat history across bot switching and page navigation
+  // Clean reset: purge old legacy cached messages and start fresh
   const [chatMessages, setChatMessages] = useState(() => {
     try {
-      const saved = localStorage.getItem('nipix_scholar_chat_history_v2');
+      localStorage.removeItem('nipix_scholar_chat_history');
+      localStorage.removeItem('nipix_scholar_chat_history_v2');
+      const saved = localStorage.getItem('nipix_chat_messages_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -214,7 +216,7 @@ const Chat = () => {
   useEffect(() => {
     try {
       if (chatMessages && Object.keys(chatMessages).length > 0) {
-        localStorage.setItem('nipix_scholar_chat_history_v2', JSON.stringify(chatMessages));
+        localStorage.setItem('nipix_chat_messages_v3', JSON.stringify(chatMessages));
       }
     } catch (err) {
       console.warn('Could not persist chat messages to localStorage:', err);
@@ -341,7 +343,7 @@ const Chat = () => {
         }
       });
 
-      const finalReply = response.reply || "Sorry, I couldn't reach the AI service right now. Please try again.";
+      const finalReply = response.reply || "Sorry, I couldn't get a response right now. Please try again.";
 
       setChatMessages((prev) => {
         const list = prev[botId] || [];
@@ -355,7 +357,7 @@ const Chat = () => {
 
     } catch (err) {
       console.error('[Nipix Chat] Error during message processing:', err);
-      const fallbackText = "Sorry, I couldn't reach the AI service right now. Please try again.";
+      const fallbackText = "Sorry, I couldn't get a response right now. Please try again.";
       setChatMessages((prev) => {
         const list = prev[botId] || [];
         return {

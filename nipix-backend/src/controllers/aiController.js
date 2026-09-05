@@ -1,12 +1,13 @@
 const {
   generateRealAIResponse,
-  streamRealAIResponse,
-  categorizeError
+  streamRealAIResponse
 } = require('../services/llmService');
+
+const USER_FRIENDLY_ERROR = "Sorry, I couldn't get a response right now. Please try again.";
 
 /**
  * Controller endpoint: POST /api/ai/chat
- * Standard JSON conversation handler
+ * Standard JSON AI response
  */
 exports.chat = async (req, res) => {
   const { botId = 'bytebot_ai', message = '', history = [] } = req.body;
@@ -32,19 +33,20 @@ exports.chat = async (req, res) => {
       provider: result.provider
     });
   } catch (error) {
-    const errorInfo = categorizeError(error, 'AI_CHAT');
+    // Technical provider errors are logged to the backend console only
+    console.error(`[Nipix AI Backend Error] (${botId}):`, error.response?.data || error.message);
 
-    return res.status(errorInfo.type === 'API_KEY_MISSING' ? 503 : 500).json({
+    return res.status(500).json({
       success: false,
-      reply: errorInfo.clientMessage,
-      error: errorInfo.type
+      reply: USER_FRIENDLY_ERROR,
+      error: 'AI_PROVIDER_ERROR'
     });
   }
 };
 
 /**
  * Controller endpoint: POST /api/ai/chat/stream
- * Real-time Server-Sent Events (SSE) streaming conversation handler
+ * Real-time SSE streaming AI response
  */
 exports.streamChat = async (req, res) => {
   const { botId = 'bytebot_ai', message = '', history = [] } = req.body;
@@ -56,14 +58,11 @@ exports.streamChat = async (req, res) => {
     });
   }
 
-  // Set SSE Headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
-
-  let hasSentChunk = false;
 
   try {
     const { provider } = await streamRealAIResponse({
@@ -71,7 +70,6 @@ exports.streamChat = async (req, res) => {
       message: message.trim(),
       history,
       onChunk: (chunk) => {
-        hasSentChunk = true;
         res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
       }
     });
@@ -79,14 +77,9 @@ exports.streamChat = async (req, res) => {
     res.write(`data: ${JSON.stringify({ done: true, provider })}\n\n`);
     res.end();
   } catch (error) {
-    const errorInfo = categorizeError(error, 'STREAM_CHAT');
+    console.error(`[Nipix AI Stream Error] (${botId}):`, error.response?.data || error.message);
 
-    if (!hasSentChunk) {
-      // If error occurred before sending any chunk, send error data
-      res.write(`data: ${JSON.stringify({ error: errorInfo.clientMessage, errorType: errorInfo.type })}\n\n`);
-    } else {
-      res.write(`data: ${JSON.stringify({ error: errorInfo.clientMessage, errorType: errorInfo.type })}\n\n`);
-    }
+    res.write(`data: ${JSON.stringify({ error: USER_FRIENDLY_ERROR })}\n\n`);
     res.end();
   }
 };
