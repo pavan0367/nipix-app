@@ -99,13 +99,13 @@ function checkAIProviderConfig() {
   const openrouterKey = (process.env.OPENROUTER_API_KEY || (preferred === 'openrouter' ? process.env.AI_API_KEY : '') || '').trim();
 
   // If user specified a preferred provider and its key exists
-  if (preferred === 'gemini' && geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-1.5-flash' };
+  if (preferred === 'gemini' && geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite' };
   if (preferred === 'groq' && groqKey) return { provider: 'Groq', ready: true, key: groqKey, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' };
   if (preferred === 'openai' && openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' };
   if (preferred === 'openrouter' && openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct' };
 
   // Fallback auto-detection: whichever key is configured
-  if (geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-1.5-flash' };
+  if (geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite' };
   if (groqKey) return { provider: 'Groq', ready: true, key: groqKey, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' };
   if (openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' };
   if (openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct' };
