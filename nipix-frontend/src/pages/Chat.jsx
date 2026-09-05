@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { sendAiChatMessageStream } from '../services/aiService';
 import MarkdownMessage from '../components/chat/MarkdownMessage';
+import BotProfileDashboard from '../components/chat/BotProfileDashboard';
 
 // Helper to identify error messages that should not be saved or previewed
 const isErrorMessage = (text) => {
@@ -234,6 +235,24 @@ const Chat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [chatError, setChatError] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [nicknames, setNicknames] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nipix_bot_nicknames');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+  const [botThemes, setBotThemes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nipix_bot_themes');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+  const [streamingEnabled, setStreamingEnabled] = useState(true);
 
   // Dedicated active streaming state to prevent re-rendering the full conversation array
   const [streamingText, setStreamingText] = useState('');
@@ -326,6 +345,7 @@ const Chat = () => {
     setIsVaultView(false);
     setActiveBot(bot);
     setShowMobileChat(true);
+    setShowProfile(false);
     setChatError(null);
   };
 
@@ -612,7 +632,7 @@ const Chat = () => {
                   {/* Bot Name & Message Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)', marginBottom: '2px' }}>
-                      {bot.name}
+                      {nicknames[bot.id] || bot.name}
                     </div>
                     <div style={{
                       fontSize: '0.78rem',
@@ -738,6 +758,40 @@ const Chat = () => {
             </div>
           ) : activeBot ? (
             /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
+            showProfile ? (
+              <BotProfileDashboard
+                bot={activeBot}
+                onBack={() => setShowProfile(false)}
+                onClearChat={handleResetActiveBot}
+                onOpenSearch={() => {
+                  setShowProfile(false);
+                  const searchInput = document.querySelector('.chat-search-input');
+                  if (searchInput) searchInput.focus();
+                }}
+                customNickname={nicknames[activeBot.id]}
+                onUpdateNickname={(newName) => {
+                  setNicknames((prev) => {
+                    const updated = { ...prev, [activeBot.id]: newName };
+                    try {
+                      localStorage.setItem('nipix_bot_nicknames', JSON.stringify(updated));
+                    } catch (e) {}
+                    return updated;
+                  });
+                }}
+                activeTheme={botThemes[activeBot.id] || 'cyber'}
+                onSelectTheme={(themeId) => {
+                  setBotThemes((prev) => {
+                    const updated = { ...prev, [activeBot.id]: themeId };
+                    try {
+                      localStorage.setItem('nipix_bot_themes', JSON.stringify(updated));
+                    } catch (e) {}
+                    return updated;
+                  });
+                }}
+                streamingEnabled={streamingEnabled}
+                onToggleStreaming={() => setStreamingEnabled((prev) => !prev)}
+              />
+            ) : (
             <div className="chat-conversation">
               
               {/* Conversation Header: [Avatar ●] Bot Name + Role + Reset Chat */}
@@ -751,21 +805,40 @@ const Chat = () => {
                   <ArrowLeft size={16} />
                 </button>
 
-                {/* Profile Avatar + Overlapping Active Green Dot */}
-                <div className="avatar-wrapper">
-                  <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
-                    {activeBot.avatar}
+                {/* Clickable Bot Profile Area (Avatar + Name + Role) */}
+                <div
+                  onClick={() => setShowProfile(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    flex: 1,
+                    minWidth: 0,
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  title={`View ${nicknames[activeBot.id] || activeBot.name}'s profile & details`}
+                >
+                  {/* Profile Avatar + Overlapping Active Green Dot */}
+                  <div className="avatar-wrapper">
+                    <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
+                      {activeBot.avatar}
+                    </div>
+                    <div className="active-dot-badge" />
                   </div>
-                  <div className="active-dot-badge" />
-                </div>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {activeBot.name}
-                  </h3>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {activeBot.role}
-                  </p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {nicknames[activeBot.id] || activeBot.name}
+                    </h3>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {activeBot.role}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Quick Clean Reset Action for Current Bot */}
@@ -873,7 +946,7 @@ const Chat = () => {
                       <div className="typing-dot" />
                       <div className="typing-dot" />
                     </div>
-                    <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{activeBot.name} is thinking...</span>
+                    <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{nicknames[activeBot.id] || activeBot.name} is thinking...</span>
                   </div>
                 )}
 
@@ -931,7 +1004,7 @@ const Chat = () => {
 
                 <textarea
                   rows={1}
-                  placeholder={`Ask ${activeBot.name} anything...`}
+                  placeholder={`Ask ${nicknames[activeBot.id] || activeBot.name} anything...`}
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -1008,6 +1081,7 @@ const Chat = () => {
                 )}
               </form>
             </div>
+            )
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
               Select an AI bot to start chatting.
