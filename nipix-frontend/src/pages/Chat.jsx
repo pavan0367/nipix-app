@@ -6,9 +6,10 @@ import {
   ArrowLeft,
   Send,
   Shield,
-  Lock
+  Lock,
+  Smile,
+  Paperclip
 } from 'lucide-react';
-import SecretWandIcon from '../components/Icons/SecretWandIcon';
 import { sendAiChatMessage } from '../services/aiService';
 
 // Exactly 6 Fictional Nipix AI Bot Personas with Unique Specialties & Timestamps
@@ -16,7 +17,7 @@ const AI_BOTS = [
   {
     id: 'cipher_09',
     name: 'Cipher_09',
-    role: 'Research / Logic / Cybersecurity',
+    role: 'Research, Cryptography & Cybersecurity',
     avatar: '🔮',
     badgeClass: 'badge-cipher',
     accentColor: '#8b5cf6',
@@ -37,11 +38,11 @@ const AI_BOTS = [
   {
     id: 'bytebot_ai',
     name: 'ByteBot AI',
-    role: 'Programming / Software / Computer Science',
+    role: 'Programming & Software Engineering',
     avatar: '🤖',
     badgeClass: 'badge-bytebot',
     accentColor: '#3b82f6',
-    specialty: 'Software Engineering, Code & Algorithms',
+    specialty: 'Programming, Software & Computer Science',
     previewText: 'Can you help me debug this algorithm?',
     ageText: '8 min ago',
     lastTime: '08:42 AM',
@@ -50,7 +51,7 @@ const AI_BOTS = [
         id: 'b-1',
         sender: 'ByteBot AI',
         isUser: false,
-        text: 'Hello developer! I am ByteBot AI, your programming companion. Ask me questions in Python, JavaScript, Java, C++, React, or data structures.',
+        text: 'Hello developer! 👋 I am ByteBot AI, your software engineering assistant. Ask me questions in Python, JavaScript, Java, C++, React, or data structures.',
         time: '08:42 AM'
       }
     ]
@@ -58,11 +59,11 @@ const AI_BOTS = [
   {
     id: 'spark_x',
     name: 'Spark_X',
-    role: 'Electrical Engineering / Physics',
+    role: 'Electrical Engineering & Physics',
     avatar: '⚡',
     badgeClass: 'badge-spark',
     accentColor: '#f59e0b',
-    specialty: 'Electronics, Physics & Circuit Laws',
+    specialty: 'Electrical Engineering, Electronics & Physics',
     previewText: "Let's explore this circuit frequency...",
     ageText: '25 min ago',
     lastTime: '10:15 AM',
@@ -79,11 +80,11 @@ const AI_BOTS = [
   {
     id: 'archivist',
     name: 'Archivist',
-    role: 'History / Books / General Knowledge',
+    role: 'History, Books & General Knowledge',
     avatar: '📚',
     badgeClass: 'badge-mentor',
     accentColor: '#10b981',
-    specialty: 'History, Books & Academic Literature',
+    specialty: 'History, Literature & General Knowledge',
     previewText: 'I found an interesting historical fact...',
     ageText: '1 hr ago',
     lastTime: '11:30 AM',
@@ -100,11 +101,11 @@ const AI_BOTS = [
   {
     id: 'novamind',
     name: 'NovaMind',
-    role: 'Mathematics / Problem Solving / Science',
+    role: 'Mathematics & Analytical Science',
     avatar: '🧠',
     badgeClass: 'badge-cipher',
     accentColor: '#ec4899',
-    specialty: 'Calculus, Algebra & Analytical Science',
+    specialty: 'Calculus, Algebra & Problem Solving',
     previewText: 'Ready for a math challenge today?',
     ageText: '15 min ago',
     lastTime: '01:05 PM',
@@ -121,11 +122,11 @@ const AI_BOTS = [
   {
     id: 'aether',
     name: 'Aether',
-    role: 'AI / Technology / Innovation',
+    role: 'Artificial Intelligence & Future Tech',
     avatar: '🌌',
     badgeClass: 'badge-spark',
     accentColor: '#06b6d4',
-    specialty: 'Artificial Intelligence & Future Science',
+    specialty: 'AI, Emerging Tech & Future Science',
     previewText: "There's something new in neural tech...",
     ageText: '5 min ago',
     lastTime: '02:20 PM',
@@ -213,7 +214,7 @@ const Chat = () => {
     setShowMobileChat(true);
   };
 
-  // Secret Wand Icon Action: Entry point to Hidden Chat
+  // Magic Wand Icon 🪄 Action: Entry point to Hidden Chat
   const handleSecretWandClick = () => {
     if (!currentUser) {
       navigate('/login?redirect=hidden-chat');
@@ -320,11 +321,11 @@ const Chat = () => {
       <div className="chat-messaging-grid">
 
         {/* -------------------------------------------------------- */}
-        {/* LEFT PANEL: SEARCH BAR + 6 COMPACT CONVERSATION ROWS     */}
+        {/* LEFT PANEL: SEARCH BAR + MAGIC WAND 🪄 + 6 BOT ROWS     */}
         {/* -------------------------------------------------------- */}
         <div className={`chat-bot-list-sidebar ${showMobileChat ? 'hidden-mobile' : ''}`}>
           
-          {/* Panel-width Search Bar [ 🔍 Search chats... ] + Custom Secret Icon [★] */}
+          {/* Search Bar [ 🔍 Search chats... ] + Magic Wand Button [ 🪄 ] */}
           <div className="chat-panel-search-header">
             <div className="chat-search-container-panel">
               <Search size={15} className="chat-search-icon-panel" />
@@ -337,14 +338,19 @@ const Chat = () => {
               />
             </div>
 
-            {/* Small Secret Wand Icon [★]: Entry point to Hidden Chat */}
-            <SecretWandIcon
+            {/* Small Magic Wand Button 🪄: Entry point to Hidden Chat */}
+            <button
+              type="button"
               onClick={handleSecretWandClick}
+              className="wand-action-btn"
               title="Hidden Chat"
-            />
+              aria-label="Hidden Chat"
+            >
+              🪄
+            </button>
           </div>
 
-          {/* 6 AI Bot Conversation Rows (Independently Scrollable) */}
+          {/* Exactly 6 AI Bot Conversation Rows (Independently Scrollable) */}
           <div className="chat-bot-scroll-list">
             {filteredBots.map((bot) => {
               const isSelected = activeBot?.id === bot.id && !isVaultView;
@@ -357,7 +363,7 @@ const Chat = () => {
                   onClick={() => handleSelectBot(bot)}
                   className={`chat-bot-item ${isSelected ? 'active' : ''}`}
                 >
-                  {/* Profile Photo + Overlapping Active Green Dot */}
+                  {/* Profile Avatar + Small Overlapping Active Green Dot */}
                   <div className="avatar-wrapper">
                     <div className={`avatar-badge ${bot.badgeClass}`} style={{ width: '40px', height: '40px', fontSize: '1.15rem' }}>
                       {bot.avatar}
@@ -365,7 +371,7 @@ const Chat = () => {
                     <div className="active-dot-badge" />
                   </div>
 
-                  {/* Bot Name & Last Message Info */}
+                  {/* Bot Name & Message Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)', marginBottom: '2px' }}>
                       {bot.name}
@@ -382,7 +388,7 @@ const Chat = () => {
                   </div>
 
                   {/* Far Right Chat Timestamp */}
-                  <div className="bot-meta-right" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', flexShrink: 0, alignSelf: 'flex-start', marginTop: '2px' }}>
+                  <div className="bot-meta-right">
                     {bot.lastTime}
                   </div>
                 </div>
@@ -396,7 +402,7 @@ const Chat = () => {
             )}
           </div>
 
-          {/* Secret Vault Footer Action Button */}
+          {/* Secret Vault Bottom Action Button */}
           <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-input)', flexShrink: 0 }}>
             <button
               type="button"
@@ -516,7 +522,7 @@ const Chat = () => {
                   <ArrowLeft size={16} />
                 </button>
 
-                {/* Profile Photo + Overlapping Active Green Dot */}
+                {/* Profile Avatar + Overlapping Active Green Dot */}
                 <div className="avatar-wrapper">
                   <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
                     {activeBot.avatar}
@@ -529,19 +535,19 @@ const Chat = () => {
                     {activeBot.name}
                   </h3>
                   <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0 }}>
-                    {activeBot.specialty}
+                    {activeBot.role}
                   </p>
                 </div>
               </div>
 
-              {/* Chat Messages Thread Area (Independently Scrollable) */}
+              {/* Chat Messages Workspace (Independently Scrollable) */}
               <div style={{ flex: 1, minHeight: 0, padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {(chatMessages[activeBot.id] || []).map((msg) => (
                   <div
                     key={msg.id}
                     style={{
                       display: 'flex',
-                      justifyContent: msg.isUser ? 'flex-end' : 'flex-start',
+                      justify: msg.isUser ? 'flex-end' : 'flex-start',
                       alignItems: 'flex-start',
                       gap: '8px'
                     }}
@@ -593,16 +599,25 @@ const Chat = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* FIXED BOTTOM MESSAGE INPUT BAR: [ Ask Bot Name anything... ] [ Send ] */}
+              {/* FIXED BOTTOM COMPOSER: [ 😊 Ask Bot Name anything... 📎 ➤ ] */}
               <form onSubmit={handleSendMessage} style={{
                 padding: '10px 16px',
                 borderTop: '1px solid var(--border-color)',
                 background: 'var(--bg-card)',
                 display: 'flex',
-                gap: '10px',
-                alignItems: 'flex-end',
+                gap: '8px',
+                alignItems: 'center',
                 flexShrink: 0
               }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'transparent', color: 'var(--text-muted)', flexShrink: 0 }}
+                  title="Emoji"
+                >
+                  <Smile size={18} />
+                </button>
+
                 <textarea
                   rows={1}
                   placeholder={`Ask ${activeBot.name} anything...`}
@@ -612,27 +627,42 @@ const Chat = () => {
                   className="input-field"
                   style={{
                     borderRadius: '18px',
-                    padding: '10px 16px',
+                    padding: '9px 16px',
                     resize: 'none',
                     maxHeight: '90px',
                     fontSize: '0.88rem',
                     lineHeight: '1.4'
                   }}
                 />
+
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'transparent', color: 'var(--text-muted)', flexShrink: 0 }}
+                  title="Attach file"
+                >
+                  <Paperclip size={18} />
+                </button>
+
                 <button
                   type="submit"
                   disabled={!userInput.trim() || isTyping}
                   className="btn-primary"
                   style={{
-                    borderRadius: 'var(--radius-full)',
-                    padding: '10px 18px',
+                    borderRadius: '50%',
+                    width: '38px',
+                    height: '38px',
+                    padding: 0,
                     flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     opacity: (!userInput.trim() || isTyping) ? 0.5 : 1,
                     cursor: (!userInput.trim() || isTyping) ? 'not-allowed' : 'pointer'
                   }}
+                  title="Send Message"
                 >
-                  <Send size={15} />
-                  <span>Send</span>
+                  <Send size={16} />
                 </button>
               </form>
             </div>
