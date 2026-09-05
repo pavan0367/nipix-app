@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import AppRoutes from './routes/AppRoutes';
 import { ThemeProvider } from './context/ThemeContext';
+import './index.css';
 import './App.css';
 
 axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
