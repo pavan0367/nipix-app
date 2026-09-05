@@ -1,9 +1,18 @@
 const {
   generateRealAIResponse,
-  streamRealAIResponse
+  streamRealAIResponse,
+  getAIHealth
 } = require('../services/llmService');
 
 const USER_FRIENDLY_ERROR = "I'm having trouble connecting right now. Please try again.";
+
+/**
+ * Controller endpoint: GET /api/ai/health
+ * Public diagnostic status showing provider availability
+ */
+exports.health = (req, res) => {
+  return res.json(getAIHealth());
+};
 
 /**
  * Controller endpoint: POST /api/ai/chat
