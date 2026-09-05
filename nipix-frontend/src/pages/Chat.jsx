@@ -11,6 +11,7 @@ import {
   Paperclip
 } from 'lucide-react';
 import { sendAiChatMessage } from '../services/aiService';
+import MarkdownMessage from '../components/chat/MarkdownMessage';
 
 // Exactly 6 Fictional Nipix AI Bot Personas with Unique Specialties & Timestamps
 const AI_BOTS = [
@@ -626,10 +627,9 @@ const Chat = () => {
                       border: msg.isUser ? 'none' : '1px solid var(--border-color)',
                       fontSize: '0.88rem',
                       lineHeight: '1.55',
-                      whiteSpace: 'pre-wrap',
                       boxShadow: 'var(--shadow-sm)'
                     }}>
-                      {msg.text}
+                      <MarkdownMessage content={msg.text} isUser={msg.isUser} />
                       <div style={{
                         fontSize: '0.68rem',
                         textAlign: 'right',
