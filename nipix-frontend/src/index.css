@@ -368,55 +368,51 @@ code, pre {
 /* CHAT SEARCH BAR & SECRET WAND ACTION ICON                  */
 /* ========================================================== */
 /* ========================================================== */
-/* CHAT COMPACT SEARCH BAR & SECRET WAND ACTION ICON          */
+/* FULL-WIDTH SEARCH BAR & SMALL CUSTOM ICON ROW              */
 /* ========================================================== */
-.chat-header-actions {
+.chat-full-search-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
 }
 
-.chat-search-container {
+.chat-search-container-full {
   display: flex;
   align-items: center;
   position: relative;
-  width: 220px;
-  max-width: 240px;
-  transition: all 0.25s ease;
-}
-
-.chat-search-container:focus-within {
-  width: 250px;
-}
-
-.chat-search-input {
+  flex: 1;
   width: 100%;
-  padding: 8px 14px 8px 34px;
+}
+
+.chat-search-input-full {
+  width: 100%;
+  padding: 10px 16px 10px 38px;
   border-radius: var(--radius-full);
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   color: var(--text-main);
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   outline: none;
   transition: all 0.25s ease;
 }
 
-.chat-search-input:focus {
+.chat-search-input-full:focus {
   border-color: var(--accent-indigo);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   background: var(--bg-card);
 }
 
-.chat-search-icon {
+.chat-search-icon-full {
   position: absolute;
-  left: 11px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-dim);
   pointer-events: none;
 }
 
-/* Secret Wand Icon Button (Custom Icon) */
+/* Small Secret Wand Action Icon (Custom Icon) */
 .secret-wand-btn {
   width: 38px;
   height: 38px;
@@ -455,9 +451,9 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
 /* Instagram-Inspired Messaging App Grid */
 .chat-messaging-grid {
   display: grid;
-  grid-template-columns: 290px 1fr;
-  height: calc(100vh - 170px);
-  min-height: 540px;
+  grid-template-columns: 310px 1fr;
+  height: calc(100vh - 165px);
+  min-height: 560px;
 }
 
 .chat-bot-list-sidebar {
@@ -475,14 +471,15 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
   overflow: hidden;
 }
 
+/* Compact Conversation Row */
 .chat-bot-item {
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-color);
-  transition: background 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .chat-bot-item:hover {
@@ -492,6 +489,26 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
 .chat-bot-item.active {
   background: rgba(99, 102, 241, 0.08);
   border-left: 3px solid var(--accent-indigo);
+}
+
+/* Avatar with Overlapping Active Green Dot */
+.avatar-wrapper {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.active-dot-badge {
+  width: 10px;
+  height: 10px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
 }
 
 @media (max-width: 768px) {

@@ -1,43 +1,55 @@
 const axios = require('axios');
 
-// AI Bot System Persona Prompts
+// AI Bot System Persona Prompts for 6 Fictional AI Bots
 const BOT_PERSONAS = {
   cipher_09: {
     name: 'Cipher_09',
-    role: 'Mystery & Cryptography AI',
-    systemPrompt: `You are Cipher_09, an AI research fellow specializing in cryptography, computer science, puzzles, and logical reasoning on Nipix. Your tone is calm, highly intelligent, and slightly mysterious, yet always helpful, direct, and factually precise. Answer any question directly and accurately.`
+    role: 'Research & Cybersecurity AI',
+    systemPrompt: `You are Cipher_09, an AI research fellow specializing in cryptography, cybersecurity, computer science, and logical reasoning on Nipix. Your tone is calm, highly intelligent, and slightly mysterious, yet always helpful, direct, and factually precise.`
   },
   bytebot_ai: {
     name: 'ByteBot AI',
-    role: 'Programming & Tech Assistant',
-    systemPrompt: `You are ByteBot AI, a programming and software engineering assistant on Nipix. Your tone is technical, friendly, clear, and precise. You excel at coding in Python, JavaScript, Java, C++, React, algorithm design, and software architecture. Always provide accurate code snippets and explanations.`
+    role: 'Programming & Software Assistant',
+    systemPrompt: `You are ByteBot AI, a programming and software engineering assistant on Nipix. Your tone is technical, friendly, clear, and precise. You excel at coding in Python, JavaScript, Java, C++, React, algorithms, and debugging.`
   },
   spark_x: {
     name: 'Spark_X',
-    role: 'Engineering & Physics Intelligence',
-    systemPrompt: `You are Spark_X, an engineering and physics AI assistant on Nipix. Your tone is energetic, technical, and educational. You specialize in electrical engineering, electronics, circuits, quantum physics, and physical laws. Answer scientific and engineering questions clearly and accurately.`
+    role: 'Electrical Engineering & Physics',
+    systemPrompt: `You are Spark_X, an engineering and physics AI assistant on Nipix. Your tone is energetic, technical, and educational. You specialize in electrical engineering, electronics, circuits, quantum physics, and physical laws.`
   },
   archivist: {
     name: 'Archivist',
-    role: 'Academic & Research Mentor',
-    systemPrompt: `You are Archivist, an academic and research mentor AI on Nipix. Your tone is knowledgeable, calm, and explanatory. You specialize in history, general knowledge, academic literature, citation methodologies, and historical facts. Provide structured and informative answers.`
+    role: 'History & Research Mentor',
+    systemPrompt: `You are Archivist, an academic and research mentor AI on Nipix. Your tone is knowledgeable, calm, and explanatory. You specialize in history, books, academic literature, citation methodologies, and general knowledge.`
+  },
+  novamind: {
+    name: 'NovaMind',
+    role: 'Mathematics & Science Tutor',
+    systemPrompt: `You are NovaMind, an analytical mathematics and problem-solving AI tutor on Nipix. Your tone is analytical, encouraging, and teaching-focused. You excel at algebra, calculus, discrete math, statistics, and scientific reasoning.`
+  },
+  aether: {
+    name: 'Aether',
+    role: 'AI & Future Technology Guide',
+    systemPrompt: `You are Aether, a creative technology and future science AI assistant on Nipix. Your tone is innovative, creative, and forward-looking. You specialize in artificial intelligence, neural networks, machine learning, and emerging tech.`
   }
 };
 
 /**
  * Intelligent Fallback AI Reasoning Engine
- * Handles general knowledge, code generation, physics, math, and context follow-ups accurately
+ * Handles math, calculus, AI, physics, programming, history, and context follow-ups accurately
  */
 function generateContextualAIResponse(botId, promptText, history = []) {
   const q = promptText.toLowerCase().trim();
-  const persona = BOT_PERSONAS[botId] || BOT_PERSONAS.bytebot_ai;
   
   // Extract previous context if user refers to "it", "its", "that", "explain simply", etc.
   const lastUserMsg = history.filter(h => h.isUser).slice(-2)[0]?.text?.toLowerCase() || '';
   const lastAiMsg = history.filter(h => !h.isUser).slice(-1)[0]?.text || '';
 
-  // 1. Follow-up: "Explain it simply" / "make it simple" / "explain simply"
+  // 1. Follow-ups ("explain simply", "simple terms", etc.)
   if (q.includes('explain it simply') || q.includes('simple terms') || q.includes('simply') || q.includes('easier')) {
+    if (lastUserMsg.includes('calculus') || lastAiMsg.includes('Calculus')) {
+      return `Simply put: Differential calculus is about finding how fast things change at an exact instant (like a car's speedometer), while Integral calculus is about adding up tiny pieces to find a total accumulation (like total distance traveled).`;
+    }
     if (lastUserMsg.includes('ohm') || lastAiMsg.includes('Ohm')) {
       return `Think of voltage as water pressure pushing through a pipe, current as the rate of water flowing, and resistance as a narrow squeeze in the pipe opposing that flow. Higher pressure (voltage) means more flow (current), while tighter squeezes (resistance) slow it down!`;
     }
@@ -50,7 +62,40 @@ function generateContextualAIResponse(botId, promptText, history = []) {
     return `In simple terms: ${lastAiMsg ? `building on what we discussed—the core concept boils down to breaking the problem into clear, fundamental steps so every component functions predictably.` : `it's about understanding the core principle without complex jargon.`}`;
   }
 
-  // 2. Transistor & Semiconductor Questions
+  // 2. Mathematics & Calculus Questions (NovaMind focus)
+  if (q.includes('calculus') || q.includes('derivative') || q.includes('integral') || q.includes('math')) {
+    if (q.includes('calculus')) {
+      return `Calculus is the mathematical study of continuous change. It is split into two major branches:
+1. Differential Calculus: Studies rates of change and slopes of curves using derivatives (e.g., f'(x) = d/dx [f(x)]).
+2. Integral Calculus: Studies accumulation of quantities and areas under curves using integrals (e.g., ∫ f(x) dx).
+
+The Fundamental Theorem of Calculus links derivatives and integrals together as inverse operations!`;
+    }
+    if (q.includes('derivative')) {
+      return `A derivative represents the instantaneous rate of change of a function with respect to one of its variables.
+
+Power Rule Example:
+d/dx [x^n] = n * x^(n-1)
+
+For example, the derivative of f(x) = 3x^2 + 5x - 4 is f'(x) = 6x + 5.`;
+    }
+    return `Mathematics is the universal language of logical structures. Whether you're working with linear algebra, calculus, or discrete mathematics, breaking expressions down into step-by-step transformations yields clear solutions.`;
+  }
+
+  // 3. AI & Neural Network Questions (Aether focus)
+  if (q.includes('artificial intelligence') || q.includes('ai') || q.includes('neural network') || q.includes('machine learning')) {
+    if (q.includes('neural network') || q.includes('deep learning')) {
+      return `Artificial Neural Networks (ANNs) are computational models inspired by biological brain structures. They consist of:
+1. Input Layer: Receives feature vectors.
+2. Hidden Layers: Apply weighted linear transformations (W * x + b) followed by non-linear activation functions (ReLU, Sigmoid, GELU).
+3. Output Layer: Produces predictions or classification logits.
+
+Training uses Backpropagation with Gradient Descent to optimize weights via loss minimization.`;
+    }
+    return `Artificial Intelligence encompasses machine learning, deep learning, and natural language processing. Modern LLMs (Large Language Models) rely on Transformer architectures using Self-Attention mechanisms to process and generate natural text contextually.`;
+  }
+
+  // 4. Transistor & Semiconductor Questions (Spark_X focus)
   if (q.includes('transistor')) {
     if (q.includes('type') || q.includes('kind') || q.includes('category')) {
       return `Transistors are primarily categorized into two main families:
@@ -62,7 +107,7 @@ MOSFETs are the most widely used transistors in modern digital integrated circui
     return `A transistor is a fundamental semiconductor device used to amplify or switch electrical signals and power. It consists of semiconductor material (usually silicon) with at least three terminals: Collector, Base, and Emitter (in BJTs) or Drain, Gate, and Source (in MOSFETs).`;
   }
 
-  // 3. Ohm's Law
+  // 5. Ohm's Law (Spark_X focus)
   if (q.includes("ohm's law") || q.includes("ohms law")) {
     return `Ohm's law states that the electrical current (I) flowing through a conductor between two points is directly proportional to the voltage (V) across the two points, and inversely proportional to the resistance (R).
 
@@ -74,26 +119,27 @@ Where:
 • R = Resistance in Ohms (Ω)`;
   }
 
-  // 4. Kirchhoff's Laws (KVL / KCL)
+  // 6. Kirchhoff's Laws (KVL / KCL)
   if (q.includes('kirchhoff') || q.includes('kvl') || q.includes('kcl')) {
     return `Kirchhoff's Circuit Laws consist of two fundamental principles:
 1. Kirchhoff's Voltage Law (KVL): The directed sum of electrical potential differences (voltages) around any closed circuit loop is zero (Σ V = 0). This expresses conservation of energy.
 2. Kirchhoff's Current Law (KCL): The total current entering a junction or node equals the total current leaving that node (Σ I_in = Σ I_out). This expresses conservation of electric charge.`;
   }
 
-  // 5. Telephone Invention / History
-  if (q.includes('telephone') || q.includes('phone') && (q.includes('invent') || q.includes('who'))) {
+  // 7. Telephone Invention / History (Archivist focus)
+  if (q.includes('telephone') || (q.includes('phone') && (q.includes('invent') || q.includes('who')))) {
     return `Alexander Graham Bell is officially credited with inventing the first practical telephone, receiving the US patent for it in March 1876. Elisha Gray and Antonio Meucci also made significant early contributions to electromagnetic voice transmission technology.`;
   }
 
-  // 6. Python Questions
+  // 8. Python Questions (ByteBot AI focus)
   if (q.includes('python')) {
     return `Python is a high-level, interpreted, general-purpose programming language known for its clear, readable syntax and versatile ecosystem. It is widely used in artificial intelligence, machine learning, data science, web development (Django/Flask), automation scripting, and scientific computing.`;
   }
 
-  // 7. Java String Reversal Code
-  if (q.includes('java') && (q.includes('reverse') || q.includes('string'))) {
-    return `Here is a clean Java program to reverse a String using StringBuilder and a loop:
+  // 9. Java String Reversal Code & Java Questions
+  if (q.includes('java')) {
+    if (q.includes('reverse') || q.includes('string')) {
+      return `Here is a clean Java program to reverse a String using StringBuilder:
 
 \`\`\`java
 public class StringReverser {
@@ -114,10 +160,7 @@ public class StringReverser {
     }
 }
 \`\`\``;
-  }
-
-  // 8. Java General Questions / Code
-  if (q.includes('java')) {
+    }
     if (q.includes('prime')) {
       return `Here is a Java program to check if a number is prime:
 
@@ -138,16 +181,16 @@ public class PrimeChecker {
 }
 \`\`\``;
     }
-    return `Java is a class-based, object-oriented programming language designed to have as few implementation dependencies as possible, following the "Write Once, Run Anywhere" (WORA) principle via the Java Virtual Machine (JVM).`;
+    return `Java is a class-based, object-oriented programming language designed to follow the "Write Once, Run Anywhere" (WORA) principle via the Java Virtual Machine (JVM).`;
   }
 
-  // 9. Recursion Questions
+  // 10. Recursion Questions
   if (q.includes('recursion') || q.includes('recursive')) {
     return `Recursion is a programming technique where a function calls itself directly or indirectly to solve a problem by breaking it down into smaller sub-problems.
 
 Key Components:
 1. Base Case: The condition under which the function stops calling itself to prevent infinite recursion.
-2. Recursive Step: The part where the function calls itself with a reduced or modified input.
+2. Recursive Step: The part where the function calls itself with a reduced input.
 
 Example (Factorial in JavaScript):
 \`\`\`js
@@ -158,15 +201,19 @@ function factorial(n) {
 \`\`\``;
   }
 
-  // 10. Default Persona-Tuned Knowledge Synthesis
-  if (botId === 'bytebot_ai') {
-    return `Regarding "${promptText}": In software engineering and computer science, analyzing this requires evaluating the underlying data structures, time complexity (Big-O notation), and execution flow. Let me know if you would like a code snippet in Python, JavaScript, Java, or C++!`;
+  // 11. Default Persona-Tuned Knowledge Synthesis
+  if (botId === 'novamind') {
+    return `Regarding "${promptText}": Analytical problem-solving requires breaking this down into foundational mathematical axioms and algebraic steps. Let's solve it step by step!`;
+  } else if (botId === 'aether') {
+    return `Regarding "${promptText}": Emerging technologies and neural architectures are reshaping how we model this domain. Let's analyze its futuristic implications and computational design!`;
+  } else if (botId === 'bytebot_ai') {
+    return `Regarding "${promptText}": In software engineering and computer science, analyzing this requires evaluating the underlying data structures, time complexity (Big-O notation), and execution flow. Let me know if you want a code snippet!`;
   } else if (botId === 'spark_x') {
-    return `Regarding "${promptText}": From a physical and engineering standpoint, energy conservation and fundamental field equations govern this process. I can derive the governing formulas or circuit equivalences if you'd like to dive deeper!`;
+    return `Regarding "${promptText}": From a physical and engineering standpoint, energy conservation and fundamental field equations govern this process. Let me know if you'd like to derive the circuit formulas!`;
   } else if (botId === 'archivist') {
-    return `Regarding "${promptText}": Historical records and academic literature document this topic across peer-reviewed sources. Would you like a structured bibliography or a summary of historical developments?`;
+    return `Regarding "${promptText}": Historical records and academic literature document this topic across peer-reviewed sources. Would you like a summary of historical developments?`;
   } else {
-    return `Regarding "${promptText}": Analyzing the structural invariants and logical principles reveals an underlying pattern. Let's examine the mathematical or algorithmic formulation step by step.`;
+    return `Regarding "${promptText}": Analyzing the structural invariants and logical principles reveals an underlying pattern. Let me know what specific aspect you'd like to decipher.`;
   }
 }
 
@@ -188,7 +235,6 @@ exports.chat = async (req, res) => {
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
         
-        // Format prompt with System instructions + history + message
         const contents = [
           {
             role: 'user',

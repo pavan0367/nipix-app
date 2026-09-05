@@ -5,37 +5,31 @@ import {
   Search,
   ArrowLeft,
   Send,
-  Sparkles,
-  Bot,
   Shield,
-  Lock,
-  KeyRound,
-  Sun,
-  Moon,
-  Laptop
+  Lock
 } from 'lucide-react';
 import SecretWandIcon from '../components/Icons/SecretWandIcon';
-import { useTheme } from '../context/ThemeContext';
 import { sendAiChatMessage } from '../services/aiService';
 
-// AI Bot Personas with Personalities & Specialties
+// Exactly 6 Fictional Nipix AI Bot Personas with Unique Specialties & Timestamps
 const AI_BOTS = [
   {
     id: 'cipher_09',
     name: 'Cipher_09',
-    role: 'Mystery & Cryptography AI',
+    role: 'Research / Logic / Cybersecurity',
     avatar: '🔮',
     badgeClass: 'badge-cipher',
     accentColor: '#8b5cf6',
-    specialty: 'Cryptography, Research & Puzzles',
-    previewText: 'Greetings seeker. What mystery shall we decipher today?',
+    specialty: 'Research, Cryptography & Cybersecurity',
+    previewText: 'Someone left an encrypted note in the vault...',
+    ageText: '12 min ago',
     lastTime: '03:14 AM',
     initialMessages: [
       {
         id: 'c-1',
         sender: 'Cipher_09',
         isUser: false,
-        text: 'Greetings, seeker of secrets. I specialize in cryptographic ciphers, research methodology, and computational enigmas. Ask me anything!',
+        text: 'Greetings, seeker of secrets. I specialize in cryptography, cybersecurity, and logical reasoning. Ask me any research question!',
         time: '03:14 AM'
       }
     ]
@@ -43,19 +37,20 @@ const AI_BOTS = [
   {
     id: 'bytebot_ai',
     name: 'ByteBot AI',
-    role: 'Programming & Tech Assistant',
+    role: 'Programming / Software / Computer Science',
     avatar: '🤖',
     badgeClass: 'badge-bytebot',
     accentColor: '#3b82f6',
     specialty: 'Software Engineering, Code & Algorithms',
-    previewText: 'Ready to review code, debug, or write algorithms!',
+    previewText: 'Can you help me debug this algorithm?',
+    ageText: '8 min ago',
     lastTime: '08:42 AM',
     initialMessages: [
       {
         id: 'b-1',
         sender: 'ByteBot AI',
         isUser: false,
-        text: 'Hello developer! I am ByteBot AI, your software engineering assistant. Ask me programming questions in Python, JavaScript, Java, C++, React, or data structures.',
+        text: 'Hello developer! I am ByteBot AI, your programming companion. Ask me questions in Python, JavaScript, Java, C++, React, or data structures.',
         time: '08:42 AM'
       }
     ]
@@ -63,40 +58,84 @@ const AI_BOTS = [
   {
     id: 'spark_x',
     name: 'Spark_X',
-    role: 'Engineering & Physics Intelligence',
+    role: 'Electrical Engineering / Physics',
     avatar: '⚡',
     badgeClass: 'badge-spark',
     accentColor: '#f59e0b',
     specialty: 'Electronics, Physics & Circuit Laws',
-    previewText: 'Frequency locked! Ask me about physics & engineering.',
-    lastTime: '2h ago',
+    previewText: "Let's explore this circuit frequency...",
+    ageText: '25 min ago',
+    lastTime: '10:15 AM',
     initialMessages: [
       {
         id: 's-1',
         sender: 'Spark_X',
         isUser: false,
-        text: 'Frequency locked! I am Spark_X, dedicated to electrical engineering, quantum physics, and circuit theory. Ask me any science or engineering question!',
-        time: '2h ago'
+        text: 'Frequency locked! I am Spark_X, dedicated to electrical engineering, physics, and circuit theory. Ask me any science or engineering question!',
+        time: '10:15 AM'
       }
     ]
   },
   {
     id: 'archivist',
     name: 'Archivist',
-    role: 'Academic & Research Mentor',
+    role: 'History / Books / General Knowledge',
     avatar: '📚',
     badgeClass: 'badge-mentor',
     accentColor: '#10b981',
-    specialty: 'History, Books & General Knowledge',
-    previewText: 'Welcome scholar. The archive is at your service.',
-    lastTime: 'Just now',
+    specialty: 'History, Books & Academic Literature',
+    previewText: 'I found an interesting historical fact...',
+    ageText: '1 hr ago',
+    lastTime: '11:30 AM',
     initialMessages: [
       {
         id: 'a-1',
         sender: 'Archivist',
         isUser: false,
-        text: 'Welcome scholar. I catalog literature, history, research frameworks, and general knowledge. What domain shall we explore today?',
-        time: 'Just now'
+        text: 'Welcome scholar. I catalog literature, history, research synthesis, and general knowledge. What domain shall we study today?',
+        time: '11:30 AM'
+      }
+    ]
+  },
+  {
+    id: 'novamind',
+    name: 'NovaMind',
+    role: 'Mathematics / Problem Solving / Science',
+    avatar: '🧠',
+    badgeClass: 'badge-cipher',
+    accentColor: '#ec4899',
+    specialty: 'Calculus, Algebra & Analytical Science',
+    previewText: 'Ready for a math challenge today?',
+    ageText: '15 min ago',
+    lastTime: '01:05 PM',
+    initialMessages: [
+      {
+        id: 'n-1',
+        sender: 'NovaMind',
+        isUser: false,
+        text: 'Greetings! I am NovaMind, your mathematics and analytical tutor. Ask me about calculus, algebra, statistics, or scientific logic.',
+        time: '01:05 PM'
+      }
+    ]
+  },
+  {
+    id: 'aether',
+    name: 'Aether',
+    role: 'AI / Technology / Innovation',
+    avatar: '🌌',
+    badgeClass: 'badge-spark',
+    accentColor: '#06b6d4',
+    specialty: 'Artificial Intelligence & Future Science',
+    previewText: "There's something new in neural tech...",
+    ageText: '5 min ago',
+    lastTime: '02:20 PM',
+    initialMessages: [
+      {
+        id: 'ae-1',
+        sender: 'Aether',
+        isUser: false,
+        text: 'Hello visionary! I am Aether, dedicated to emerging technologies, AI architectures, and future innovation. What idea shall we explore?',
+        time: '02:20 PM'
       }
     ]
   }
@@ -124,7 +163,6 @@ const HIDDEN_VAULT_MESSAGES = [
 
 const Chat = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
-  const { themeMode, changeTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -138,6 +176,7 @@ const Chat = () => {
   const [chatMessages, setChatMessages] = useState({});
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
 
   // Hidden Vault State
   const [isVaultView, setIsVaultView] = useState(requestedHiddenView);
@@ -146,7 +185,7 @@ const Chat = () => {
 
   const messagesEndRef = useRef(null);
 
-  // Initialize messages state for each bot
+  // Initialize messages state for all 6 bots
   useEffect(() => {
     const initialMap = {};
     AI_BOTS.forEach((bot) => {
@@ -159,17 +198,19 @@ const Chat = () => {
   useEffect(() => {
     if (requestedHiddenView && currentUser) {
       setIsVaultView(true);
+      setShowMobileChat(true);
     }
   }, [requestedHiddenView, currentUser]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, isTyping, vaultMessages, activeBot, isVaultView]);
+  }, [chatMessages, isTyping, vaultMessages, activeBot, isVaultView, showMobileChat]);
 
-  // Open an AI Bot Chat immediately WITHOUT demanding login!
+  // Select an AI Bot (No login required)
   const handleSelectBot = (bot) => {
     setIsVaultView(false);
     setActiveBot(bot);
+    setShowMobileChat(true);
   };
 
   // Secret Wand Icon Action: Entry point to Hidden Chat
@@ -178,6 +219,7 @@ const Chat = () => {
       navigate('/login?redirect=hidden-chat');
     } else {
       setIsVaultView(!isVaultView);
+      setShowMobileChat(true);
     }
   };
 
@@ -258,7 +300,7 @@ const Chat = () => {
     setVaultInput('');
   };
 
-  // Real-time search filter for AI bots and messages
+  // Filter bots in real time based on search query
   const filteredBots = AI_BOTS.filter((bot) => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -277,96 +319,28 @@ const Chat = () => {
     <div className="page-theme-chat" style={{ minHeight: '100vh', padding: '16px', display: 'flex', flexDirection: 'column' }}>
       
       {/* ========================================================== */}
-      {/* 1. COMPACT CHAT PAGE HEADER                                */}
+      {/* 1. FULL-WIDTH SEARCH BAR & SMALL CUSTOM ICON ROW           */}
       {/* ========================================================== */}
       <div className="glass-card" style={{
         maxWidth: '1060px',
         margin: '0 auto 12px auto',
         width: '100%',
-        padding: '12px 18px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        flexWrap: 'wrap'
+        padding: '10px 16px'
       }}>
-        {/* Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: isVaultView ? 'var(--vault-gradient)' : 'var(--mystic-gradient)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            boxShadow: 'var(--shadow-sm)',
-            flexShrink: 0
-          }}>
-            {isVaultView ? <Shield size={18} /> : <Bot size={18} />}
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {isVaultView ? 'Secret Vault Transmissions' : 'Nipix AI Chat'}
-              <span style={{
-                fontSize: '0.7rem',
-                background: isVaultView ? 'rgba(5, 150, 105, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                color: isVaultView ? 'var(--accent-emerald)' : '#16a34a',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                fontWeight: '700'
-              }}>
-                {isVaultView ? 'Encrypted' : '4 Bots Active'}
-              </span>
-            </h2>
-          </div>
-        </div>
-
-        {/* Right Header Actions: Theme Controls + Compact Search + Custom Wand Icon */}
-        <div className="chat-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          
-          {/* Quick Theme Selector (Light, Dark, Device) */}
-          <div className="theme-segmented-control" title="Change Appearance Theme">
-            <button
-              type="button"
-              onClick={() => changeTheme('light')}
-              className={`theme-segmented-btn ${themeMode === 'light' ? 'active' : ''}`}
-              title="Light Mode"
-            >
-              <Sun size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={() => changeTheme('dark')}
-              className={`theme-segmented-btn ${themeMode === 'dark' ? 'active' : ''}`}
-              title="Dark Mode"
-            >
-              <Moon size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={() => changeTheme('system')}
-              className={`theme-segmented-btn ${themeMode === 'system' ? 'active' : ''}`}
-              title="Same as Device"
-            >
-              <Laptop size={13} />
-            </button>
-          </div>
-
-          {/* COMPACT SEARCH BAR: [ Search chats... ] */}
-          <div className="chat-search-container">
-            <Search size={15} className="chat-search-icon" />
+        <div className="chat-full-search-row">
+          {/* Full-width Search Bar: [ 🔍 Search chats... ] */}
+          <div className="chat-search-container-full">
+            <Search size={16} className="chat-search-icon-full" />
             <input
               type="text"
               placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="chat-search-input"
+              className="chat-search-input-full"
             />
           </div>
 
-          {/* CUSTOM SECRET WAND ICON [★]: Entry point to Hidden Chat */}
+          {/* Small Custom Secret Wand Icon [★]: Entry point to Hidden Chat */}
           <SecretWandIcon
             onClick={handleSecretWandClick}
             title="Hidden Chat"
@@ -375,7 +349,7 @@ const Chat = () => {
       </div>
 
       {/* ========================================================== */}
-      {/* 2. INSTAGRAM-INSPIRED MESSAGING GRID                       */}
+      {/* 2. MESSAGING APP LAYOUT (6 BOTS LIST + ACTIVE CONVERSATION) */}
       {/* ========================================================== */}
       <div className="glass-card" style={{
         maxWidth: '1060px',
@@ -388,22 +362,16 @@ const Chat = () => {
         <div className="chat-messaging-grid">
 
           {/* -------------------------------------------------------- */}
-          {/* LEFT PANEL: AI BOTS DIRECTORY                            */}
+          {/* LEFT PANEL: 6 COMPACT CONVERSATION ROWS                  */}
           {/* -------------------------------------------------------- */}
-          <div className="chat-bot-list-sidebar">
+          <div className={`chat-bot-list-sidebar ${showMobileChat ? 'hidden-mobile' : ''}`}>
             <div style={{
-              padding: '14px 16px',
+              padding: '12px 16px',
               borderBottom: '1px solid var(--border-color)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
               background: 'var(--bg-card)'
             }}>
-              <span style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--text-main)' }}>
-                Conversations
-              </span>
-              <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
-                Public AI Bots
+              <span style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                Chats
               </span>
             </div>
 
@@ -411,7 +379,7 @@ const Chat = () => {
               {filteredBots.map((bot) => {
                 const isSelected = activeBot?.id === bot.id && !isVaultView;
                 const lastMsg = (chatMessages[bot.id] || []).slice(-1)[0];
-                const preview = lastMsg ? lastMsg.text : bot.previewText;
+                const previewText = lastMsg ? lastMsg.text : bot.previewText;
 
                 return (
                   <div
@@ -419,29 +387,33 @@ const Chat = () => {
                     onClick={() => handleSelectBot(bot)}
                     className={`chat-bot-item ${isSelected ? 'active' : ''}`}
                   >
-                    <div className={`avatar-badge ${bot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
-                      {bot.avatar}
+                    {/* Profile Photo + Overlapping Active Green Dot */}
+                    <div className="avatar-wrapper">
+                      <div className={`avatar-badge ${bot.badgeClass}`} style={{ width: '40px', height: '40px', fontSize: '1.15rem' }}>
+                        {bot.avatar}
+                      </div>
+                      <div className="active-dot-badge" />
                     </div>
 
+                    {/* Bot Name & Message Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                        <span style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)' }}>
-                          {bot.name}
-                        </span>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                          {bot.lastTime}
-                        </span>
+                      <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '2px' }}>
+                        {bot.name}
                       </div>
-                      <p style={{
-                        margin: 0,
+                      <div style={{
                         fontSize: '0.78rem',
                         color: 'var(--text-muted)',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
                       }}>
-                        {preview}
-                      </p>
+                        {previewText} <span style={{ opacity: 0.6 }}>· {bot.ageText}</span>
+                      </div>
+                    </div>
+
+                    {/* Far Right Chat Timestamp */}
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', flexShrink: 0, alignSelf: 'flex-start', marginTop: '2px' }}>
+                      {bot.lastTime}
                     </div>
                   </div>
                 );
@@ -454,12 +426,11 @@ const Chat = () => {
               )}
             </div>
 
-            {/* Secret Vault Entry Card */}
+            {/* Secret Vault Bottom Action Card */}
             <div style={{
-              padding: '14px',
+              padding: '12px 14px',
               borderTop: '1px solid var(--border-color)',
-              background: 'var(--bg-input)',
-              textAlign: 'center'
+              background: 'var(--bg-input)'
             }}>
               <button
                 type="button"
@@ -474,14 +445,14 @@ const Chat = () => {
           </div>
 
           {/* -------------------------------------------------------- */}
-          {/* RIGHT PANEL: ACTIVE AI CHAT WORKSPACE / VAULT            */}
+          {/* RIGHT PANEL: SELECTED AI CONVERSATION VIEW               */}
           {/* -------------------------------------------------------- */}
-          <div className="chat-active-workspace">
+          <div className={`chat-active-workspace ${!showMobileChat ? 'hidden-mobile' : ''}`}>
             {isVaultView ? (
               /* SECRET VAULT VIEW (AUTHENTICATED) */
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <div style={{
-                  padding: '12px 18px',
+                  padding: '12px 16px',
                   borderBottom: '1px solid var(--border-color)',
                   background: 'rgba(5, 150, 105, 0.1)',
                   display: 'flex',
@@ -558,39 +529,44 @@ const Chat = () => {
               /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
                 
-                {/* Bot Header */}
+                {/* Conversation Header: ← [Avatar ●] Bot Name (Dot status only, NO "Online" text) */}
                 <div style={{
-                  padding: '12px 18px',
+                  padding: '10px 16px',
                   borderBottom: '1px solid var(--border-color)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  gap: '12px',
                   background: 'var(--bg-card)'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '36px', height: '36px', fontSize: '1.1rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileChat(false)}
+                    className="btn-secondary"
+                    style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+
+                  {/* Profile Photo + Overlapping Active Green Dot */}
+                  <div className="avatar-wrapper">
+                    <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
                       {activeBot.avatar}
                     </div>
-                    <div>
-                      <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {activeBot.name}
-                        <span style={{ fontSize: '0.68rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700' }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} /> Online
-                        </span>
-                      </h3>
-                      <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0 }}>
-                        {activeBot.specialty}
-                      </p>
-                    </div>
+                    <div className="active-dot-badge" />
                   </div>
 
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(37, 99, 235, 0.1)', color: 'var(--accent-blue)', padding: '3px 10px', borderRadius: '12px', fontWeight: '700' }}>
-                    {activeBot.role}
-                  </span>
+                  <div>
+                    <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
+                      {activeBot.name}
+                    </h3>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0 }}>
+                      {activeBot.specialty}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Messages Workspace */}
-                <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Chat Messages Workspace */}
+                <div style={{ flex: 1, padding: '18px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {(chatMessages[activeBot.id] || []).map((msg) => (
                     <div
                       key={msg.id}
@@ -608,7 +584,7 @@ const Chat = () => {
                       )}
 
                       <div className={!msg.isUser ? 'chat-bubble-ai-msg' : ''} style={{
-                        maxWidth: '80%',
+                        maxWidth: '82%',
                         padding: '10px 16px',
                         borderRadius: msg.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                         background: msg.isUser ? 'var(--chat-bubble-user)' : 'var(--chat-bubble-ai)',
@@ -648,9 +624,9 @@ const Chat = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* BOTTOM MESSAGE INPUT BAR: [ Ask anything... ] [ Send ] */}
+                {/* BOTTOM MESSAGE INPUT BAR: [ Ask Bot Name anything... ] [ Send ] */}
                 <form onSubmit={handleSendMessage} style={{
-                  padding: '12px 18px',
+                  padding: '12px 16px',
                   borderTop: '1px solid var(--border-color)',
                   background: 'var(--bg-card)',
                   display: 'flex',
