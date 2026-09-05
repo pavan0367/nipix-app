@@ -476,6 +476,19 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
 }
 
 /* Fixed-Height Messaging App Layout & Zero-Page-Scroll Isolation */
+html.chat-route-active,
+body.chat-route-active {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100vw !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .main-content.main-content-chat {
   padding-bottom: 0 !important;
   height: 100% !important;

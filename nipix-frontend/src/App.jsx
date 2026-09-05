@@ -10,7 +10,13 @@ import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 import './App.css';
 
-axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Prioritize local backend when testing on localhost
+const isLocalhost = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+axios.defaults.baseURL = (isLocalhost && !process.env.REACT_APP_FORCE_REMOTE)
+  ? 'http://localhost:5000/api'
+  : (process.env.REACT_APP_API_URL || 'http://localhost:5000/api');
 
 function AppContent() {
   const dispatch = useDispatch();
@@ -19,6 +25,18 @@ function AppContent() {
   const { user, token } = useSelector((state) => state.auth);
 
   const isChatRoute = location.pathname.startsWith('/chat') || location.pathname === '/hidden-chat';
+
+  // Strict zero-page-scroll lock on Chat routes
+  useEffect(() => {
+    if (isChatRoute) {
+      document.documentElement.classList.add('chat-route-active');
+      document.body.classList.add('chat-route-active');
+      return () => {
+        document.documentElement.classList.remove('chat-route-active');
+        document.body.classList.remove('chat-route-active');
+      };
+    }
+  }, [isChatRoute]);
 
   useEffect(() => {
     if (token) {

@@ -10,7 +10,7 @@ import {
   Smile,
   Paperclip
 } from 'lucide-react';
-import { sendAiChatMessage } from '../services/aiService';
+import { sendAiChatMessage, sendAiChatMessageStream } from '../services/aiService';
 import MarkdownMessage from '../components/chat/MarkdownMessage';
 
 // Exactly 6 Fictional Nipix AI Bot Personas with Unique Specialties & Timestamps
@@ -262,7 +262,11 @@ const Chat = () => {
   }, [vaultMessages, isVaultView]);
 
   // Select an AI Bot (No login required, does NOT scroll the browser page)
-  const handleSelectBot = (bot) => {
+  const handleSelectBot = (bot, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsVaultView(false);
     setActiveBot(bot);
     setShowMobileChat(true);
@@ -278,7 +282,7 @@ const Chat = () => {
     }
   };
 
-  // Real AI Message Handler
+  // Real AI Message Handler with Streaming Support
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!userInput.trim() || !activeBot || isTyping) return;
@@ -295,50 +299,72 @@ const Chat = () => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    // Update frontend chat state immediately with user message
+    const botMsgId = (Date.now() + 1).toString();
+    const newAiPlaceholderMsg = {
+      id: botMsgId,
+      sender: activeBot.name,
+      isUser: false,
+      text: '',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // Immediately display user message and prepare placeholder
     setChatMessages((prev) => ({
       ...prev,
-      [botId]: [...(prev[botId] || []), newUserMsg]
+      [botId]: [...(prev[botId] || []), newUserMsg, newAiPlaceholderMsg]
     }));
 
     setUserInput('');
     setIsTyping(true);
 
+    let streamStarted = false;
+
     try {
-      // Call Backend / Intelligent AI Service
-      const response = await sendAiChatMessage({
+      const response = await sendAiChatMessageStream({
         botId,
         message: userText,
-        history: [...currentHistory, newUserMsg]
+        history: [...currentHistory, newUserMsg],
+        onChunk: (currentStreamedText) => {
+          if (!streamStarted) {
+            streamStarted = true;
+            setIsTyping(false); // Stop typing dots once text begins streaming
+          }
+          setChatMessages((prev) => {
+            const list = prev[botId] || [];
+            return {
+              ...prev,
+              [botId]: list.map((msg) =>
+                msg.id === botMsgId ? { ...msg, text: currentStreamedText } : msg
+              )
+            };
+          });
+        }
       });
 
-      const aiReplyText = response.reply || "I'm having trouble reaching the AI service right now. Please try again in a moment.";
+      const finalReply = response.reply || "Sorry, I couldn't reach the AI service right now. Please try again.";
 
-      const newAiMsg = {
-        id: (Date.now() + 1).toString(),
-        sender: activeBot.name,
-        isUser: false,
-        text: aiReplyText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+      setChatMessages((prev) => {
+        const list = prev[botId] || [];
+        return {
+          ...prev,
+          [botId]: list.map((msg) =>
+            msg.id === botMsgId ? { ...msg, text: finalReply } : msg
+          )
+        };
+      });
 
-      setChatMessages((prev) => ({
-        ...prev,
-        [botId]: [...(prev[botId] || []), newAiMsg]
-      }));
     } catch (err) {
       console.error('[Nipix Chat] Error during message processing:', err);
-      const fallbackMsg = {
-        id: (Date.now() + 1).toString(),
-        sender: activeBot.name,
-        isUser: false,
-        text: "I'm having trouble reaching the AI service right now. Please try again in a moment.",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setChatMessages((prev) => ({
-        ...prev,
-        [botId]: [...(prev[botId] || []), fallbackMsg]
-      }));
+      const fallbackText = "Sorry, I couldn't reach the AI service right now. Please try again.";
+      setChatMessages((prev) => {
+        const list = prev[botId] || [];
+        return {
+          ...prev,
+          [botId]: list.map((msg) =>
+            msg.id === botMsgId ? { ...msg, text: fallbackText } : msg
+          )
+        };
+      });
     } finally {
       setIsTyping(false);
     }
@@ -429,7 +455,7 @@ const Chat = () => {
               return (
                 <div
                   key={bot.id}
-                  onClick={() => handleSelectBot(bot)}
+                  onClick={(e) => handleSelectBot(bot, e)}
                   className={`chat-bot-item ${isSelected ? 'active' : ''}`}
                 >
                   {/* Profile Avatar + Small Overlapping Active Green Dot */}
@@ -602,7 +628,9 @@ const Chat = () => {
 
               {/* Chat Messages Workspace (Independently Scrollable via container ref) */}
               <div ref={messagesContainerRef} className="chat-messages">
-                {(chatMessages[activeBot.id] || []).map((msg) => (
+                {(chatMessages[activeBot.id] || [])
+                  .filter((msg) => msg.text && msg.text.trim().length > 0)
+                  .map((msg) => (
                   <div
                     key={msg.id}
                     style={{

@@ -1,4 +1,4 @@
-import api from './api';
+import api, { getBaseApiUrl } from './api';
 
 // Bot Persona Metadata for Nipix AI Characters
 export const BOT_PERSONAS = {
@@ -41,8 +41,8 @@ export const BOT_PERSONAS = {
 };
 
 /**
- * Send chat message to authoritative backend AI service (/api/ai/chat)
- * Real AI conversation with multi-turn context
+ * Send chat message to backend AI service (/api/ai/chat)
+ * Standard non-streaming request
  * @param {Object} payload - { botId, message, history }
  * @returns {Promise<Object>} Response object containing reply and provider info
  */
@@ -72,13 +72,12 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
 
     return {
       success: false,
-      reply: "I'm having trouble reaching the AI service right now. Please try again in a moment.",
+      reply: "Sorry, I couldn't reach the AI service right now. Please try again.",
       error: "Invalid response format"
     };
   } catch (error) {
     console.error('[Nipix AI Chat Client] Error contacting backend:', error.message);
 
-    // If backend provided a specific helpful message (e.g. key missing)
     if (error.response?.data?.reply) {
       return {
         success: false,
@@ -89,8 +88,120 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
 
     return {
       success: false,
-      reply: "I'm having trouble reaching the AI service right now. Please try again in a moment.",
+      reply: "Sorry, I couldn't reach the AI service right now. Please try again.",
       error: error.message
     };
+  }
+};
+
+/**
+ * Stream chat message from backend AI service (/api/ai/chat/stream)
+ * Server-Sent Events (SSE) streaming with chunk callback
+ * Falls back to standard POST if streaming is unsupported
+ * @param {Object} payload - { botId, message, history, onChunk }
+ * @returns {Promise<Object>} Final response object
+ */
+export const sendAiChatMessageStream = async ({ botId = 'bytebot_ai', message = '', history = [], onChunk }) => {
+  if (!message || !message.trim()) {
+    return {
+      success: false,
+      reply: "Please enter a message.",
+      error: "Empty message"
+    };
+  }
+
+  const baseUrl = getBaseApiUrl();
+  const streamUrl = `${baseUrl}/ai/chat/stream`;
+
+  try {
+    const token = localStorage.getItem('nipix_token');
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['x-auth-token'] = token;
+    }
+
+    const response = await fetch(streamUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        botId,
+        message: message.trim(),
+        history
+      })
+    });
+
+    if (!response.ok) {
+      // If stream endpoint failed, fallback to standard POST
+      return await sendAiChatMessage({ botId, message, history });
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let accumulatedText = '';
+    let buffer = '';
+    let streamDone = false;
+    let streamProvider = null;
+    let streamError = null;
+
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep partial line
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.replace(/^data:\s*/, '').trim();
+          if (jsonStr) {
+            try {
+              const data = JSON.parse(jsonStr);
+              if (data.chunk) {
+                accumulatedText += data.chunk;
+                if (typeof onChunk === 'function') {
+                  onChunk(accumulatedText);
+                }
+              }
+              if (data.done) {
+                streamDone = true;
+                streamProvider = data.provider;
+              }
+              if (data.error) {
+                streamError = data.error;
+              }
+            } catch (e) {
+              // Ignore partial JSON parse errors
+            }
+          }
+        }
+      }
+    }
+
+    if (streamError && !accumulatedText) {
+      return {
+        success: false,
+        reply: streamError,
+        error: streamError
+      };
+    }
+
+    if (accumulatedText) {
+      return {
+        success: true,
+        reply: accumulatedText,
+        provider: streamProvider
+      };
+    }
+
+    // Fallback if nothing was received from stream
+    return await sendAiChatMessage({ botId, message, history });
+
+  } catch (streamError) {
+    console.warn('[Nipix AI Chat Stream] Stream failed, falling back to standard POST:', streamError.message);
+    return await sendAiChatMessage({ botId, message, history });
   }
 };
