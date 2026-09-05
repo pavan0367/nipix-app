@@ -49,7 +49,7 @@ function getSystemPrompt(botId) {
 Behavior Guidelines:
 1. Understand the user's actual question and provide a direct, accurate, and useful answer to that exact question.
 2. Behave naturally like ChatGPT:
-   - For simple questions (e.g., "what is java", "what is a transistor", "solve 2x + 5 = 15", "tell me a joke"), give direct and clear answers without fluff.
+   - For simple questions (e.g., "what is java", "what is a transistor", "solve 2x + 5 = 15", "tell me a joke", "polymorphism"), give direct and clear answers without fluff.
    - For code requests (e.g., "give a code for a secret message as infinity i love you with emojis, each", "write a java program to reverse a string", "create a react login page"), provide working, clean code with syntax highlighting, followed by a concise explanation.
    - For math problems, show clear step-by-step working.
 3. NEVER use generic template filler such as "Regarding...", "Here is the direct breakdown...", "Core Concept...", "Practical Perspective...", "Next Steps...", or "Would you like me to...".
@@ -99,27 +99,26 @@ function checkAIProviderConfig() {
   const openrouterKey = (process.env.OPENROUTER_API_KEY || (preferred === 'openrouter' ? process.env.AI_API_KEY : '') || '').trim();
 
   // If user specified a preferred provider and its key exists
-  if (preferred === 'gemini' && geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey };
-  if (preferred === 'groq' && groqKey) return { provider: 'Groq', ready: true, key: groqKey };
-  if (preferred === 'openai' && openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey };
-  if (preferred === 'openrouter' && openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey };
+  if (preferred === 'gemini' && geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-1.5-flash' };
+  if (preferred === 'groq' && groqKey) return { provider: 'Groq', ready: true, key: groqKey, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' };
+  if (preferred === 'openai' && openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' };
+  if (preferred === 'openrouter' && openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct' };
 
   // Fallback auto-detection: whichever key is configured
-  if (geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey };
-  if (groqKey) return { provider: 'Groq', ready: true, key: groqKey };
-  if (openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey };
-  if (openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey };
+  if (geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey, model: process.env.GEMINI_MODEL || 'gemini-1.5-flash' };
+  if (groqKey) return { provider: 'Groq', ready: true, key: groqKey, model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile' };
+  if (openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' };
+  if (openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey, model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct' };
 
-  return { provider: 'None', ready: false, key: null };
+  return { provider: 'None', ready: false, key: null, model: null };
 }
 
 /**
  * Call Google Gemini Provider
  */
-async function callGemini(apiKey, botId, message, history) {
+async function callGemini(apiKey, model, botId, message, history) {
   const systemPrompt = getSystemPrompt(botId);
-  const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = [
     {
@@ -201,61 +200,87 @@ async function callOpenAICompatible(endpoint, apiKey, model, botId, message, his
 async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', history = [] }) {
   const config = checkAIProviderConfig();
 
+  // Useful Developer Logs (Section 2)
+  console.log('\n========================================');
+  console.log(`[Nipix AI Service] AI request received`);
+  console.log(`[Nipix AI Service] Selected bot: ${BOT_PROFILES[botId]?.name || botId} (${botId})`);
+  console.log(`[Nipix AI Service] Message: "${message}"`);
+  console.log(`[Nipix AI Service] Provider: ${config.provider}`);
+  console.log(`[Nipix AI Service] Model: ${config.model || 'N/A'}`);
+
   if (!config.ready) {
-    console.error('[Nipix AI Backend] No API key configured. Please set GEMINI_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY in nipix-backend/.env.');
+    console.error('[Nipix AI Service] ERROR: No AI API key is configured in nipix-backend/.env.');
+    console.error('[Nipix AI Service] Expected one of: GEMINI_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY.');
+    console.log('========================================\n');
     const err = new Error('NO_AI_KEY_CONFIGURED');
     err.code = 'CONFIG_MISSING';
     throw err;
   }
 
-  let reply = '';
-  if (config.provider === 'Gemini') {
-    reply = await callGemini(config.key, botId, message, history);
-  } else if (config.provider === 'Groq') {
-    reply = await callOpenAICompatible(
-      'https://api.groq.com/openai/v1/chat/completions',
-      config.key,
-      process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      botId,
-      message,
-      history
-    );
-  } else if (config.provider === 'OpenAI') {
-    reply = await callOpenAICompatible(
-      'https://api.openai.com/v1/chat/completions',
-      config.key,
-      process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      botId,
-      message,
-      history
-    );
-  } else if (config.provider === 'OpenRouter') {
-    reply = await callOpenAICompatible(
-      'https://openrouter.ai/api/v1/chat/completions',
-      config.key,
-      process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct',
-      botId,
-      message,
-      history,
-      { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
-    );
-  }
+  console.log(`[Nipix AI Service] Request sent to ${config.provider}...`);
 
-  return {
-    success: true,
-    botId,
-    reply: reply.trim(),
-    provider: config.provider
-  };
+  try {
+    let reply = '';
+    if (config.provider === 'Gemini') {
+      reply = await callGemini(config.key, config.model, botId, message, history);
+    } else if (config.provider === 'Groq') {
+      reply = await callOpenAICompatible(
+        'https://api.groq.com/openai/v1/chat/completions',
+        config.key,
+        config.model,
+        botId,
+        message,
+        history
+      );
+    } else if (config.provider === 'OpenAI') {
+      reply = await callOpenAICompatible(
+        'https://api.openai.com/v1/chat/completions',
+        config.key,
+        config.model,
+        botId,
+        message,
+        history
+      );
+    } else if (config.provider === 'OpenRouter') {
+      reply = await callOpenAICompatible(
+        'https://openrouter.ai/api/v1/chat/completions',
+        config.key,
+        config.model,
+        botId,
+        message,
+        history,
+        { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
+      );
+    }
+
+    console.log(`[Nipix AI Service] Response status: 200 OK`);
+    console.log(`[Nipix AI Service] Response received successfully (${reply.length} chars)`);
+    console.log('========================================\n');
+
+    return {
+      success: true,
+      botId,
+      reply: reply.trim(),
+      provider: config.provider
+    };
+  } catch (err) {
+    console.error(`[Nipix AI Service Exception] Provider ${config.provider} failed:`);
+    console.error(`[Nipix AI Service Exception] Status: ${err.response?.status || 'N/A'}`);
+    console.error(`[Nipix AI Service Exception] Message: ${err.message}`);
+    if (err.response?.data) {
+      console.error(`[Nipix AI Service Exception] Details:`, JSON.stringify(err.response.data, null, 2));
+    }
+    console.log('========================================\n');
+    throw err;
+  }
 }
 
 /**
  * Stream Gemini SSE
  */
-async function streamGemini(apiKey, botId, message, history, onChunk) {
+async function streamGemini(apiKey, model, botId, message, history, onChunk) {
   const systemPrompt = getSystemPrompt(botId);
-  const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:streamGenerateContent?alt=sse&key=${apiKey}`;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
   const contents = [
     {
@@ -397,51 +422,72 @@ async function streamOpenAICompatible(url, apiKey, model, botId, message, histor
 async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', history = [], onChunk }) {
   const config = checkAIProviderConfig();
 
+  console.log('\n========================================');
+  console.log(`[Nipix AI Stream] AI request received`);
+  console.log(`[Nipix AI Stream] Selected bot: ${BOT_PROFILES[botId]?.name || botId} (${botId})`);
+  console.log(`[Nipix AI Stream] Message: "${message}"`);
+  console.log(`[Nipix AI Stream] Provider: ${config.provider}`);
+  console.log(`[Nipix AI Stream] Model: ${config.model || 'N/A'}`);
+
   if (!config.ready) {
-    console.error('[Nipix AI Backend] No API key configured. Please set GEMINI_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY in nipix-backend/.env.');
+    console.error('[Nipix AI Stream] ERROR: No AI API key is configured in nipix-backend/.env.');
+    console.log('========================================\n');
     const err = new Error('NO_AI_KEY_CONFIGURED');
     err.code = 'CONFIG_MISSING';
     throw err;
   }
 
-  if (config.provider === 'Gemini') {
-    await streamGemini(config.key, botId, message, history, onChunk);
-  } else if (config.provider === 'Groq') {
-    await streamOpenAICompatible(
-      'https://api.groq.com/openai/v1/chat/completions',
-      config.key,
-      process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-      botId,
-      message,
-      history,
-      onChunk
-    );
-  } else if (config.provider === 'OpenAI') {
-    await streamOpenAICompatible(
-      'https://api.openai.com/v1/chat/completions',
-      config.key,
-      process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      botId,
-      message,
-      history,
-      onChunk
-    );
-  } else if (config.provider === 'OpenRouter') {
-    await streamOpenAICompatible(
-      'https://openrouter.ai/api/v1/chat/completions',
-      config.key,
-      process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct',
-      botId,
-      message,
-      history,
-      onChunk,
-      { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
-    );
-  }
+  console.log(`[Nipix AI Stream] Streaming request sent to ${config.provider}...`);
 
-  return {
-    provider: config.provider
-  };
+  try {
+    if (config.provider === 'Gemini') {
+      await streamGemini(config.key, config.model, botId, message, history, onChunk);
+    } else if (config.provider === 'Groq') {
+      await streamOpenAICompatible(
+        'https://api.groq.com/openai/v1/chat/completions',
+        config.key,
+        config.model,
+        botId,
+        message,
+        history,
+        onChunk
+      );
+    } else if (config.provider === 'OpenAI') {
+      await streamOpenAICompatible(
+        'https://api.openai.com/v1/chat/completions',
+        config.key,
+        config.model,
+        botId,
+        message,
+        history,
+        onChunk
+      );
+    } else if (config.provider === 'OpenRouter') {
+      await streamOpenAICompatible(
+        'https://openrouter.ai/api/v1/chat/completions',
+        config.key,
+        config.model,
+        botId,
+        message,
+        history,
+        onChunk,
+        { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
+      );
+    }
+
+    console.log(`[Nipix AI Stream] Stream completed successfully`);
+    console.log('========================================\n');
+
+    return {
+      provider: config.provider
+    };
+  } catch (err) {
+    console.error(`[Nipix AI Stream Exception] Provider ${config.provider} failed:`);
+    console.error(`[Nipix AI Stream Exception] Status: ${err.status || err.response?.status || 'N/A'}`);
+    console.error(`[Nipix AI Stream Exception] Message: ${err.message}`);
+    console.log('========================================\n');
+    throw err;
+  }
 }
 
 module.exports = {
