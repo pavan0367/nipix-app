@@ -316,364 +316,333 @@ const Chat = () => {
   });
 
   return (
-    <div className="page-theme-chat" style={{ minHeight: '100vh', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* ========================================================== */}
-      {/* 1. FULL-WIDTH SEARCH BAR & SMALL CUSTOM ICON ROW           */}
-      {/* ========================================================== */}
-      <div className="glass-card" style={{
-        maxWidth: '1060px',
-        margin: '0 auto 12px auto',
-        width: '100%',
-        padding: '10px 16px'
-      }}>
-        <div className="chat-full-search-row">
-          {/* Full-width Search Bar: [ 🔍 Search chats... ] */}
-          <div className="chat-search-container-full">
-            <Search size={16} className="chat-search-icon-full" />
-            <input
-              type="text"
-              placeholder="Search chats..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="chat-search-input-full"
+    <div className="page-theme-chat">
+      <div className="chat-messaging-grid">
+
+        {/* -------------------------------------------------------- */}
+        {/* LEFT PANEL: SEARCH BAR + 6 COMPACT CONVERSATION ROWS     */}
+        {/* -------------------------------------------------------- */}
+        <div className={`chat-bot-list-sidebar ${showMobileChat ? 'hidden-mobile' : ''}`}>
+          
+          {/* Panel-width Search Bar [ 🔍 Search chats... ] + Custom Secret Icon [★] */}
+          <div className="chat-panel-search-header">
+            <div className="chat-search-container-panel">
+              <Search size={15} className="chat-search-icon-panel" />
+              <input
+                type="text"
+                placeholder="Search chats..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="chat-search-input-panel"
+              />
+            </div>
+
+            {/* Small Secret Wand Icon [★]: Entry point to Hidden Chat */}
+            <SecretWandIcon
+              onClick={handleSecretWandClick}
+              title="Hidden Chat"
             />
           </div>
 
-          {/* Small Custom Secret Wand Icon [★]: Entry point to Hidden Chat */}
-          <SecretWandIcon
-            onClick={handleSecretWandClick}
-            title="Hidden Chat"
-          />
-        </div>
-      </div>
+          {/* 6 AI Bot Conversation Rows (Independently Scrollable) */}
+          <div className="chat-bot-scroll-list">
+            {filteredBots.map((bot) => {
+              const isSelected = activeBot?.id === bot.id && !isVaultView;
+              const lastMsg = (chatMessages[bot.id] || []).slice(-1)[0];
+              const previewText = lastMsg ? lastMsg.text : bot.previewText;
 
-      {/* ========================================================== */}
-      {/* 2. MESSAGING APP LAYOUT (6 BOTS LIST + ACTIVE CONVERSATION) */}
-      {/* ========================================================== */}
-      <div className="glass-card" style={{
-        maxWidth: '1060px',
-        margin: '0 auto',
-        width: '100%',
-        flex: 1,
-        borderRadius: 'var(--radius-md)',
-        overflow: 'hidden'
-      }}>
-        <div className="chat-messaging-grid">
-
-          {/* -------------------------------------------------------- */}
-          {/* LEFT PANEL: 6 COMPACT CONVERSATION ROWS                  */}
-          {/* -------------------------------------------------------- */}
-          <div className={`chat-bot-list-sidebar ${showMobileChat ? 'hidden-mobile' : ''}`}>
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid var(--border-color)',
-              background: 'var(--bg-card)'
-            }}>
-              <span style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--text-main)' }}>
-                Chats
-              </span>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              {filteredBots.map((bot) => {
-                const isSelected = activeBot?.id === bot.id && !isVaultView;
-                const lastMsg = (chatMessages[bot.id] || []).slice(-1)[0];
-                const previewText = lastMsg ? lastMsg.text : bot.previewText;
-
-                return (
-                  <div
-                    key={bot.id}
-                    onClick={() => handleSelectBot(bot)}
-                    className={`chat-bot-item ${isSelected ? 'active' : ''}`}
-                  >
-                    {/* Profile Photo + Overlapping Active Green Dot */}
-                    <div className="avatar-wrapper">
-                      <div className={`avatar-badge ${bot.badgeClass}`} style={{ width: '40px', height: '40px', fontSize: '1.15rem' }}>
-                        {bot.avatar}
-                      </div>
-                      <div className="active-dot-badge" />
-                    </div>
-
-                    {/* Bot Name & Message Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '2px' }}>
-                        {bot.name}
-                      </div>
-                      <div style={{
-                        fontSize: '0.78rem',
-                        color: 'var(--text-muted)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        {previewText} <span style={{ opacity: 0.6 }}>· {bot.ageText}</span>
-                      </div>
-                    </div>
-
-                    {/* Far Right Chat Timestamp */}
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', flexShrink: 0, alignSelf: 'flex-start', marginTop: '2px' }}>
-                      {bot.lastTime}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {filteredBots.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--text-dim)', fontSize: '0.84rem' }}>
-                  No conversations found.
-                </div>
-              )}
-            </div>
-
-            {/* Secret Vault Bottom Action Card */}
-            <div style={{
-              padding: '12px 14px',
-              borderTop: '1px solid var(--border-color)',
-              background: 'var(--bg-input)'
-            }}>
-              <button
-                type="button"
-                onClick={handleSecretWandClick}
-                className="btn-secondary"
-                style={{ width: '100%', fontSize: '0.78rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <Lock size={14} color="var(--accent-emerald)" />
-                <span>{currentUser ? (isVaultView ? 'Return to AI Bots' : 'Open Hidden Vault') : 'Hidden Chat Login'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* -------------------------------------------------------- */}
-          {/* RIGHT PANEL: SELECTED AI CONVERSATION VIEW               */}
-          {/* -------------------------------------------------------- */}
-          <div className={`chat-active-workspace ${!showMobileChat ? 'hidden-mobile' : ''}`}>
-            {isVaultView ? (
-              /* SECRET VAULT VIEW (AUTHENTICATED) */
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <div style={{
-                  padding: '12px 16px',
-                  borderBottom: '1px solid var(--border-color)',
-                  background: 'rgba(5, 150, 105, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  color: 'var(--text-main)',
-                  fontSize: '0.86rem'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-emerald)', fontWeight: '700' }}>
-                    <Shield size={16} />
-                    <span>SECRET VAULT CHANNEL UNLOCKED</span>
-                  </div>
-                  <button
-                    onClick={() => setIsVaultView(false)}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Back to AI Bots
-                  </button>
-                </div>
-
-                <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {vaultMessages.map((vMsg) => (
-                    <div
-                      key={vMsg.id}
-                      style={{
-                        padding: '12px 16px',
-                        borderRadius: 'var(--radius-md)',
-                        background: vMsg.isUser ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-input)',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '4px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: '700', fontSize: '0.84rem', color: 'var(--text-main)' }}>
-                          {vMsg.sender} <span style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginLeft: '4px' }}>[{vMsg.role}]</span>
-                        </span>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{vMsg.time}</span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
-                        {vMsg.text}
-                      </p>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                <form onSubmit={handleSendVaultMessage} style={{
-                  padding: '12px 16px',
-                  borderTop: '1px solid var(--border-color)',
-                  background: 'var(--bg-card)',
-                  display: 'flex',
-                  gap: '10px'
-                }}>
-                  <input
-                    type="text"
-                    placeholder="Broadcast encrypted transmission..."
-                    value={vaultInput}
-                    onChange={(e) => setVaultInput(e.target.value)}
-                    className="input-field"
-                    style={{ borderRadius: 'var(--radius-full)', padding: '10px 16px' }}
-                  />
-                  <button
-                    type="submit"
-                    className="btn-vault"
-                    style={{ borderRadius: 'var(--radius-full)', padding: '10px 18px', flexShrink: 0, fontSize: '0.84rem' }}
-                  >
-                    Send
-                  </button>
-                </form>
-              </div>
-            ) : activeBot ? (
-              /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                
-                {/* Conversation Header: ← [Avatar ●] Bot Name (Dot status only, NO "Online" text) */}
-                <div style={{
-                  padding: '10px 16px',
-                  borderBottom: '1px solid var(--border-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  background: 'var(--bg-card)'
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileChat(false)}
-                    className="btn-secondary"
-                    style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-                  >
-                    <ArrowLeft size={16} />
-                  </button>
-
+              return (
+                <div
+                  key={bot.id}
+                  onClick={() => handleSelectBot(bot)}
+                  className={`chat-bot-item ${isSelected ? 'active' : ''}`}
+                >
                   {/* Profile Photo + Overlapping Active Green Dot */}
                   <div className="avatar-wrapper">
-                    <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
-                      {activeBot.avatar}
+                    <div className={`avatar-badge ${bot.badgeClass}`} style={{ width: '40px', height: '40px', fontSize: '1.15rem' }}>
+                      {bot.avatar}
                     </div>
                     <div className="active-dot-badge" />
                   </div>
 
-                  <div>
-                    <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
-                      {activeBot.name}
-                    </h3>
-                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0 }}>
-                      {activeBot.specialty}
-                    </p>
+                  {/* Bot Name & Last Message Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)', marginBottom: '2px' }}>
+                      {bot.name}
+                    </div>
+                    <div style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {previewText} <span style={{ opacity: 0.6 }}>· {bot.ageText}</span>
+                    </div>
+                  </div>
+
+                  {/* Far Right Chat Timestamp */}
+                  <div className="bot-meta-right" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', flexShrink: 0, alignSelf: 'flex-start', marginTop: '2px' }}>
+                    {bot.lastTime}
                   </div>
                 </div>
+              );
+            })}
 
-                {/* Chat Messages Workspace */}
-                <div style={{ flex: 1, padding: '18px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {(chatMessages[activeBot.id] || []).map((msg) => (
-                    <div
-                      key={msg.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: msg.isUser ? 'flex-end' : 'flex-start',
-                        alignItems: 'flex-start',
-                        gap: '8px'
-                      }}
-                    >
-                      {!msg.isUser && (
-                        <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '30px', height: '30px', fontSize: '0.95rem' }}>
-                          {activeBot.avatar}
-                        </div>
-                      )}
-
-                      <div className={!msg.isUser ? 'chat-bubble-ai-msg' : ''} style={{
-                        maxWidth: '82%',
-                        padding: '10px 16px',
-                        borderRadius: msg.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                        background: msg.isUser ? 'var(--chat-bubble-user)' : 'var(--chat-bubble-ai)',
-                        color: msg.isUser ? '#ffffff' : 'var(--text-main)',
-                        border: msg.isUser ? 'none' : '1px solid var(--border-color)',
-                        fontSize: '0.88rem',
-                        lineHeight: '1.55',
-                        whiteSpace: 'pre-wrap',
-                        boxShadow: 'var(--shadow-sm)'
-                      }}>
-                        {msg.text}
-                        <div style={{
-                          fontSize: '0.68rem',
-                          textAlign: 'right',
-                          marginTop: '4px',
-                          opacity: 0.75,
-                          color: msg.isUser ? '#e0e7ff' : 'var(--text-dim)'
-                        }}>
-                          {msg.time}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* REAL-TIME AI TYPING ANIMATION */}
-                  {isTyping && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', paddingLeft: '38px' }}>
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <div className="typing-dot" />
-                        <div className="typing-dot" />
-                        <div className="typing-dot" />
-                      </div>
-                      <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{activeBot.name} is typing...</span>
-                    </div>
-                  )}
-
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* BOTTOM MESSAGE INPUT BAR: [ Ask Bot Name anything... ] [ Send ] */}
-                <form onSubmit={handleSendMessage} style={{
-                  padding: '12px 16px',
-                  borderTop: '1px solid var(--border-color)',
-                  background: 'var(--bg-card)',
-                  display: 'flex',
-                  gap: '10px',
-                  alignItems: 'flex-end'
-                }}>
-                  <textarea
-                    rows={1}
-                    placeholder={`Ask ${activeBot.name} anything...`}
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="input-field"
-                    style={{
-                      borderRadius: '18px',
-                      padding: '10px 16px',
-                      resize: 'none',
-                      maxHeight: '100px',
-                      fontSize: '0.88rem',
-                      lineHeight: '1.4'
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!userInput.trim() || isTyping}
-                    className="btn-primary"
-                    style={{
-                      borderRadius: 'var(--radius-full)',
-                      padding: '10px 18px',
-                      flexShrink: 0,
-                      opacity: (!userInput.trim() || isTyping) ? 0.5 : 1,
-                      cursor: (!userInput.trim() || isTyping) ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    <Send size={15} />
-                    <span>Send</span>
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
-                Select an AI bot to start chatting.
+            {filteredBots.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--text-dim)', fontSize: '0.84rem' }}>
+                No conversations found.
               </div>
             )}
           </div>
 
+          {/* Secret Vault Footer Action Button */}
+          <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-input)', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handleSecretWandClick}
+              className="btn-secondary"
+              style={{ width: '100%', fontSize: '0.78rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              <Lock size={14} color="var(--accent-emerald)" />
+              <span>{currentUser ? (isVaultView ? 'Return to AI Bots' : 'Open Hidden Vault') : 'Hidden Chat Login'}</span>
+            </button>
+          </div>
         </div>
+
+        {/* -------------------------------------------------------- */}
+        {/* RIGHT PANEL: SELECTED AI CONVERSATION VIEW               */}
+        {/* -------------------------------------------------------- */}
+        <div className={`chat-active-workspace ${!showMobileChat ? 'hidden-mobile' : ''}`}>
+          {isVaultView ? (
+            /* SECRET VAULT VIEW (AUTHENTICATED) */
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+              <div style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid var(--border-color)',
+                background: 'rgba(5, 150, 105, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                color: 'var(--text-main)',
+                fontSize: '0.86rem',
+                flexShrink: 0
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-emerald)', fontWeight: '700' }}>
+                  <Shield size={16} />
+                  <span>SECRET VAULT CHANNEL UNLOCKED</span>
+                </div>
+                <button
+                  onClick={() => setIsVaultView(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Back to AI Bots
+                </button>
+              </div>
+
+              <div style={{ flex: 1, minHeight: 0, padding: '18px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {vaultMessages.map((vMsg) => (
+                  <div
+                    key={vMsg.id}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: vMsg.isUser ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-input)',
+                      border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: '700', fontSize: '0.84rem', color: 'var(--text-main)' }}>
+                        {vMsg.sender} <span style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginLeft: '4px' }}>[{vMsg.role}]</span>
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{vMsg.time}</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
+                      {vMsg.text}
+                    </p>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <form onSubmit={handleSendVaultMessage} style={{
+                padding: '10px 16px',
+                borderTop: '1px solid var(--border-color)',
+                background: 'var(--bg-card)',
+                display: 'flex',
+                gap: '10px',
+                flexShrink: 0
+              }}>
+                <input
+                  type="text"
+                  placeholder="Broadcast encrypted transmission..."
+                  value={vaultInput}
+                  onChange={(e) => setVaultInput(e.target.value)}
+                  className="input-field"
+                  style={{ borderRadius: 'var(--radius-full)', padding: '10px 16px' }}
+                />
+                <button
+                  type="submit"
+                  className="btn-vault"
+                  style={{ borderRadius: 'var(--radius-full)', padding: '10px 18px', flexShrink: 0, fontSize: '0.84rem' }}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          ) : activeBot ? (
+            /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+              
+              {/* Conversation Header: ← [Avatar ●] Bot Name (Active status ONLY as small green dot) */}
+              <div style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                background: 'var(--bg-card)',
+                flexShrink: 0
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileChat(false)}
+                  className="btn-secondary"
+                  style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                >
+                  <ArrowLeft size={16} />
+                </button>
+
+                {/* Profile Photo + Overlapping Active Green Dot */}
+                <div className="avatar-wrapper">
+                  <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
+                    {activeBot.avatar}
+                  </div>
+                  <div className="active-dot-badge" />
+                </div>
+
+                <div>
+                  <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
+                    {activeBot.name}
+                  </h3>
+                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0 }}>
+                    {activeBot.specialty}
+                  </p>
+                </div>
+              </div>
+
+              {/* Chat Messages Thread Area (Independently Scrollable) */}
+              <div style={{ flex: 1, minHeight: 0, padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {(chatMessages[activeBot.id] || []).map((msg) => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: msg.isUser ? 'flex-end' : 'flex-start',
+                      alignItems: 'flex-start',
+                      gap: '8px'
+                    }}
+                  >
+                    {!msg.isUser && (
+                      <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '30px', height: '30px', fontSize: '0.95rem' }}>
+                        {activeBot.avatar}
+                      </div>
+                    )}
+
+                    <div className={!msg.isUser ? 'chat-bubble-ai-msg' : ''} style={{
+                      maxWidth: '82%',
+                      padding: '10px 16px',
+                      borderRadius: msg.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      background: msg.isUser ? 'var(--chat-bubble-user)' : 'var(--chat-bubble-ai)',
+                      color: msg.isUser ? '#ffffff' : 'var(--text-main)',
+                      border: msg.isUser ? 'none' : '1px solid var(--border-color)',
+                      fontSize: '0.88rem',
+                      lineHeight: '1.55',
+                      whiteSpace: 'pre-wrap',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      {msg.text}
+                      <div style={{
+                        fontSize: '0.68rem',
+                        textAlign: 'right',
+                        marginTop: '4px',
+                        opacity: 0.75,
+                        color: msg.isUser ? '#e0e7ff' : 'var(--text-dim)'
+                      }}>
+                        {msg.time}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* REAL-TIME AI TYPING ANIMATION */}
+                {isTyping && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', paddingLeft: '38px' }}>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <div className="typing-dot" />
+                      <div className="typing-dot" />
+                      <div className="typing-dot" />
+                    </div>
+                    <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{activeBot.name} is typing...</span>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* FIXED BOTTOM MESSAGE INPUT BAR: [ Ask Bot Name anything... ] [ Send ] */}
+              <form onSubmit={handleSendMessage} style={{
+                padding: '10px 16px',
+                borderTop: '1px solid var(--border-color)',
+                background: 'var(--bg-card)',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'flex-end',
+                flexShrink: 0
+              }}>
+                <textarea
+                  rows={1}
+                  placeholder={`Ask ${activeBot.name} anything...`}
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="input-field"
+                  style={{
+                    borderRadius: '18px',
+                    padding: '10px 16px',
+                    resize: 'none',
+                    maxHeight: '90px',
+                    fontSize: '0.88rem',
+                    lineHeight: '1.4'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!userInput.trim() || isTyping}
+                  className="btn-primary"
+                  style={{
+                    borderRadius: 'var(--radius-full)',
+                    padding: '10px 18px',
+                    flexShrink: 0,
+                    opacity: (!userInput.trim() || isTyping) ? 0.5 : 1,
+                    cursor: (!userInput.trim() || isTyping) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <Send size={15} />
+                  <span>Send</span>
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
+              Select an AI bot to start chatting.
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
