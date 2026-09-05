@@ -30,6 +30,7 @@ exports.chat = async (req, res) => {
       success: true,
       botId: result.botId,
       reply: result.reply,
+      message: result.reply,
       provider: result.provider
     });
   } catch (error) {
@@ -39,6 +40,7 @@ exports.chat = async (req, res) => {
     return res.status(500).json({
       success: false,
       reply: USER_FRIENDLY_ERROR,
+      message: USER_FRIENDLY_ERROR,
       error: 'AI_PROVIDER_ERROR'
     });
   }

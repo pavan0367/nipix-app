@@ -392,7 +392,7 @@ const Chat = () => {
         }
       });
 
-      const finalReply = response.reply;
+      const finalReply = response.reply || response.message;
 
       if (!finalReply || isErrorMessage(finalReply)) {
         throw new Error(finalReply || 'Connection failed');

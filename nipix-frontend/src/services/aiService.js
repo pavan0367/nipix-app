@@ -66,30 +66,34 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
       { timeout: 30000 }
     );
 
-    if (response.data && response.data.reply) {
-      return response.data;
-    }
+    const reply = response.data?.reply || response.data?.message;
+    console.log(`[Nipix AI Chat] POST /api/ai/chat Status: ${response.status}`);
 
-    return {
-      success: false,
-      reply: "I'm having trouble connecting right now. Please try again.",
-      error: "Invalid response format"
-    };
-  } catch (error) {
-    console.error('[Nipix AI Chat Client] Error contacting backend:', error.message);
-
-    if (error.response?.data?.reply) {
+    if (response.data && reply) {
       return {
-        success: false,
-        reply: error.response.data.reply,
-        error: error.response.data.error || error.message
+        ...response.data,
+        reply,
+        message: reply
       };
     }
 
     return {
       success: false,
       reply: "I'm having trouble connecting right now. Please try again.",
-      error: error.message
+      message: "I'm having trouble connecting right now. Please try again.",
+      error: "Invalid response format"
+    };
+  } catch (error) {
+    const status = error.response?.status || 'Network Error';
+    console.error(`[Nipix AI Chat] POST /api/ai/chat Status: ${status}`, error.response?.data || error.message);
+
+    const errReply = error.response?.data?.reply || error.response?.data?.message || "I'm having trouble connecting right now. Please try again.";
+
+    return {
+      success: false,
+      reply: errReply,
+      message: errReply,
+      error: error.response?.data?.error || error.message
     };
   }
 };
@@ -123,6 +127,7 @@ export const sendAiChatMessageStream = async ({ botId = 'bytebot_ai', message = 
       headers['x-auth-token'] = token;
     }
 
+    console.log(`[Nipix AI Stream] POST ${streamUrl}`);
     const response = await fetch(streamUrl, {
       method: 'POST',
       headers,
@@ -133,8 +138,10 @@ export const sendAiChatMessageStream = async ({ botId = 'bytebot_ai', message = 
       })
     });
 
+    console.log(`[Nipix AI Stream] Status: ${response.status}`);
+
     if (!response.ok) {
-      // If stream endpoint failed, fallback to standard POST
+      console.warn(`[Nipix AI Stream] Stream endpoint status ${response.status}, falling back to standard POST`);
       return await sendAiChatMessage({ botId, message, history });
     }
 
