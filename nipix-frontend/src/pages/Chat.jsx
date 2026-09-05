@@ -185,7 +185,9 @@ const Chat = () => {
   const [vaultMessages, setVaultMessages] = useState(HIDDEN_VAULT_MESSAGES);
   const [vaultInput, setVaultInput] = useState('');
 
-  const messagesEndRef = useRef(null);
+  // Container refs for isolated internal message scrolling (NEVER scrolls window/page)
+  const messagesContainerRef = useRef(null);
+  const vaultContainerRef = useRef(null);
 
   // Initialize messages state for all 6 bots
   useEffect(() => {
@@ -223,11 +225,20 @@ const Chat = () => {
     }
   }, [requestedHiddenView, currentUser]);
 
+  // Scroll ONLY the internal messages container to the bottom (NEVER scrolls window or document)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, isTyping, vaultMessages, activeBot, isVaultView, showMobileChat]);
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages, isTyping, activeBot]);
 
-  // Select an AI Bot (No login required)
+  useEffect(() => {
+    if (vaultContainerRef.current) {
+      vaultContainerRef.current.scrollTop = vaultContainerRef.current.scrollHeight;
+    }
+  }, [vaultMessages, isVaultView]);
+
+  // Select an AI Bot (No login required, does NOT scroll the browser page)
   const handleSelectBot = (bot) => {
     setIsVaultView(false);
     setActiveBot(bot);
@@ -466,7 +477,7 @@ const Chat = () => {
                 </button>
               </div>
 
-              <div style={{ flex: 1, minHeight: 0, padding: '18px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div ref={vaultContainerRef} className="chat-messages" style={{ flex: 1, minHeight: 0, padding: '18px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {vaultMessages.map((vMsg) => (
                   <div
                     key={vMsg.id}
@@ -491,7 +502,6 @@ const Chat = () => {
                     </p>
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
               </div>
 
               <form onSubmit={handleSendVaultMessage} style={{
@@ -560,8 +570,8 @@ const Chat = () => {
                 </div>
               </div>
 
-              {/* Chat Messages Workspace (Independently Scrollable) */}
-              <div style={{ flex: 1, minHeight: 0, padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Chat Messages Workspace (Independently Scrollable via container ref) */}
+              <div ref={messagesContainerRef} className="chat-messages" style={{ flex: 1, minHeight: 0, padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {(chatMessages[activeBot.id] || []).map((msg) => (
                   <div
                     key={msg.id}
@@ -615,8 +625,6 @@ const Chat = () => {
                     <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{activeBot.name} is typing...</span>
                   </div>
                 )}
-
-                <div ref={messagesEndRef} />
               </div>
 
               {/* FIXED BOTTOM COMPOSER: [ 😊 Ask Bot Name anything... 📎 ➤ ] */}

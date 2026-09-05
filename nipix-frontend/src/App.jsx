@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
 import { logout } from './store/slices/authSlice';
@@ -15,7 +15,10 @@ axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000
 function AppContent() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, token } = useSelector((state) => state.auth);
+
+  const isChatRoute = location.pathname.startsWith('/chat') || location.pathname === '/hidden-chat';
 
   useEffect(() => {
     if (token) {
@@ -39,8 +42,19 @@ function AppContent() {
           {/* Persistent Academic Sidebar */}
           <Sidebar currentUser={user} onLogout={handleLogout} />
 
-          {/* Main App Workspace */}
-          <main className="main-content" style={{ flex: 1, minHeight: 'calc(100vh - 65px)', width: '100%' }}>
+          {/* Main App Workspace (Strictly isolated on Chat route to prevent page scroll) */}
+          <main
+            className={`main-content ${isChatRoute ? 'main-content-chat' : ''}`}
+            style={{
+              flex: 1,
+              width: '100%',
+              minHeight: isChatRoute ? 0 : 'calc(100vh - 65px)',
+              height: isChatRoute ? 'calc(100vh - 65px)' : 'auto',
+              maxHeight: isChatRoute ? 'calc(100vh - 65px)' : 'none',
+              overflow: isChatRoute ? 'hidden' : 'visible',
+              paddingBottom: isChatRoute ? 0 : undefined
+            }}
+          >
             <AppRoutes />
           </main>
         </div>

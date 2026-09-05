@@ -475,15 +475,24 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
   filter: invert(1) hue-rotate(180deg);
 }
 
-/* Fixed-Height Messaging App Layout */
+/* Fixed-Height Messaging App Layout & Zero-Page-Scroll Isolation */
+.main-content.main-content-chat {
+  padding-bottom: 0 !important;
+  height: calc(100vh - 65px) !important;
+  max-height: calc(100vh - 65px) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
 .page-theme-chat {
   background-color: var(--bg-primary);
-  height: calc(100vh - 65px);
-  max-height: calc(100vh - 65px);
+  height: 100%;
+  max-height: 100%;
   padding: 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .chat-messaging-grid {
@@ -492,6 +501,7 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
   flex: 1;
   min-height: 0;
   height: 100%;
+  max-height: 100%;
   overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -504,6 +514,7 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  max-height: 100%;
   background: var(--bg-card);
   overflow: hidden;
 }
@@ -521,8 +532,15 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  max-height: 100%;
   background: var(--bg-card);
   overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Compact Conversation Row */
