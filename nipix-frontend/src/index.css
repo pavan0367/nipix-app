@@ -139,6 +139,7 @@ code, pre {
   letter-spacing: -0.5px;
   background: var(--scholar-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   text-decoration: none;
   display: inline-flex;
@@ -366,45 +367,59 @@ code, pre {
 /* ========================================================== */
 /* CHAT SEARCH BAR & SECRET WAND ACTION ICON                  */
 /* ========================================================== */
+/* ========================================================== */
+/* CHAT COMPACT SEARCH BAR & SECRET WAND ACTION ICON          */
+/* ========================================================== */
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .chat-search-container {
   display: flex;
   align-items: center;
   position: relative;
-  width: 280px;
-  transition: width 0.3s ease;
+  width: 220px;
+  max-width: 240px;
+  transition: all 0.25s ease;
+}
+
+.chat-search-container:focus-within {
+  width: 250px;
 }
 
 .chat-search-input {
   width: 100%;
-  padding: 8px 14px 8px 36px;
+  padding: 8px 14px 8px 34px;
   border-radius: var(--radius-full);
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   color: var(--text-main);
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   outline: none;
   transition: all 0.25s ease;
 }
 
 .chat-search-input:focus {
   border-color: var(--accent-indigo);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   background: var(--bg-card);
 }
 
 .chat-search-icon {
   position: absolute;
-  left: 12px;
+  left: 11px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-dim);
   pointer-events: none;
 }
 
-/* Secret Wand Icon Button */
+/* Secret Wand Icon Button (Custom Icon) */
 .secret-wand-btn {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
@@ -412,7 +427,7 @@ code, pre {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
@@ -421,13 +436,13 @@ code, pre {
 .secret-wand-btn:hover {
   transform: scale(1.08) rotate(6deg);
   border-color: var(--accent-purple);
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.35);
   background: var(--bg-card);
 }
 
 .secret-wand-img {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
   transition: filter 0.2s ease;
 }
@@ -435,6 +450,60 @@ code, pre {
 /* In light mode, invert or blend the black icon background */
 html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand-img {
   filter: invert(1) hue-rotate(180deg);
+}
+
+/* Instagram-Inspired Messaging App Grid */
+.chat-messaging-grid {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  height: calc(100vh - 170px);
+  min-height: 540px;
+}
+
+.chat-bot-list-sidebar {
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  overflow-y: auto;
+}
+
+.chat-active-workspace {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.chat-bot-item {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s ease;
+}
+
+.chat-bot-item:hover {
+  background: var(--bg-hover);
+}
+
+.chat-bot-item.active {
+  background: rgba(99, 102, 241, 0.08);
+  border-left: 3px solid var(--accent-indigo);
+}
+
+@media (max-width: 768px) {
+  .chat-messaging-grid {
+    grid-template-columns: 1fr;
+  }
+  .chat-bot-list-sidebar.hidden-mobile {
+    display: none;
+  }
+  .chat-active-workspace.hidden-mobile {
+    display: none;
+  }
 }
 
 /* ========================================================== */
@@ -531,6 +600,93 @@ html[data-theme="light"] .page-theme-chat, body[data-theme="light"] .page-theme-
     margin-left: 0;
   }
   .chat-search-container {
-    width: 170px;
+    width: 160px;
   }
 }
+
+/* ========================================================== */
+/* THEME CONTROL DROPDOWN & SEGMENTED CONTROLS                */
+/* ========================================================== */
+.theme-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 3px;
+}
+
+.theme-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-segmented-btn:hover {
+  color: var(--text-main);
+}
+
+.theme-segmented-btn.active {
+  background: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="light"] .theme-segmented-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+/* ========================================================== */
+/* TYPING ANIMATION & BOT CHAT BUBBLES                         */
+/* ========================================================== */
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* Theme Adaptive Chat Bubbles Contrast Guarantee */
+html[data-theme="light"] .chat-bubble-ai-msg {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .chat-bubble-ai-msg {
+  background: #1f2334 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Bot Card Interactive Hover */
+.ai-bot-card {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-bot-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+

@@ -68,15 +68,39 @@ const Navbar = ({ currentUser }) => {
 
       {/* Right Controls: THEME TOGGLE & PROMINENT CHAT BUTTON in TOP-RIGHT CORNER */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Quick Theme Toggle Button */}
-        <button
-          onClick={handleCycleTheme}
-          className="theme-toggle-btn"
-          aria-label="Toggle theme (Light, Dark, System)"
-          title={`Current: ${themeMode} mode (Click to cycle)`}
-        >
-          {getThemeIcon()}
-        </button>
+        {/* 3-Option Theme Control (Light, Dark, Device) */}
+        <div className="theme-segmented-control" title="Choose appearance theme">
+          <button
+            type="button"
+            onClick={() => changeTheme('light')}
+            className={`theme-segmented-btn ${themeMode === 'light' ? 'active' : ''}`}
+            aria-label="Light Mode"
+            title="Light Mode"
+          >
+            <Sun size={14} />
+            <span className="theme-btn-text">Light</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => changeTheme('dark')}
+            className={`theme-segmented-btn ${themeMode === 'dark' ? 'active' : ''}`}
+            aria-label="Dark Mode"
+            title="Dark Mode"
+          >
+            <Moon size={14} />
+            <span className="theme-btn-text">Dark</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => changeTheme('system')}
+            className={`theme-segmented-btn ${themeMode === 'system' ? 'active' : ''}`}
+            aria-label="Device Theme"
+            title="Same as Device"
+          >
+            <Laptop size={14} />
+            <span className="theme-btn-text">Device</span>
+          </button>
+        </div>
 
         {/* Prominent Chat Option */}
         <Link to="/chat" className="top-chat-btn" title="Open AI & Secret Chat">

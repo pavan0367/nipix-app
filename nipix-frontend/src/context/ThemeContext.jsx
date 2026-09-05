@@ -29,6 +29,8 @@ export const ThemeProvider = ({ children }) => {
       // Apply theme to both html (documentElement) and body for 100% CSS coverage
       document.documentElement.setAttribute('data-theme', resolvedTheme);
       document.body.setAttribute('data-theme', resolvedTheme);
+      document.documentElement.setAttribute('data-theme-mode', themeMode);
+      document.body.setAttribute('data-theme-mode', themeMode);
       document.documentElement.className = `theme-${resolvedTheme}`;
       document.body.className = `theme-${resolvedTheme}`;
     };
@@ -41,6 +43,8 @@ export const ThemeProvider = ({ children }) => {
         setActiveTheme(newTheme);
         document.documentElement.setAttribute('data-theme', newTheme);
         document.body.setAttribute('data-theme', newTheme);
+        document.documentElement.setAttribute('data-theme-mode', 'system');
+        document.body.setAttribute('data-theme-mode', 'system');
         document.documentElement.className = `theme-${newTheme}`;
         document.body.className = `theme-${newTheme}`;
       }
