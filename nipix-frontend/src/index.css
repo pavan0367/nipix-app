@@ -581,24 +581,70 @@ html[data-theme="light"] .secret-wand-img, body[data-theme="light"] .secret-wand
 /* SUBTLE PAGE-SPECIFIC BACKGROUNDS (THEME ADAPTIVE)          */
 /* ========================================================== */
 
-.page-theme-chat {
+/* ========================================================== */
+/* PLATFORM-WIDE THEME-ADAPTIVE PAGE BACKGROUNDS              */
+/* ========================================================== */
+
+.page-theme-chat,
+.page-theme-home,
+.page-theme-study,
+.page-theme-news,
+.page-theme-explore,
+.page-theme-youtube,
+.page-theme-saved,
+.page-theme-profile,
+.page-theme-settings {
   background-color: var(--bg-primary);
   min-height: 100vh;
 }
 
-html[data-theme="dark"] .page-theme-chat, body[data-theme="dark"] .page-theme-chat {
+html[data-theme="dark"] .page-theme-chat,
+html[data-theme="dark"] .page-theme-home,
+html[data-theme="dark"] .page-theme-study,
+html[data-theme="dark"] .page-theme-news,
+html[data-theme="dark"] .page-theme-explore,
+html[data-theme="dark"] .page-theme-youtube,
+html[data-theme="dark"] .page-theme-saved,
+html[data-theme="dark"] .page-theme-profile,
+html[data-theme="dark"] .page-theme-settings,
+body[data-theme="dark"] .page-theme-chat,
+body[data-theme="dark"] .page-theme-home,
+body[data-theme="dark"] .page-theme-study,
+body[data-theme="dark"] .page-theme-news,
+body[data-theme="dark"] .page-theme-explore,
+body[data-theme="dark"] .page-theme-youtube,
+body[data-theme="dark"] .page-theme-saved,
+body[data-theme="dark"] .page-theme-profile,
+body[data-theme="dark"] .page-theme-settings {
   background-image: 
-    radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
-    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.09) 0%, transparent 45%),
+    radial-gradient(circle at 15% 85%, rgba(139, 92, 246, 0.07) 0%, transparent 50%),
+    radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 32px 32px;
 }
 
-html[data-theme="light"] .page-theme-chat, body[data-theme="light"] .page-theme-chat {
+html[data-theme="light"] .page-theme-chat,
+html[data-theme="light"] .page-theme-home,
+html[data-theme="light"] .page-theme-study,
+html[data-theme="light"] .page-theme-news,
+html[data-theme="light"] .page-theme-explore,
+html[data-theme="light"] .page-theme-youtube,
+html[data-theme="light"] .page-theme-saved,
+html[data-theme="light"] .page-theme-profile,
+html[data-theme="light"] .page-theme-settings,
+body[data-theme="light"] .page-theme-chat,
+body[data-theme="light"] .page-theme-home,
+body[data-theme="light"] .page-theme-study,
+body[data-theme="light"] .page-theme-news,
+body[data-theme="light"] .page-theme-explore,
+body[data-theme="light"] .page-theme-youtube,
+body[data-theme="light"] .page-theme-saved,
+body[data-theme="light"] .page-theme-profile,
+body[data-theme="light"] .page-theme-settings {
   background-image: 
-    radial-gradient(circle at 80% 20%, rgba(79, 70, 229, 0.04) 0%, transparent 45%),
-    radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.03) 0%, transparent 50%),
-    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    radial-gradient(circle at 85% 15%, rgba(79, 70, 229, 0.04) 0%, transparent 45%),
+    radial-gradient(circle at 15% 85%, rgba(124, 58, 237, 0.03) 0%, transparent 50%),
+    radial-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 32px 32px;
 }
 
