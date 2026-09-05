@@ -2,9 +2,10 @@ require('dotenv').config();
 const readline = require('readline');
 const { checkAIProviderConfig, generateRealAIResponse, BOT_PROFILES } = require('./src/services/llmService');
 
-async function askQuestion(botId, question) {
+async function askQuestion(botId, question, history = []) {
+  const botName = BOT_PROFILES[botId]?.name || botId;
   console.log(`\n========================================`);
-  console.log(`[Query] Bot: ${BOT_PROFILES[botId]?.name || botId} (${botId})`);
+  console.log(`[Query] Bot: ${botName} (${botId})`);
   console.log(`[Query] Question: "${question}"`);
   console.log(`========================================`);
 
@@ -13,53 +14,53 @@ async function askQuestion(botId, question) {
     const res = await generateRealAIResponse({
       botId,
       message: question,
-      history: []
+      history
     });
     const elapsed = Date.now() - startTime;
-    console.log(`\n✅ ANSWER (${elapsed}ms) [Provider: ${res.provider}]:`);
+    console.log(`\n✅ ${botName} (${elapsed}ms) [Provider: ${res.provider}]:`);
     console.log('----------------------------------------------------');
     console.log(res.reply);
     console.log('----------------------------------------------------\n');
-    return true;
+    return res.reply;
   } catch (err) {
-    console.error(`\n❌ FAILED on "${question}":`, err.message);
+    console.error(`\n❌ Request Failed:`, err.message);
     if (err.response?.data) {
       console.error('Details:', JSON.stringify(err.response.data, null, 2));
     }
-    return false;
+    return null;
   }
 }
 
-async function testBackendAI() {
-  console.log('========================================');
-  console.log('🧪 NIPIX AI - ALL-KIND QUESTION RUNNER');
-  console.log('========================================');
+async function startInteractiveCLI() {
+  console.log('========================================================');
+  console.log('💬 NIPIX AI - LIVE INTERACTIVE ASSISTANT');
+  console.log('   Ask ANY question on any topic to any bot.');
+  console.log('========================================================');
 
   const config = checkAIProviderConfig();
   console.log(`Configured Provider: ${config.provider}`);
-  console.log(`Configured Model:    ${config.model || 'None'}`);
-  console.log(`Has Key:             ${config.ready ? 'YES (Key detected)' : 'NO (Key is missing)'}`);
+  console.log(`Configured Model:    ${config.model || 'Default'}`);
+  console.log(`Status:              ${config.ready ? 'Ready (Connected)' : 'Not Configured'}`);
 
   if (!config.ready) {
-    console.log('\n❌ FAILED: No AI API key is configured.');
+    console.log('\n❌ No AI API key is configured.');
     console.log('Please configure your API key in nipix-backend/.env:');
     console.log('  GEMINI_API_KEY=your_gemini_key_here');
     console.log('  GROQ_API_KEY=your_groq_key_here');
-    console.log('  OPENAI_API_KEY=your_openai_key_here');
-    console.log('========================================\n');
+    console.log('  OPENAI_API_KEY=your_openai_key_here\n');
     process.exit(1);
   }
 
-  // Parse command line arguments to accept ANY user question on the fly
+  // Parse command line arguments if user passed a question directly
   const args = process.argv.slice(2);
   let customQuestion = null;
   let selectedBot = 'bytebot_ai';
 
   if (args.length > 0) {
-    const botArg = args.find(a => a.startsWith('--bot='));
+    const botArg = args.find((a) => a.startsWith('--bot='));
     if (botArg) {
       selectedBot = botArg.split('=')[1];
-      const remaining = args.filter(a => !a.startsWith('--bot='));
+      const remaining = args.filter((a) => !a.startsWith('--bot='));
       customQuestion = remaining.join(' ');
     } else if (BOT_PROFILES[args[0]]) {
       selectedBot = args[0];
@@ -69,51 +70,73 @@ async function testBackendAI() {
     }
   }
 
-  // 1. If user passed a question via CLI: answer it directly
+  // If user passed a single question via CLI: answer it directly
   if (customQuestion && customQuestion.trim()) {
     await askQuestion(selectedBot, customQuestion.trim());
     return;
   }
 
-  // 2. Default: Multi-category demonstration answering all/any kinds of questions
-  const allKindDemoQuestions = [
-    {
-      category: 'General Knowledge / Astronomy',
-      bot: 'bytebot_ai',
-      question: 'What is the average distance between Earth and the Moon, and why does it vary?'
-    },
-    {
-      category: 'Mathematics & Logic',
-      bot: 'bytebot_ai',
-      question: 'Solve this step by step: If 3x + 15 = 45, what is the value of x?'
-    },
-    {
-      category: 'Creative / Everyday Life',
-      bot: 'bytebot_ai',
-      question: 'Give 3 quick, healthy breakfast ideas that can be prepared in under 5 minutes.'
-    },
-    {
-      category: 'Programming & Algorithms',
-      bot: 'bytebot_ai',
-      question: 'Write a Python function to check if a string is a palindrome, with test examples.'
-    }
-  ];
+  // Interactive Live Chat REPL
+  console.log(`\nActive Bot: ${BOT_PROFILES[selectedBot]?.name || selectedBot}`);
+  console.log(`Available Bots: ${Object.keys(BOT_PROFILES).join(', ')}`);
+  console.log(`\nCommands:`);
+  console.log(`  /bot <name>  -> Switch active bot (e.g. /bot spark_x)`);
+  console.log(`  /clear       -> Clear conversation history`);
+  console.log(`  exit         -> Quit`);
+  console.log('--------------------------------------------------------\n');
 
-  console.log(`\n📋 Testing all/any kind questions across diverse categories...`);
-  console.log(`💡 Tip: You can test ANY custom question by running:`);
-  console.log(`   node test-ai.js "your question here"`);
-  console.log(`   node test-ai.js --bot=cipher_09 "your question here"\n`);
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
 
-  for (const item of allKindDemoQuestions) {
-    console.log(`\n[Category: ${item.category}]`);
-    const success = await askQuestion(item.bot, item.question);
-    if (!success) {
-      process.exit(1);
-    }
-  }
+  const sessionHistory = [];
 
-  console.log('🎉 ALL QUESTION CATEGORIES ANSWERED SUCCESSFULLY!');
-  console.log('========================================\n');
+  const promptUser = () => {
+    rl.question(`You (${selectedBot}) > `, async (input) => {
+      const trimmed = input.trim();
+      if (!trimmed) {
+        promptUser();
+        return;
+      }
+
+      if (trimmed.toLowerCase() === 'exit' || trimmed.toLowerCase() === 'quit') {
+        console.log('\nGoodbye! 👋\n');
+        rl.close();
+        process.exit(0);
+      }
+
+      if (trimmed.toLowerCase().startsWith('/bot ')) {
+        const newBot = trimmed.slice(5).trim().toLowerCase();
+        if (BOT_PROFILES[newBot]) {
+          selectedBot = newBot;
+          sessionHistory.length = 0; // Fresh context for new bot
+          console.log(`\nSwitched active bot to: ${BOT_PROFILES[newBot].name} (${newBot})\n`);
+        } else {
+          console.log(`\nUnknown bot "${newBot}". Available bots: ${Object.keys(BOT_PROFILES).join(', ')}\n`);
+        }
+        promptUser();
+        return;
+      }
+
+      if (trimmed.toLowerCase() === '/clear') {
+        sessionHistory.length = 0;
+        console.log('\nConversation history cleared.\n');
+        promptUser();
+        return;
+      }
+
+      const reply = await askQuestion(selectedBot, trimmed, sessionHistory);
+      if (reply) {
+        sessionHistory.push({ isUser: true, text: trimmed });
+        sessionHistory.push({ isUser: false, text: reply });
+      }
+
+      promptUser();
+    });
+  };
+
+  promptUser();
 }
 
-testBackendAI();
+startInteractiveCLI();

@@ -38,7 +38,7 @@ const AI_BOTS = [
     badgeClass: 'badge-bytebot',
     accentColor: '#3b82f6',
     specialty: 'Programming, Software Engineering & Code Intelligence',
-    previewText: 'Hello developer! Ask me any programming question.',
+    previewText: 'Hello developer! Ask me any question—coding, tech, or anything you need.',
     ageText: 'Just now',
     lastTime: '08:42 AM',
     initialMessages: [
@@ -46,7 +46,7 @@ const AI_BOTS = [
         id: 'b-1',
         sender: 'ByteBot AI',
         isUser: false,
-        text: 'Hello developer! 👋 I am ByteBot AI, your software engineering assistant. Ask me questions in Python, JavaScript, Java, C++, React, Spring Boot, or data structures & algorithms.',
+        text: 'Hello developer! 👋 I am ByteBot AI, your programming and software engineering assistant. Feel free to ask me anything—whether it is code in Python, Java, React, debugging, algorithms, or any other topic you have in mind!',
         time: '08:42 AM'
       }
     ]
@@ -59,7 +59,7 @@ const AI_BOTS = [
     badgeClass: 'badge-cipher',
     accentColor: '#8b5cf6',
     specialty: 'Research, Cryptography, Security & Logic',
-    previewText: 'Greetings, seeker of secrets. Ask me any research question!',
+    previewText: 'Greetings! Ask me any research, security, or general question.',
     ageText: '12 min ago',
     lastTime: '03:14 AM',
     initialMessages: [
@@ -67,7 +67,7 @@ const AI_BOTS = [
         id: 'c-1',
         sender: 'Cipher_09',
         isUser: false,
-        text: 'Greetings, seeker of secrets. I specialize in cryptography, cybersecurity, networks, and logical reasoning. Ask me any research or security question!',
+        text: 'Greetings! I am Cipher_09, your research and security assistant. You can ask me any question—from cryptography, cybersecurity, and logic to any general knowledge or inquiry!',
         time: '03:14 AM'
       }
     ]
@@ -80,7 +80,7 @@ const AI_BOTS = [
     badgeClass: 'badge-spark',
     accentColor: '#f59e0b',
     specialty: 'Electrical Engineering, Electronics, Circuits & Physics',
-    previewText: 'Frequency locked! Ask me any science or engineering question!',
+    previewText: 'Frequency locked! Ask me any engineering, science, or general question!',
     ageText: '25 min ago',
     lastTime: '10:15 AM',
     initialMessages: [
@@ -88,7 +88,7 @@ const AI_BOTS = [
         id: 's-1',
         sender: 'Spark_X',
         isUser: false,
-        text: 'Frequency locked! I am Spark_X, dedicated to electrical engineering, physics, and circuit theory. Ask me any engineering or physical science question!',
+        text: 'Frequency locked! I am Spark_X, your engineering and physical sciences assistant. Ask me anything—from circuit theory and physics to math, coding, or any question you have!',
         time: '10:15 AM'
       }
     ]
@@ -101,7 +101,7 @@ const AI_BOTS = [
     badgeClass: 'badge-mentor',
     accentColor: '#10b981',
     specialty: 'Study Materials, History, Literature & General Knowledge',
-    previewText: 'Welcome scholar. What topic shall we explore today?',
+    previewText: 'Welcome scholar. What question or topic shall we explore today?',
     ageText: '1 hr ago',
     lastTime: '11:30 AM',
     initialMessages: [
@@ -109,7 +109,7 @@ const AI_BOTS = [
         id: 'a-1',
         sender: 'Archivist',
         isUser: false,
-        text: 'Welcome scholar. I catalog literature, history, research synthesis, academic study materials, and general knowledge. What topic shall we explore today?',
+        text: 'Welcome scholar. I am Archivist, your research and study assistant. Ask me anything you want to learn about—literature, history, study materials, or any other subject!',
         time: '11:30 AM'
       }
     ]
@@ -122,7 +122,7 @@ const AI_BOTS = [
     badgeClass: 'badge-cipher',
     accentColor: '#ec4899',
     specialty: 'General Learning, Educational Guidance & Logical Reasoning',
-    previewText: 'Greetings! Ask me any general education or knowledge question!',
+    previewText: 'Greetings! Ask me any math, science, or general knowledge question!',
     ageText: '15 min ago',
     lastTime: '01:05 PM',
     initialMessages: [
@@ -130,7 +130,7 @@ const AI_BOTS = [
         id: 'n-1',
         sender: 'NovaMind',
         isUser: false,
-        text: 'Greetings! I am NovaMind, your general AI and learning companion. Ask me any general education, conceptual, or knowledge question!',
+        text: 'Greetings! I am NovaMind, your versatile learning and reasoning companion. Feel free to ask me any question across math, science, general education, or any topic!',
         time: '01:05 PM'
       }
     ]
@@ -143,7 +143,7 @@ const AI_BOTS = [
     badgeClass: 'badge-spark',
     accentColor: '#06b6d4',
     specialty: 'Science, Innovation, Emerging Tech & Future Engineering',
-    previewText: 'Hello visionary! What idea shall we explore?',
+    previewText: 'Hello visionary! Ask me any question about tech, science, or ideas!',
     ageText: '5 min ago',
     lastTime: '02:20 PM',
     initialMessages: [
@@ -151,7 +151,7 @@ const AI_BOTS = [
         id: 'ae-1',
         sender: 'Aether',
         isUser: false,
-        text: 'Hello visionary! I am Aether, dedicated to science, innovation, and emerging technologies. What idea shall we explore?',
+        text: 'Hello visionary! I am Aether, your innovation and future technology assistant. Ask me any question—from emerging tech and creative problem-solving to any topic you are curious about!',
         time: '02:20 PM'
       }
     ]
@@ -199,8 +199,9 @@ const Chat = () => {
       localStorage.removeItem('nipix_scholar_chat_history_v2');
       localStorage.removeItem('nipix_chat_messages_v3');
       localStorage.removeItem('nipix_chat_messages_v4');
+      localStorage.removeItem('nipix_chat_messages_v5');
 
-      const saved = localStorage.getItem('nipix_chat_messages_v5');
+      const saved = localStorage.getItem('nipix_chat_messages_v6');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -247,7 +248,7 @@ const Chat = () => {
   useEffect(() => {
     try {
       if (chatMessages && Object.keys(chatMessages).length > 0) {
-        localStorage.setItem('nipix_chat_messages_v5', JSON.stringify(chatMessages));
+        localStorage.setItem('nipix_chat_messages_v6', JSON.stringify(chatMessages));
       }
     } catch (err) {
       console.warn('Could not persist chat messages to localStorage:', err);
