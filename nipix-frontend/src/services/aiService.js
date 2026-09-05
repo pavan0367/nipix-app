@@ -43,10 +43,10 @@ export const BOT_PERSONAS = {
 /**
  * Send chat message to backend AI service (/api/ai/chat)
  * Standard non-streaming request
- * @param {Object} payload - { botId, message, history }
+ * @param {Object} payload - { botId, message, history, signal, requestId }
  * @returns {Promise<Object>} Response object containing reply and provider info
  */
-export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', history = [] }) => {
+export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', history = [], signal, requestId }) => {
   if (!message || !message.trim()) {
     return {
       success: false,
@@ -55,15 +55,18 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
     };
   }
 
+  const finalRequestId = requestId || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
+
   try {
     const response = await api.post(
       '/ai/chat',
       {
         botId,
         message: message.trim(),
-        history
+        history,
+        requestId: finalRequestId
       },
-      { timeout: 30000 }
+      { timeout: 30000, signal }
     );
 
     const reply = response.data?.reply || response.data?.message;
@@ -79,15 +82,24 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
 
     return {
       success: false,
-      reply: "I'm having trouble connecting right now. Please try again.",
-      message: "I'm having trouble connecting right now. Please try again.",
+      reply: "I couldn't connect to the AI service right now. Please try again.",
+      message: "I couldn't connect to the AI service right now. Please try again.",
       error: "Invalid response format"
     };
   } catch (error) {
+    if (signal?.aborted || error.name === 'AbortError' || error.name === 'CanceledError') {
+      return {
+        success: true,
+        aborted: true,
+        reply: '',
+        message: ''
+      };
+    }
+
     const status = error.response?.status || 'Network Error';
     console.error(`[Nipix AI Chat] POST /api/ai/chat Status: ${status}`, error.response?.data || error.message);
 
-    const errReply = error.response?.data?.reply || error.response?.data?.message || "I'm having trouble connecting right now. Please try again.";
+    const errReply = error.response?.data?.reply || error.response?.data?.message || "I couldn't connect to the AI service right now. Please try again.";
 
     return {
       success: false,
@@ -100,12 +112,18 @@ export const sendAiChatMessage = async ({ botId = 'bytebot_ai', message = '', hi
 
 /**
  * Stream chat message from backend AI service (/api/ai/chat/stream)
- * Server-Sent Events (SSE) streaming with chunk callback
- * Falls back to standard POST if streaming is unsupported
- * @param {Object} payload - { botId, message, history, onChunk }
+ * Server-Sent Events (SSE) streaming with chunk callback and abort control
+ * @param {Object} payload - { botId, message, history, onChunk, signal, requestId }
  * @returns {Promise<Object>} Final response object
  */
-export const sendAiChatMessageStream = async ({ botId = 'bytebot_ai', message = '', history = [], onChunk }) => {
+export const sendAiChatMessageStream = async ({
+  botId = 'bytebot_ai',
+  message = '',
+  history = [],
+  onChunk,
+  signal,
+  requestId
+}) => {
   if (!message || !message.trim()) {
     return {
       success: false,
@@ -114,8 +132,11 @@ export const sendAiChatMessageStream = async ({ botId = 'bytebot_ai', message = 
     };
   }
 
+  const finalRequestId = requestId || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`);
   const baseUrl = getBaseApiUrl();
   const streamUrl = `${baseUrl}/ai/chat/stream`;
+
+  let accumulatedText = '';
 
   try {
     const token = localStorage.getItem('nipix_token');
@@ -127,33 +148,51 @@ export const sendAiChatMessageStream = async ({ botId = 'bytebot_ai', message = 
       headers['x-auth-token'] = token;
     }
 
-    console.log(`[Nipix AI Stream] POST ${streamUrl}`);
+    console.log(`[Nipix AI Stream] POST ${streamUrl} (reqId: ${finalRequestId})`);
     const response = await fetch(streamUrl, {
       method: 'POST',
       headers,
+      signal,
       body: JSON.stringify({
         botId,
         message: message.trim(),
-        history
+        history,
+        requestId: finalRequestId
       })
     });
 
     console.log(`[Nipix AI Stream] Status: ${response.status}`);
 
     if (!response.ok) {
+      // If user aborted while fetching
+      if (signal?.aborted) {
+        return { success: true, aborted: true, reply: accumulatedText };
+      }
       console.warn(`[Nipix AI Stream] Stream endpoint status ${response.status}, falling back to standard POST`);
-      return await sendAiChatMessage({ botId, message, history });
+      return await sendAiChatMessage({ botId, message, history, signal, requestId: finalRequestId });
     }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
-    let accumulatedText = '';
     let buffer = '';
     let streamDone = false;
     let streamProvider = null;
     let streamError = null;
 
     while (!streamDone) {
+      if (signal?.aborted) {
+        try {
+          await reader.cancel();
+        } catch (e) {
+          // Ignore cancel error
+        }
+        return {
+          success: true,
+          aborted: true,
+          reply: accumulatedText
+        };
+      }
+
       const { done, value } = await reader.read();
       if (done) break;
 
@@ -205,10 +244,22 @@ export const sendAiChatMessageStream = async ({ botId = 'bytebot_ai', message = 
     }
 
     // Fallback if nothing was received from stream
-    return await sendAiChatMessage({ botId, message, history });
+    if (!signal?.aborted) {
+      return await sendAiChatMessage({ botId, message, history, signal, requestId: finalRequestId });
+    }
+
+    return { success: true, aborted: true, reply: '' };
 
   } catch (streamError) {
+    if (signal?.aborted || streamError.name === 'AbortError') {
+      return {
+        success: true,
+        aborted: true,
+        reply: accumulatedText
+      };
+    }
+
     console.warn('[Nipix AI Chat Stream] Stream failed, falling back to standard POST:', streamError.message);
-    return await sendAiChatMessage({ botId, message, history });
+    return await sendAiChatMessage({ botId, message, history, signal, requestId: finalRequestId });
   }
 };

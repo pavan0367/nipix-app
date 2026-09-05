@@ -180,4 +180,4 @@ const MarkdownMessage = ({ content = '', isUser = false }) => {
   );
 };
 
-export default MarkdownMessage;
+export default React.memo(MarkdownMessage);

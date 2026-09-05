@@ -266,9 +266,9 @@ function getAIHealth() {
 }
 
 /**
- * Call Google Gemini Provider
+ * Call Google Gemini REST API
  */
-async function callGemini(apiKey, model, botId, message, history) {
+async function callGemini(apiKey, model, botId, message, history, signal) {
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const contents = normalizeGeminiContents(botId, message, history);
 
@@ -282,7 +282,7 @@ async function callGemini(apiKey, model, botId, message, history) {
         maxOutputTokens: 2048
       }
     },
-    { timeout: 25000 }
+    { timeout: 25000, signal }
   );
 
   const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -293,7 +293,7 @@ async function callGemini(apiKey, model, botId, message, history) {
 /**
  * Call OpenAI-compatible provider (Groq, OpenAI, OpenRouter)
  */
-async function callOpenAICompatible(endpoint, apiKey, model, botId, message, history, headers = {}) {
+async function callOpenAICompatible(endpoint, apiKey, model, botId, message, history, headers = {}, signal) {
   const messages = normalizeMessages(botId, message, history);
 
   const response = await axios.post(
@@ -310,7 +310,8 @@ async function callOpenAICompatible(endpoint, apiKey, model, botId, message, his
         'Content-Type': 'application/json',
         ...headers
       },
-      timeout: 25000
+      timeout: 25000,
+      signal
     }
   );
 
@@ -322,10 +323,10 @@ async function callOpenAICompatible(endpoint, apiKey, model, botId, message, his
 /**
  * Dispatcher to execute a call for a given provider configuration
  */
-async function executeProviderCall(providerConfig, botId, message, history) {
+async function executeProviderCall(providerConfig, botId, message, history, signal) {
   const { provider, key, model } = providerConfig;
   if (provider === 'Gemini') {
-    return await callGemini(key, model, botId, message, history);
+    return await callGemini(key, model, botId, message, history, signal);
   }
   if (provider === 'Groq') {
     return await callOpenAICompatible(
@@ -334,7 +335,9 @@ async function executeProviderCall(providerConfig, botId, message, history) {
       model,
       botId,
       message,
-      history
+      history,
+      {},
+      signal
     );
   }
   if (provider === 'OpenAI') {
@@ -344,7 +347,9 @@ async function executeProviderCall(providerConfig, botId, message, history) {
       model,
       botId,
       message,
-      history
+      history,
+      {},
+      signal
     );
   }
   if (provider === 'OpenRouter') {
@@ -355,7 +360,8 @@ async function executeProviderCall(providerConfig, botId, message, history) {
       botId,
       message,
       history,
-      { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
+      { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' },
+      signal
     );
   }
   throw new Error(`Unsupported provider: ${provider}`);
@@ -364,7 +370,7 @@ async function executeProviderCall(providerConfig, botId, message, history) {
 /**
  * Real AI Dispatcher with Single Retry and Multi-Provider Fallback
  */
-async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', history = [] }) {
+async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', history = [], signal }) {
   const providers = getConfiguredProviders();
 
   console.log('\n========================================');
@@ -385,14 +391,22 @@ async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', hist
 
   // Try each provider in preference order
   for (const prov of providers) {
+    if (signal?.aborted) {
+      throw new Error('REQUEST_ABORTED');
+    }
+
+    const requestStart = Date.now();
     console.log(`[Nipix AI Service] Attempting call with ${prov.provider} (${prov.model})...`);
 
     // Attempt up to 2 times (1 retry for transient glitches)
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const reply = await executeProviderCall(prov, botId, message, history);
+        const reply = await executeProviderCall(prov, botId, message, history, signal);
+        const totalTime = Date.now() - requestStart;
         console.log(`[Nipix AI Service] SUCCESS with ${prov.provider} on attempt ${attempt} (${reply.length} chars)`);
         console.log('========================================\n');
+        console.log(`[AI Performance] Bot: ${botId} | Provider: ${prov.provider} | TTFT: ${totalTime}ms | Total: ${totalTime}ms | Chunks: 1\n`);
+
         return {
           success: true,
           botId,
@@ -402,6 +416,7 @@ async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', hist
       } catch (err) {
         lastError = err;
         console.warn(`[Nipix AI Service] Provider ${prov.provider} attempt ${attempt} failed: ${err.message}`);
+        if (signal?.aborted) throw err;
         if (attempt === 1) {
           // Wait 600ms before transient retry
           await new Promise((resolve) => setTimeout(resolve, 600));
@@ -417,11 +432,23 @@ async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', hist
 }
 
 /**
+ * Helper to combine external abort signal with a safety timeout
+ */
+function combineSignals(signal, timeoutMs = 25000) {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  if (signal && typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([signal, timeoutSignal]);
+  }
+  return signal || timeoutSignal;
+}
+
+/**
  * Stream Gemini SSE
  */
-async function streamGemini(apiKey, model, botId, message, history, onChunk) {
+async function streamGemini(apiKey, model, botId, message, history, onChunk, signal) {
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
   const contents = normalizeGeminiContents(botId, message, history);
+  const activeSignal = combineSignals(signal, 25000);
 
   const response = await fetch(geminiUrl, {
     method: 'POST',
@@ -433,7 +460,8 @@ async function streamGemini(apiKey, model, botId, message, history, onChunk) {
         topP: 0.95,
         maxOutputTokens: 2048
       }
-    })
+    }),
+    signal: activeSignal
   });
 
   if (!response.ok) {
@@ -446,6 +474,10 @@ async function streamGemini(apiKey, model, botId, message, history, onChunk) {
   let buffer = '';
 
   while (true) {
+    if (signal?.aborted) {
+      await reader.cancel();
+      break;
+    }
     const { done, value } = await reader.read();
     if (done) break;
 
@@ -475,8 +507,9 @@ async function streamGemini(apiKey, model, botId, message, history, onChunk) {
 /**
  * Stream OpenAI-Compatible SSE
  */
-async function streamOpenAICompatible(url, apiKey, model, botId, message, history, onChunk, extraHeaders = {}) {
+async function streamOpenAICompatible(url, apiKey, model, botId, message, history, onChunk, extraHeaders = {}, signal) {
   const messages = normalizeMessages(botId, message, history);
+  const activeSignal = combineSignals(signal, 25000);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -491,7 +524,8 @@ async function streamOpenAICompatible(url, apiKey, model, botId, message, histor
       temperature: 0.7,
       max_tokens: 2048,
       stream: true
-    })
+    }),
+    signal: activeSignal
   });
 
   if (!response.ok) {
@@ -504,6 +538,10 @@ async function streamOpenAICompatible(url, apiKey, model, botId, message, histor
   let buffer = '';
 
   while (true) {
+    if (signal?.aborted) {
+      await reader.cancel();
+      break;
+    }
     const { done, value } = await reader.read();
     if (done) break;
 
@@ -531,9 +569,9 @@ async function streamOpenAICompatible(url, apiKey, model, botId, message, histor
 }
 
 /**
- * Stream Real AI Response Dispatcher with Fallbacks
+ * Stream Real AI Response Dispatcher with Fallbacks & TTFT Metrics
  */
-async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', history = [], onChunk }) {
+async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', history = [], onChunk, signal }) {
   const providers = getConfiguredProviders();
 
   console.log('\n========================================');
@@ -552,10 +590,28 @@ async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', histor
   let lastError = null;
 
   for (const prov of providers) {
+    if (signal?.aborted) {
+      throw new Error('REQUEST_ABORTED');
+    }
+
+    const requestStart = Date.now();
+    let firstChunkTime = null;
+    let chunkCount = 0;
+
+    const wrappedOnChunk = (chunkText) => {
+      if (!firstChunkTime) {
+        firstChunkTime = Date.now();
+      }
+      chunkCount++;
+      if (typeof onChunk === 'function') {
+        onChunk(chunkText);
+      }
+    };
+
     try {
       console.log(`[Nipix AI Stream] Streaming with ${prov.provider}...`);
       if (prov.provider === 'Gemini') {
-        await streamGemini(prov.key, prov.model, botId, message, history, onChunk);
+        await streamGemini(prov.key, prov.model, botId, message, history, wrappedOnChunk, signal);
       } else if (prov.provider === 'Groq') {
         await streamOpenAICompatible(
           'https://api.groq.com/openai/v1/chat/completions',
@@ -564,7 +620,9 @@ async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', histor
           botId,
           message,
           history,
-          onChunk
+          wrappedOnChunk,
+          {},
+          signal
         );
       } else if (prov.provider === 'OpenAI') {
         await streamOpenAICompatible(
@@ -574,7 +632,9 @@ async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', histor
           botId,
           message,
           history,
-          onChunk
+          wrappedOnChunk,
+          {},
+          signal
         );
       } else if (prov.provider === 'OpenRouter') {
         await streamOpenAICompatible(
@@ -584,17 +644,29 @@ async function streamRealAIResponse({ botId = 'bytebot_ai', message = '', histor
           botId,
           message,
           history,
-          onChunk,
-          { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' }
+          wrappedOnChunk,
+          { 'HTTP-Referer': 'https://nipix.app', 'X-Title': 'Nipix AI Scholar' },
+          signal
         );
       }
 
-      console.log(`[Nipix AI Stream] Stream completed successfully with ${prov.provider}`);
+      const totalTime = Date.now() - requestStart;
+      const ttft = firstChunkTime ? firstChunkTime - requestStart : totalTime;
+
+      console.log(`[Nipix AI Stream] Stream completed successfully with ${prov.provider} (${chunkCount} chunks)`);
       console.log('========================================\n');
-      return { provider: prov.provider };
+      console.log(`[AI Performance] Bot: ${botId} | Provider: ${prov.provider} | TTFT: ${ttft}ms | Total: ${totalTime}ms | Chunks: ${chunkCount}\n`);
+
+      return { provider: prov.provider, chunkCount, ttft, totalTime };
     } catch (err) {
       lastError = err;
       console.warn(`[Nipix AI Stream] Stream with ${prov.provider} failed: ${err.message}`);
+
+      // If chunks have ALREADY been emitted to the client, DO NOT try another provider from scratch
+      // (as this would output two combined answers into the stream).
+      if (chunkCount > 0 || signal?.aborted) {
+        throw err;
+      }
     }
   }
 

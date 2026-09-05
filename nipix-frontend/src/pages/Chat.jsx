@@ -235,16 +235,26 @@ const Chat = () => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [chatError, setChatError] = useState(null);
 
+  // Dedicated active streaming state to prevent re-rendering the full conversation array
+  const [streamingText, setStreamingText] = useState('');
+  const [streamingBotId, setStreamingBotId] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
   // Hidden Vault State
   const [isVaultView, setIsVaultView] = useState(requestedHiddenView);
   const [vaultMessages, setVaultMessages] = useState(HIDDEN_VAULT_MESSAGES);
   const [vaultInput, setVaultInput] = useState('');
 
-  // Container refs for isolated internal message scrolling (NEVER scrolls window/page)
+  // Performance & Control Refs
   const messagesContainerRef = useRef(null);
   const vaultContainerRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const autoScrollEnabledRef = useRef(true);
+  const pendingChunkBufferRef = useRef('');
+  const renderTimerRef = useRef(null);
+  const lastSentPromptRef = useRef('');
 
-  // Keep localStorage in sync whenever clean messages update
+  // Keep localStorage in sync ONLY when completed messages change (NEVER on every token!)
   useEffect(() => {
     try {
       if (chatMessages && Object.keys(chatMessages).length > 0) {
@@ -282,12 +292,24 @@ const Chat = () => {
     }
   }, [requestedHiddenView, currentUser]);
 
-  // Scroll ONLY the internal messages container to the bottom (NEVER scrolls window or document)
-  useEffect(() => {
-    if (messagesContainerRef.current) {
+  // Smart user scroll detector: stops forced auto-scroll if user scrolls up
+  const handleContainerScroll = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    autoScrollEnabledRef.current = scrollHeight - scrollTop - clientHeight < 80;
+  };
+
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current && autoScrollEnabledRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, [chatMessages, isTyping, activeBot]);
+  };
+
+  // Scroll to bottom only when switching bot or when user sends message
+  useEffect(() => {
+    autoScrollEnabledRef.current = true;
+    scrollToBottom();
+  }, [activeBot]);
 
   useEffect(() => {
     if (vaultContainerRef.current) {
@@ -295,7 +317,7 @@ const Chat = () => {
     }
   }, [vaultMessages, isVaultView]);
 
-  // Select an AI Bot (No login required, strictly preserves page position)
+  // Select an AI Bot (preserves active background generations)
   const handleSelectBot = (bot, e) => {
     if (e) {
       e.preventDefault();
@@ -311,6 +333,9 @@ const Chat = () => {
   const handleResetActiveBot = (e) => {
     if (e) e.preventDefault();
     if (!activeBot) return;
+    if (isGenerating && streamingBotId === activeBot.id) {
+      handleStopGeneration();
+    }
     const botId = activeBot.id;
     setChatMessages((prev) => ({
       ...prev,
@@ -329,108 +354,165 @@ const Chat = () => {
     }
   };
 
-  // Real AI Message Handler with Streaming Support & Safe Non-Persistent Errors
-  const handleSendMessage = async (e) => {
+  // Stop Generation Handler: cancels upstream request and preserves received text
+  const handleStopGeneration = (e) => {
     if (e) e.preventDefault();
-    if (!userInput.trim() || !activeBot || isTyping) return;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    if (renderTimerRef.current) {
+      clearTimeout(renderTimerRef.current);
+      renderTimerRef.current = null;
+    }
 
-    const userText = userInput.trim();
+    const partialContent = pendingChunkBufferRef.current;
+    if (partialContent && partialContent.trim() && streamingBotId) {
+      const assistantMsg = {
+        id: (Date.now() + 1).toString(),
+        sender: activeBot?.name || 'Assistant',
+        isUser: false,
+        text: partialContent,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatMessages((prev) => ({
+        ...prev,
+        [streamingBotId]: [...(prev[streamingBotId] || []), assistantMsg]
+      }));
+    }
+
+    setIsGenerating(false);
+    setIsTyping(false);
+    setStreamingText('');
+    setStreamingBotId(null);
+    pendingChunkBufferRef.current = '';
+    abortControllerRef.current = null;
+  };
+
+  // Retry last failed prompt
+  const handleRetryLastMessage = (e) => {
+    if (e) e.preventDefault();
+    if (lastSentPromptRef.current && !isGenerating) {
+      handleSendMessage(null, lastSentPromptRef.current);
+    }
+  };
+
+  // High-Performance Stream Handler with Micro-Batching (Zero UI Freezing)
+  const handleSendMessage = async (e, retryText) => {
+    if (e) e.preventDefault();
+    const userText = (typeof retryText === 'string' ? retryText : userInput).trim();
+    if (!userText || !activeBot || isGenerating) return;
+
     const botId = activeBot.id;
     const currentHistory = (chatMessages[botId] || []).filter(
       (m) => m && m.text && !isErrorMessage(m.text)
     );
 
-    const newUserMsg = {
-      id: Date.now().toString(),
-      sender: currentUser?.username || 'Learner',
-      isUser: true,
-      text: userText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+    // Save prompt for retry support
+    lastSentPromptRef.current = userText;
 
-    const botMsgId = (Date.now() + 1).toString();
-    const newAiPlaceholderMsg = {
-      id: botMsgId,
-      sender: activeBot.name,
-      isUser: false,
-      text: '',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+    // Immediately display user message
+    if (!retryText) {
+      const newUserMsg = {
+        id: Date.now().toString(),
+        sender: currentUser?.username || 'Learner',
+        isUser: true,
+        text: userText,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatMessages((prev) => ({
+        ...prev,
+        [botId]: [...(prev[botId] || []), newUserMsg]
+      }));
+      setUserInput('');
+    }
 
-    // Clear previous transient errors
+    // Set active streaming state
     setChatError(null);
+    setIsGenerating(true);
+    setStreamingBotId(botId);
+    setStreamingText('');
+    setIsTyping(true); // Shows subtle "thinking..." indicator until first token
+    autoScrollEnabledRef.current = true;
+    pendingChunkBufferRef.current = '';
 
-    // Immediately display user message and prepare placeholder
-    setChatMessages((prev) => ({
-      ...prev,
-      [botId]: [...(prev[botId] || []), newUserMsg, newAiPlaceholderMsg]
-    }));
-
-    setUserInput('');
-    setIsTyping(true);
-
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     let streamStarted = false;
 
     try {
       const response = await sendAiChatMessageStream({
         botId,
         message: userText,
-        history: [...currentHistory, newUserMsg],
+        history: currentHistory,
+        signal: abortController.signal,
         onChunk: (currentStreamedText) => {
+          pendingChunkBufferRef.current = currentStreamedText;
+
           if (!streamStarted) {
             streamStarted = true;
-            setIsTyping(false); // Stop typing dots once text begins streaming
+            setIsTyping(false); // Seamlessly switch from typing dots to streamed text
           }
-          setChatMessages((prev) => {
-            const list = prev[botId] || [];
-            return {
-              ...prev,
-              [botId]: list.map((msg) =>
-                msg.id === botMsgId ? { ...msg, text: currentStreamedText } : msg
-              )
-            };
-          });
+
+          // Throttle UI updates to 40ms (~25fps) to prevent React reconciler flooding
+          if (!renderTimerRef.current) {
+            renderTimerRef.current = setTimeout(() => {
+              renderTimerRef.current = null;
+              setStreamingText(pendingChunkBufferRef.current);
+              if (autoScrollEnabledRef.current && messagesContainerRef.current) {
+                messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+              }
+            }, 40);
+          }
         }
       });
 
-      const finalReply = response.reply || response.message;
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      // Flush any pending render frame
+      if (renderTimerRef.current) {
+        clearTimeout(renderTimerRef.current);
+        renderTimerRef.current = null;
+      }
+
+      const finalReply = response.reply || pendingChunkBufferRef.current;
 
       if (!finalReply || isErrorMessage(finalReply)) {
         throw new Error(finalReply || 'Connection failed');
       }
 
-      setChatMessages((prev) => {
-        const list = prev[botId] || [];
-        return {
-          ...prev,
-          [botId]: list.map((msg) =>
-            msg.id === botMsgId ? { ...msg, text: finalReply } : msg
-          )
-        };
-      });
+      // Commit finalized assistant message to conversation history
+      const assistantMsg = {
+        id: (Date.now() + 1).toString(),
+        sender: activeBot.name,
+        isUser: false,
+        text: finalReply,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setChatMessages((prev) => ({
+        ...prev,
+        [botId]: [...(prev[botId] || []), assistantMsg]
+      }));
 
     } catch (err) {
+      if (abortController.signal.aborted) {
+        return;
+      }
       console.error('[Nipix Chat] Error during message processing:', err);
-      // Remove empty placeholder so the error is NOT saved as the bot's message
-      setChatMessages((prev) => {
-        const list = prev[botId] || [];
-        return {
-          ...prev,
-          [botId]: list.filter((msg) => msg.id !== botMsgId)
-        };
-      });
-      // Show short user-friendly transient error banner
-      setChatError("I'm having trouble connecting right now. Please try again.");
+      setChatError("I couldn't connect to the AI service right now. Please try again.");
     } finally {
+      if (renderTimerRef.current) {
+        clearTimeout(renderTimerRef.current);
+        renderTimerRef.current = null;
+      }
+      setIsGenerating(false);
       setIsTyping(false);
-    }
-  };
-
-  // Support Shift+Enter for newline, Enter to send
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+      setStreamingText('');
+      setStreamingBotId(null);
+      pendingChunkBufferRef.current = '';
+      abortControllerRef.current = null;
     }
   };
 
@@ -700,7 +782,7 @@ const Chat = () => {
               </div>
 
               {/* Chat Messages Workspace (Independently Scrollable via container ref) */}
-              <div ref={messagesContainerRef} className="chat-messages">
+              <div ref={messagesContainerRef} onScroll={handleContainerScroll} className="chat-messages">
                 {(chatMessages[activeBot.id] || [])
                   .filter((msg) => msg && msg.text && msg.text.trim().length > 0 && !isErrorMessage(msg.text))
                   .map((msg) => (
@@ -744,23 +826,63 @@ const Chat = () => {
                   </div>
                 ))}
 
-                {/* REAL-TIME AI TYPING ANIMATION */}
-                {isTyping && (
+                {/* ACTIVE REAL-TIME STREAMING BUBBLE */}
+                {streamingBotId === activeBot.id && streamingText.length > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-start',
+                      alignItems: 'flex-start',
+                      gap: '8px'
+                    }}
+                  >
+                    <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '30px', height: '30px', fontSize: '0.95rem', flexShrink: 0 }}>
+                      {activeBot.avatar}
+                    </div>
+
+                    <div className="chat-bubble-ai-msg" style={{
+                      maxWidth: '82%',
+                      padding: '10px 16px',
+                      borderRadius: '16px 16px 16px 4px',
+                      background: 'var(--chat-bubble-ai)',
+                      color: 'var(--text-main)',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '0.88rem',
+                      lineHeight: '1.55',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <MarkdownMessage content={streamingText} isUser={false} />
+                      <div style={{
+                        fontSize: '0.68rem',
+                        textAlign: 'right',
+                        marginTop: '4px',
+                        opacity: 0.75,
+                        color: 'var(--text-dim)'
+                      }}>
+                        Streaming...
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* REAL-TIME AI THINKING ANIMATION (Before first token arrives) */}
+                {isTyping && (!streamingText || streamingText.length === 0) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', paddingLeft: '38px' }}>
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                       <div className="typing-dot" />
                       <div className="typing-dot" />
                       <div className="typing-dot" />
                     </div>
-                    <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{activeBot.name} is typing...</span>
+                    <span style={{ fontWeight: '600', color: 'var(--text-muted)' }}>{activeBot.name} is thinking...</span>
                   </div>
                 )}
 
-                {/* TRANSIENT CONNECTION ERROR BANNER (Not saved to permanent history) */}
+                {/* TRANSIENT CONNECTION ERROR BANNER WITH RETRY */}
                 {chatError && (
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'space-between',
                     gap: '8px',
                     padding: '8px 14px',
                     borderRadius: 'var(--radius-sm)',
@@ -770,13 +892,33 @@ const Chat = () => {
                     fontSize: '0.82rem',
                     margin: '6px 0'
                   }}>
-                    <AlertCircle size={15} style={{ flexShrink: 0 }} />
-                    <span style={{ flex: 1 }}>{chatError}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                      <span>{chatError}</span>
+                    </div>
+                    {lastSentPromptRef.current && (
+                      <button
+                        type="button"
+                        onClick={handleRetryLastMessage}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.2)',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          color: '#fca5a5',
+                          padding: '4px 10px',
+                          borderRadius: '4px',
+                          fontSize: '0.74rem',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Retry
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* ALWAYS VISIBLE FIXED BOTTOM COMPOSER: [ 😊 Ask Bot Name anything... 📎 ➤ ] */}
+              {/* ALWAYS VISIBLE FIXED BOTTOM COMPOSER: [ 😊 Ask Bot Name anything... 📎 ➤ / Stop ] */}
               <form onSubmit={handleSendMessage} className="chat-composer">
                 <button
                   type="button"
@@ -817,28 +959,53 @@ const Chat = () => {
                   <Paperclip size={20} />
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={!userInput.trim() || isTyping}
-                  className="btn-primary"
-                  style={{
-                    borderRadius: '50%',
-                    width: '38px',
-                    height: '38px',
-                    padding: 0,
-                    flexShrink: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: (!userInput.trim() || isTyping) ? 0.45 : 1,
-                    cursor: (!userInput.trim() || isTyping) ? 'not-allowed' : 'pointer',
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
-                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.35)'
-                  }}
-                  title="Send Message"
-                >
-                  <Send size={16} />
-                </button>
+                {isGenerating ? (
+                  <button
+                    type="button"
+                    onClick={handleStopGeneration}
+                    style={{
+                      borderRadius: '20px',
+                      padding: '8px 16px',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#f87171',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      fontWeight: '600'
+                    }}
+                    title="Stop Generating"
+                  >
+                    <div style={{ width: '9px', height: '9px', background: '#ef4444', borderRadius: '2px' }} />
+                    <span>Stop</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!userInput.trim()}
+                    className="btn-primary"
+                    style={{
+                      borderRadius: '50%',
+                      width: '38px',
+                      height: '38px',
+                      padding: 0,
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: !userInput.trim() ? 0.45 : 1,
+                      cursor: !userInput.trim() ? 'not-allowed' : 'pointer',
+                      background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
+                      boxShadow: '0 2px 8px rgba(124, 58, 237, 0.35)'
+                    }}
+                    title="Send Message"
+                  >
+                    <Send size={16} />
+                  </button>
+                )}
               </form>
             </div>
           ) : (
