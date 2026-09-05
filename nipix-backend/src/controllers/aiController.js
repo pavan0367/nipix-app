@@ -30,20 +30,14 @@ exports.chat = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[Nipix AI Chat Controller] Error:', error.message);
+    // Technical log on developer server console
+    console.error('[Nipix AI Chat Controller Error]:', error.message);
 
-    if (error.message === 'NO_LLM_KEY_CONFIGURED') {
-      return res.status(503).json({
-        success: false,
-        reply: "AI service is not configured. Please add your GEMINI_API_KEY (or GROQ_API_KEY / OPENAI_API_KEY) to nipix-backend/.env to enable live AI responses.",
-        error: 'NO_LLM_KEY_CONFIGURED'
-      });
-    }
-
-    return res.status(500).json({
+    // Clean user-facing error response (per requirements: "AI service is temporarily unavailable. Please try again.")
+    return res.status(503).json({
       success: false,
-      reply: "I'm having trouble reaching the AI service right now. Please try again in a moment.",
-      error: error.message
+      reply: "AI service is temporarily unavailable. Please try again.",
+      error: 'AI_SERVICE_UNAVAILABLE'
     });
   }
 };

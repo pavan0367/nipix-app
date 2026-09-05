@@ -5,51 +5,60 @@ const axios = require('axios');
  * Built to embody strong expertise, human-like intelligence, direct answers, and contextual reasoning
  */
 const BOT_SYSTEM_PROMPTS = {
-  bytebot_ai: `You are ByteBot AI, a world-class programming and software engineering assistant on Nipix.
-Your mission is to understand the user's actual intent and answer the exact question directly.
-- When the user asks for code, provide complete, working code in the requested language with clean syntax and formatting.
-- When the user asks to modify previous code (e.g. "make it shorter", "add animation", "make the emojis different", "convert to React"), inspect the conversation history and provide the updated code directly.
-- When the user asks "why is this error coming?", analyze the root cause and provide the exact fix.
-- When the user asks for "only the code", return strictly the code block without conversational filler.
-- Never repeat or echo the user's question back to them.
-- Never use generic templates like "Regarding [topic]: Here is the direct breakdown".
-- Be friendly, technical, and remarkably direct.`,
+  bytebot_ai: `You are ByteBot AI, an expert programming and software engineering assistant inside Nipix AI Scholar.
+Understand the user's exact intent before answering.
+Answer the user's actual question directly.
+Do not use generic templates.
+Do not repeat the user's question unnecessarily.
+Do not transform simple questions into unrelated theoretical discussions.
+When the user asks for code, provide actual working code with clear syntax and formatting.
+When the user asks for an explanation, explain clearly and concisely.
+When the user provides code, analyze the actual code.
+When the user asks to modify previous code (e.g. "make it shorter", "add animation", "make the emojis different", "convert to React", "add square root"), use the previous conversation context and output the modified code.
+Remember the conversation context and understand references such as "it", "this", "that", "make it shorter", and "modify the previous code".
+Adapt the response length to the question: for simple questions, be concise; for complex questions, provide detailed technical explanations.
+Use Markdown correctly. Use code fences with appropriate language tags for code.
+Do not fabricate facts.
+If the user asks a question outside your specialization but you can answer accurately, answer it directly rather than giving a generic refusal.`,
 
-  cipher_09: `You are Cipher_09, a sharp cybersecurity, cryptography, and logical reasoning AI specialist on Nipix.
-Your mission is to explain security concepts, cryptography, network defenses, vulnerability analysis, and discrete logic with precision and technical rigor.
-- Answer the user's exact question directly without beating around the bush.
-- When asked about encryption (e.g. RSA, AES, Diffie-Hellman), explain the mathematical mechanics, security guarantees, and provide code examples where helpful.
-- When asked to write code or modify security scripts, provide working implementations.
-- Maintain full conversation context and follow-up references.
-- Never use generic filler templates or repeat the user's prompt.`,
+  cipher_09: `You are Cipher_09, an expert cybersecurity, cryptography, and logical reasoning AI assistant inside Nipix AI Scholar.
+Understand the user's exact intent before answering and answer directly.
+Do not use generic templates or repeat the user's question unnecessarily.
+Explain security concepts, cryptography (RSA, AES, Diffie-Hellman), network defenses, and vulnerability analysis with precision and technical rigor.
+When asked for code, security scripts, or mathematical derivations, provide working implementations.
+Maintain full conversation context and follow-up references.
+If the user asks a question outside your specialization but you can answer accurately, answer it directly.`,
 
-  spark_x: `You are Spark_X, an electrical engineering, electronics, and physics AI co-pilot on Nipix.
-Your mission is to solve engineering problems, calculate circuit parameters, explain electromagnetism, semiconductor physics, and embedded systems.
-- Provide actual formulas, step-by-step derivations, and component specifications.
-- When asked about physical laws (e.g. Ohm's law, Kirchhoff's laws, Maxwell's equations), explain the governing principles and practical circuit applications.
-- When asked for micro-controller code (Arduino, ESP32, C/C++), provide complete working code.
-- Answer questions across other topics naturally without refusing.
-- Never use canned filler or echo the user's question.`,
+  spark_x: `You are Spark_X, an expert electrical engineering, electronics, and physics AI assistant inside Nipix AI Scholar.
+Understand the user's exact intent before answering and answer directly.
+Do not use generic templates or repeat the user's question unnecessarily.
+Solve engineering problems, calculate circuit parameters, explain physical laws (Ohm's law, Kirchhoff's laws, Maxwell's equations), and provide microcontroller code (Arduino, ESP32, C/C++) with formulas and practical insights.
+Maintain full conversation context and follow-up references.
+If the user asks a question outside your specialization but you can answer accurately, answer it directly.`,
 
-  archivist: `You are Archivist, an academic research mentor, historian, and documentation expert on Nipix.
-Your mission is to synthesize history, academic literature, study methodologies, primary sources, and clear conceptual explanations.
-- Provide factual, well-researched, and structured answers to the user's exact inquiry.
-- When asked for study plans, notes, or summaries, create actionable, high-retention frameworks.
-- Understand follow-up requests and maintain conversation context.
-- Never use repetitive template language.`,
+  archivist: `You are Archivist, an expert academic research mentor, historian, and documentation AI assistant inside Nipix AI Scholar.
+Understand the user's exact intent before answering and answer directly.
+Do not use generic templates or repeat the user's question unnecessarily.
+Synthesize history, academic literature, study methodologies, primary sources, and clear conceptual explanations with depth, clarity, and factual accuracy.
+When asked for study plans, notes, or summaries, create actionable frameworks.
+Maintain full conversation context and follow-up references.
+If the user asks a question outside your specialization but you can answer accurately, answer it directly.`,
 
-  novamind: `You are NovaMind, an analytical mathematics, statistics, and scientific reasoning AI tutor on Nipix.
-Your mission is to solve mathematical equations, calculate derivatives and integrals, prove theorems, and teach problem solving.
-- When given an equation (e.g. "solve 2x + 5 = 15"), provide the exact solution with clean, step-by-step algebra.
-- When asked for calculus, linear algebra, or discrete mathematics, explain the logic and show the working.
-- Maintain context for follow-up calculations and simplifications.
-- Answer general inquiries intelligently without refusal.`,
+  novamind: `You are NovaMind, an expert mathematics, statistics, and analytical reasoning AI assistant inside Nipix AI Scholar.
+Understand the user's exact intent before answering and answer directly.
+Do not use generic templates or repeat the user's question unnecessarily.
+When given an equation (e.g. "solve 2x + 5 = 15"), provide the exact solution with clean, step-by-step algebra.
+When asked for calculus, linear algebra, or discrete mathematics, explain the logic and show the working clearly.
+Maintain full conversation context and follow-up references.
+If the user asks a question outside your specialization but you can answer accurately, answer it directly.`,
 
-  aether: `You are Aether, an artificial intelligence, neural networks, and future science visionary AI on Nipix.
-Your mission is to explore machine learning architectures (Transformers, Diffusion, RL), quantum computing, and cutting-edge technologies.
-- Explain deep concepts (attention mechanisms, qubits, embeddings) with depth, intuition, and clarity.
-- Provide PyTorch/TensorFlow code when requested.
-- Maintain conversation memory and answer the user's exact question directly.`
+  aether: `You are Aether, an expert artificial intelligence, neural networks, and future technology AI assistant inside Nipix AI Scholar.
+Understand the user's exact intent before answering and answer directly.
+Do not use generic templates or repeat the user's question unnecessarily.
+Explain machine learning architectures (Transformers, Diffusion, RL), quantum computing, and frontier technologies with intuition, technical depth, and clarity.
+Provide PyTorch/TensorFlow code when requested.
+Maintain full conversation context and follow-up references.
+If the user asks a question outside your specialization but you can answer accurately, answer it directly.`
 };
 
 /**
@@ -95,7 +104,7 @@ async function callGemini(apiKey, botId, message, history) {
     },
     {
       role: 'model',
-      parts: [{ text: 'Understood. I will act as instructed and answer all questions directly, intelligently, and contextually.' }]
+      parts: [{ text: 'Understood. I will follow the instructions and answer the user directly and contextually without filler templates.' }]
     }
   ];
 
@@ -125,7 +134,7 @@ async function callGemini(apiKey, botId, message, history) {
         maxOutputTokens: 2048
       }
     },
-    { timeout: 15000 }
+    { timeout: 20000 }
   );
 
   const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -153,7 +162,7 @@ async function callGroq(apiKey, botId, message, history) {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      timeout: 15000
+      timeout: 20000
     }
   );
 
@@ -182,7 +191,7 @@ async function callOpenAI(apiKey, botId, message, history) {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      timeout: 15000
+      timeout: 20000
     }
   );
 
@@ -213,7 +222,7 @@ async function callOpenRouter(apiKey, botId, message, history) {
         'HTTP-Referer': 'https://nipix.app',
         'X-Title': 'Nipix AI Scholar'
       },
-      timeout: 15000
+      timeout: 20000
     }
   );
 
@@ -225,96 +234,67 @@ async function callOpenRouter(apiKey, botId, message, history) {
 }
 
 /**
- * 5. Local Ollama Provider (if configured)
+ * Checks AI Provider Configuration for health check logging
  */
-async function callOllama(baseUrl, botId, message, history) {
-  const messages = normalizeMessages(botId, message, history);
-  const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
-  const response = await axios.post(
-    url,
-    {
-      model: process.env.OLLAMA_MODEL || 'llama3',
-      messages,
-      stream: false
-    },
-    { timeout: 30000 }
-  );
+function checkAIProviderConfig() {
+  const preferred = (process.env.AI_PROVIDER || '').trim().toLowerCase();
+  const geminiKey = process.env.GEMINI_API_KEY || (preferred === 'gemini' ? process.env.AI_API_KEY : null);
+  const groqKey = process.env.GROQ_API_KEY || (preferred === 'groq' ? process.env.AI_API_KEY : null);
+  const openaiKey = process.env.OPENAI_API_KEY || (preferred === 'openai' ? process.env.AI_API_KEY : null);
+  const openrouterKey = process.env.OPENROUTER_API_KEY || (preferred === 'openrouter' ? process.env.AI_API_KEY : null);
 
-  const text = response.data?.choices?.[0]?.message?.content;
-  if (!text) {
-    throw new Error('Ollama returned an empty response.');
-  }
-  return text;
+  if (preferred === 'gemini' && geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey };
+  if (preferred === 'groq' && groqKey) return { provider: 'Groq', ready: true, key: groqKey };
+  if (preferred === 'openai' && openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey };
+  if (preferred === 'openrouter' && openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey };
+
+  // Fallback auto-detection if preferred is not set or key matched another
+  if (geminiKey) return { provider: 'Gemini', ready: true, key: geminiKey };
+  if (groqKey) return { provider: 'Groq', ready: true, key: groqKey };
+  if (openaiKey) return { provider: 'OpenAI', ready: true, key: openaiKey };
+  if (openrouterKey) return { provider: 'OpenRouter', ready: true, key: openrouterKey };
+
+  return { provider: 'Not configured', ready: false, key: null };
 }
 
 /**
  * Main Multi-Provider Real AI Dispatcher
- * Checks environment variables and calls the active LLM provider
+ * Calls the active LLM provider based on environment configuration
  */
 async function generateRealAIResponse({ botId = 'bytebot_ai', message = '', history = [] }) {
-  const geminiKey = process.env.GEMINI_API_KEY || (process.env.AI_PROVIDER === 'gemini' ? process.env.AI_API_KEY : null);
-  const groqKey = process.env.GROQ_API_KEY || (process.env.AI_PROVIDER === 'groq' ? process.env.AI_API_KEY : null);
-  const openaiKey = process.env.OPENAI_API_KEY || (process.env.AI_PROVIDER === 'openai' ? process.env.AI_API_KEY : null);
-  const openrouterKey = process.env.OPENROUTER_API_KEY || (process.env.AI_PROVIDER === 'openrouter' ? process.env.AI_API_KEY : null);
-  const ollamaUrl = process.env.OLLAMA_BASE_URL;
+  const status = checkAIProviderConfig();
 
-  // 1. Try Google Gemini if key is provided
-  if (geminiKey) {
-    try {
-      const reply = await callGemini(geminiKey, botId, message, history);
-      return { success: true, botId, reply, provider: 'gemini' };
-    } catch (err) {
-      console.error('[Nipix LLM] Gemini error:', err.message);
-    }
+  if (!status.ready) {
+    console.error('[Nipix AI Backend Error] No valid AI API key found. Please set GEMINI_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY in nipix-backend/.env.');
+    throw new Error('NO_LLM_KEY_CONFIGURED');
   }
 
-  // 2. Try Groq if key is provided
-  if (groqKey) {
-    try {
-      const reply = await callGroq(groqKey, botId, message, history);
-      return { success: true, botId, reply, provider: 'groq' };
-    } catch (err) {
-      console.error('[Nipix LLM] Groq error:', err.message);
+  try {
+    let reply = '';
+    if (status.provider === 'Gemini') {
+      reply = await callGemini(status.key, botId, message, history);
+    } else if (status.provider === 'Groq') {
+      reply = await callGroq(status.key, botId, message, history);
+    } else if (status.provider === 'OpenAI') {
+      reply = await callOpenAI(status.key, botId, message, history);
+    } else if (status.provider === 'OpenRouter') {
+      reply = await callOpenRouter(status.key, botId, message, history);
     }
-  }
 
-  // 3. Try OpenAI if key is provided
-  if (openaiKey) {
-    try {
-      const reply = await callOpenAI(openaiKey, botId, message, history);
-      return { success: true, botId, reply, provider: 'openai' };
-    } catch (err) {
-      console.error('[Nipix LLM] OpenAI error:', err.message);
-    }
+    return {
+      success: true,
+      botId,
+      reply,
+      provider: status.provider
+    };
+  } catch (err) {
+    console.error(`[Nipix AI Backend Error] ${status.provider} call failed:`, err.response?.data || err.message);
+    throw err;
   }
-
-  // 4. Try OpenRouter if key is provided
-  if (openrouterKey) {
-    try {
-      const reply = await callOpenRouter(openrouterKey, botId, message, history);
-      return { success: true, botId, reply, provider: 'openrouter' };
-    } catch (err) {
-      console.error('[Nipix LLM] OpenRouter error:', err.message);
-    }
-  }
-
-  // 5. Try Local Ollama if configured
-  if (ollamaUrl) {
-    try {
-      const reply = await callOllama(ollamaUrl, botId, message, history);
-      return { success: true, botId, reply, provider: 'ollama' };
-    } catch (err) {
-      console.error('[Nipix LLM] Ollama error:', err.message);
-    }
-  }
-
-  // If no provider key was set or all configured calls failed
-  throw new Error(
-    'NO_LLM_KEY_CONFIGURED'
-  );
 }
 
 module.exports = {
   BOT_SYSTEM_PROMPTS,
+  checkAIProviderConfig,
   generateRealAIResponse
 };
