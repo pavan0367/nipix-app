@@ -22,12 +22,16 @@ const AppRoutes = () => {
       <Route path="/" element={<Home />} />
       <Route path="/home" element={<Home />} />
       <Route path="/study" element={<StudyMaterials />} />
+      <Route path="/study-materials" element={<StudyMaterials />} />
       <Route path="/news" element={<NewsFeed />} />
       <Route path="/youtube" element={<YouTubeHub />} />
+      <Route path="/lectures" element={<YouTubeHub />} />
       <Route path="/explore" element={<Explore />} />
 
-      {/* Chat Route: Open to preview with locked privacy previews, interactive for auth */}
+      {/* Chat Routes: Open for public AI bots, hidden-chat requires auth */}
       <Route path="/chat" element={<Chat />} />
+      <Route path="/chat/:botId" element={<Chat />} />
+      <Route path="/hidden-chat" element={<Chat />} />
 
       {/* Auth Entry Routes */}
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
@@ -36,6 +40,7 @@ const AppRoutes = () => {
       {/* Protected Scholar Routes (Require Authentication) */}
       <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/id/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 

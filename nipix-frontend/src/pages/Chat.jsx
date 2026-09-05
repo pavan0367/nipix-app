@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   Search,
   ArrowLeft,
@@ -166,10 +166,11 @@ const Chat = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const location = useLocation();
+  const { botId } = useParams();
 
   // URL state checking for secret chat redirect
   const searchParams = new URLSearchParams(location.search);
-  const requestedHiddenView = searchParams.get('view') === 'hidden';
+  const requestedHiddenView = searchParams.get('view') === 'hidden' || location.pathname === '/hidden-chat';
 
   // Active Chat & UI States
   const [activeBot, setActiveBot] = useState(AI_BOTS[1]); // Default to ByteBot AI
@@ -194,6 +195,25 @@ const Chat = () => {
     });
     setChatMessages(initialMap);
   }, []);
+
+  // Handle URL route params (/chat/:botId and /hidden-chat)
+  useEffect(() => {
+    if (location.pathname === '/hidden-chat') {
+      if (!currentUser) {
+        navigate('/login?redirect=hidden-chat');
+      } else {
+        setIsVaultView(true);
+        setShowMobileChat(true);
+      }
+    } else if (botId) {
+      const foundBot = AI_BOTS.find((b) => b.id.toLowerCase() === botId.toLowerCase());
+      if (foundBot) {
+        setActiveBot(foundBot);
+        setIsVaultView(false);
+        setShowMobileChat(true);
+      }
+    }
+  }, [botId, location.pathname, currentUser, navigate]);
 
   // Auto-switch to secret vault view if authenticated user comes back with ?view=hidden
   useEffect(() => {
