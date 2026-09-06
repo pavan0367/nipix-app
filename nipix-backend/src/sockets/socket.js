@@ -5,10 +5,7 @@ let io;
 const initSocket = (server) => {
   const allowedOrigins = [
     'https://nipix-media.vercel.app',
-    process.env.CLIENT_URL,
-    process.env.NODE_ENV !== 'production' && 'http://localhost:3000',
-    process.env.NODE_ENV !== 'production' && 'http://localhost:5173',
-    process.env.NODE_ENV !== 'production' && 'http://127.0.0.1:3000'
+    process.env.CLIENT_URL
   ].filter(Boolean);
 
   io = new Server(server, {

@@ -854,18 +854,6 @@ const Chat = () => {
                     </p>
                   </div>
                 </div>
-
-                {/* Quick Clean Reset Action for Current Bot */}
-                <button
-                  type="button"
-                  onClick={handleResetActiveBot}
-                  className="btn-secondary"
-                  style={{ padding: '6px 12px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '5px' }}
-                  title="Reset conversation to initial welcome message"
-                >
-                  <RotateCcw size={12} />
-                  <span>Reset Chat</span>
-                </button>
               </div>
 
               {/* Chat Messages Workspace (Independently Scrollable via container ref) */}
