@@ -1,25 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageSquare, BookOpen, User, LogIn, Compass, Newspaper, Film, Sun, Moon, Laptop } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { MessageSquare, BookOpen, LogIn, Newspaper, Film } from 'lucide-react';
 import NipixLogo from '../NipixLogo';
 
 const Navbar = ({ currentUser }) => {
   const location = useLocation();
-  const { themeMode, activeTheme, changeTheme } = useTheme();
-
-  // Cycle theme: light -> dark -> system -> light
-  const handleCycleTheme = () => {
-    if (themeMode === 'light') changeTheme('dark');
-    else if (themeMode === 'dark') changeTheme('system');
-    else changeTheme('light');
-  };
-
-  const getThemeIcon = () => {
-    if (themeMode === 'system') return <Laptop size={17} title="Theme: Same as Device" />;
-    if (themeMode === 'light') return <Sun size={17} title="Theme: Light Mode" />;
-    return <Moon size={17} title="Theme: Dark Mode" />;
-  };
 
   return (
     <header style={{
@@ -56,44 +41,8 @@ const Navbar = ({ currentUser }) => {
         </Link>
       </div>
 
-      {/* Right Controls: THEME TOGGLE & PROMINENT CHAT BUTTON in TOP-RIGHT CORNER */}
+      {/* Right Controls: PROMINENT CHAT BUTTON & USER / SIGN IN */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* 3-Option Theme Control (Light, Dark, Device) - Hidden exclusively on Chat UI */}
-        {!(location.pathname.startsWith('/chat') || location.pathname === '/hidden-chat') && (
-          <div className="theme-segmented-control" title="Choose appearance theme">
-            <button
-              type="button"
-              onClick={() => changeTheme('light')}
-              className={`theme-segmented-btn ${themeMode === 'light' ? 'active' : ''}`}
-              aria-label="Light Mode"
-              title="Light Mode"
-            >
-              <Sun size={14} />
-              <span className="theme-btn-text">Light</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => changeTheme('dark')}
-              className={`theme-segmented-btn ${themeMode === 'dark' ? 'active' : ''}`}
-              aria-label="Dark Mode"
-              title="Dark Mode"
-            >
-              <Moon size={14} />
-              <span className="theme-btn-text">Dark</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => changeTheme('system')}
-              className={`theme-segmented-btn ${themeMode === 'system' ? 'active' : ''}`}
-              aria-label="Device Theme"
-              title="Same as Device"
-            >
-              <Laptop size={14} />
-              <span className="theme-btn-text">Device</span>
-            </button>
-          </div>
-        )}
-
         {/* Prominent Chat Option */}
         <Link to="/chat" className="top-chat-btn" title="Open AI & Secret Chat">
           <div className="pulse-dot" />

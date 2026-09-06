@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Settings as SettingsIcon, Sun, Moon, Laptop, Lock, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Settings as SettingsIcon, Sun, Moon, Laptop, Lock, Check, LogIn } from 'lucide-react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import NipixLogo from '../../components/NipixLogo';
@@ -160,81 +161,102 @@ const Settings = () => {
             </div>
           )}
 
-          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                Scholar Username
-              </label>
-              <input
-                type="text"
-                value={currentUser?.username || ''}
-                disabled
-                className="input-field"
-                style={{ opacity: 0.6, cursor: 'not-allowed' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                className="input-field"
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                Scholar Bio
-              </label>
-              <textarea
-                value={bio}
-                onChange={e => setBio(e.target.value)}
-                rows={3}
-                className="input-field"
-                style={{ resize: 'none' }}
-                placeholder="Share your research interests and academic focuses..."
-              />
-            </div>
-
-            {/* Privacy Toggle */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '16px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-input)',
-              border: '1px solid var(--border-color)'
-            }}>
+          {currentUser ? (
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
-                <p style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Lock size={16} color="var(--accent-blue)" /> Private Scholar Profile
-                </p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                  When enabled, only verified peers can view your study materials and notes.
-                </p>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  Scholar Username
+                </label>
+                <input
+                  type="text"
+                  value={currentUser?.username || ''}
+                  disabled
+                  className="input-field"
+                  style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                />
               </div>
-              <input
-                type="checkbox"
-                checked={isPrivate}
-                onChange={e => setIsPrivate(e.target.checked)}
-                style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--accent-blue)' }}
-              />
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary"
-              style={{ width: '100%', padding: '12px', marginTop: '8px' }}
-            >
-              {loading ? 'Saving Changes...' : 'Save Profile Settings'}
-            </button>
-          </form>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  Scholar Bio
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  rows={3}
+                  className="input-field"
+                  style={{ resize: 'none' }}
+                  placeholder="Share your research interests and academic focuses..."
+                />
+              </div>
+
+              {/* Privacy Toggle */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-color)'
+              }}>
+                <div>
+                  <p style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Lock size={16} color="var(--accent-blue)" /> Private Scholar Profile
+                  </p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                    When enabled, only verified peers can view your study materials and notes.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isPrivate}
+                  onChange={e => setIsPrivate(e.target.checked)}
+                  style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--accent-blue)' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                style={{ width: '100%', padding: '12px', marginTop: '8px' }}
+              >
+                {loading ? 'Saving Changes...' : 'Save Profile Settings'}
+              </button>
+            </form>
+          ) : (
+            <div style={{
+              padding: '24px 20px',
+              textAlign: 'center',
+              background: 'var(--bg-input)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0 }}>
+                Sign in to your Nipix account to manage profile details and personal privacy preferences.
+              </p>
+              <Link to="/login" className="btn-secondary" style={{ padding: '8px 20px', fontSize: '0.84rem', gap: '6px' }}>
+                <LogIn size={15} /> Sign In to Edit Profile
+              </Link>
+            </div>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: '32px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
             <NipixLogo size={24} style={{ borderRadius: '6px', marginBottom: '6px' }} />

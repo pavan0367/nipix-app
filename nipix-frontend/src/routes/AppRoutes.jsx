@@ -41,7 +41,7 @@ const AppRoutes = () => {
 
       {/* Protected Scholar Routes (Require Authentication) */}
       <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/settings" element={<Settings />} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/id/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

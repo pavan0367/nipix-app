@@ -197,36 +197,72 @@ describe('Nipix AI Bots UX Consistency & Feature Tests', () => {
     });
   });
 
-  describe('6. Navbar Theme Controls Hiding on Chat', () => {
-    test('Navbar does NOT render Light/Dark/Device theme controls when on /chat', () => {
+  describe('6. Theme Controls Moved from Header to Settings Only & Dashboard Expansion', () => {
+    test('Navbar does NOT render Light/Dark/Device theme controls on /home or /chat', () => {
       const Navbar = require('../Navbar/Navbar').default;
       const { ThemeProvider } = require('../../context/ThemeContext');
-      const html = ReactDOMServer.renderToStaticMarkup(
-        <ThemeProvider>
-          <MemoryRouter initialEntries={['/chat']}>
-            <Navbar />
-          </MemoryRouter>
-        </ThemeProvider>
-      );
-      expect(html).not.toContain('theme-segmented-control');
-      expect(html).not.toContain('aria-label="Light Mode"');
-      expect(html).not.toContain('aria-label="Device Theme"');
+      ['/home', '/chat', '/study'].forEach((path) => {
+        const html = ReactDOMServer.renderToStaticMarkup(
+          <ThemeProvider>
+            <MemoryRouter initialEntries={[path]}>
+              <Navbar />
+            </MemoryRouter>
+          </ThemeProvider>
+        );
+        expect(html).not.toContain('theme-segmented-control');
+        expect(html).not.toContain('aria-label="Light Mode"');
+        expect(html).not.toContain('aria-label="Device Theme"');
+        expect(html).toContain('top-chat-btn');
+      });
     });
 
-    test('Navbar DOES render Light/Dark/Device theme controls on non-chat pages', () => {
-      const Navbar = require('../Navbar/Navbar').default;
+    test('Settings page preserves complete Light, Dark, Same as Device theme controls', () => {
+      const Settings = require('../../pages/Settings/Settings').default;
       const { ThemeProvider } = require('../../context/ThemeContext');
       const html = ReactDOMServer.renderToStaticMarkup(
-        <ThemeProvider>
-          <MemoryRouter initialEntries={['/home']}>
-            <Navbar />
-          </MemoryRouter>
-        </ThemeProvider>
+        <Provider store={createMockStore()}>
+          <ThemeProvider>
+            <MemoryRouter initialEntries={['/settings']}>
+              <Settings />
+            </MemoryRouter>
+          </ThemeProvider>
+        </Provider>
       );
-      expect(html).toContain('theme-segmented-control');
+      expect(html).toContain('Appearance Theme');
       expect(html).toContain('Light');
       expect(html).toContain('Dark');
       expect(html).toContain('Device');
+    });
+
+    test('Home dashboard renders introduction video and 6 expanded study sections', () => {
+      const Home = require('../../pages/Home').default;
+      const html = ReactDOMServer.renderToStaticMarkup(
+        <Provider store={createMockStore()}>
+          <MemoryRouter initialEntries={['/home']}>
+            <Home />
+          </MemoryRouter>
+        </Provider>
+      );
+      // Video
+      expect(html).toContain('Welcome to Nipix');
+      expect(html).toContain('A quick introduction to your AI-powered study platform');
+      expect(html).toContain('src="/intro.mp4"');
+      expect(html).toContain('autoplay=""');
+      expect(html).toContain('playsinline=""');
+      expect(html).toContain('muted=""');
+
+      // 6 Expanded Sections
+      expect(html).toContain('Continue Learning');
+      expect(html).toContain('Study Plan');
+      expect(html).toContain('Quick Learning');
+      expect(html).toContain('Latest Learning Resources');
+      expect(html).toContain('Japanese Learning Progress');
+      expect(html).toContain('AI Study Insights');
+
+      // Preserved Existing Sections
+      expect(html).toContain('✦ AI STUDY CO-PILOT ACTIVE');
+      expect(html).toContain('Recommended Study Modules');
+      expect(html).toContain('Daily Learning Streak');
     });
   });
 });

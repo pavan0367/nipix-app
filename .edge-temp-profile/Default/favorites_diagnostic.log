@@ -97,3 +97,47 @@
 2026-09-06 14:19:34.971: [INFO] BookmarksLoadDropped droppedNodes=0
 2026-09-06 14:19:34.971: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
 2026-09-06 14:19:35.044: [INFO] Sync initialization duration: 11ms
+2026-09-06 15:26:58.948: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 15:26:58.948: [INFO] Profiles total count: 1
+2026-09-06 15:26:58.948: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 15:26:58.948: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 15:26:58.948: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 15:26:58.948: [INFO] VisibilityChanged: 0
+2026-09-06 15:26:58.974: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 15:26:58.974: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 15:26:58.974: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 15:26:58.974: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 15:26:59.052: [INFO] Sync initialization duration: 9ms
+2026-09-06 15:28:30.186: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 15:28:30.186: [INFO] Profiles total count: 1
+2026-09-06 15:28:30.186: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 15:28:30.186: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 15:28:30.186: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 15:28:30.186: [INFO] VisibilityChanged: 0
+2026-09-06 15:28:30.213: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 15:28:30.213: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 15:28:30.213: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 15:28:30.213: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 15:28:30.285: [INFO] Sync initialization duration: 11ms
+2026-09-06 15:51:51.039: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 15:51:51.039: [INFO] Profiles total count: 1
+2026-09-06 15:51:51.039: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 15:51:51.039: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 15:51:51.039: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 15:51:51.039: [INFO] VisibilityChanged: 0
+2026-09-06 15:51:51.071: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 15:51:51.071: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 15:51:51.071: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 15:51:51.071: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 15:51:51.152: [INFO] Sync initialization duration: 11ms
+2026-09-06 16:05:50.799: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 16:05:50.799: [INFO] Profiles total count: 1
+2026-09-06 16:05:50.799: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 16:05:50.799: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 16:05:50.799: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:19:34.953Z
+2026-09-06 16:05:50.799: [INFO] VisibilityChanged: 0
+2026-09-06 16:05:50.851: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 16:05:50.851: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 16:05:50.851: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 16:05:50.851: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 16:05:50.942: [INFO] Sync initialization duration: 24ms
