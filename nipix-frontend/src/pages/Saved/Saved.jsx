@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { Bookmark, Lock, Image as ImageIcon } from 'lucide-react';
+import NipixLogo from '../../components/NipixLogo';
 
 const Saved = () => {
   const [savedPosts, setSavedPosts] = useState([]);
@@ -26,11 +27,11 @@ const Saved = () => {
   return (
     <div style={{ maxWidth: '935px', margin: '30px auto', padding: '0 16px' }}>
       <div className="glass-card" style={{ padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Bookmark size={24} color="var(--accent-purple)" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <NipixLogo size={42} style={{ borderRadius: '10px' }} glow />
           <div>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0 }}>Saved Posts</h2>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>Only you can see posts you have saved.</p>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0 }}>Saved Notes & Posts</h2>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>Only you can see study materials and posts you have saved on Nipix.</p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
@@ -40,9 +41,9 @@ const Saved = () => {
 
       {savedPosts.length === 0 ? (
         <div className="glass-card" style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--text-muted)' }}>
-          <Bookmark size={48} color="var(--accent-purple)" style={{ marginBottom: '16px' }} />
-          <h3 style={{ color: '#fff', marginBottom: '8px' }}>Save Posts for Later</h3>
-          <p style={{ fontSize: '0.9rem' }}>When you bookmark a post, it will be stored securely here in your private collection.</p>
+          <NipixLogo size={64} style={{ borderRadius: '14px', marginBottom: '16px' }} glow />
+          <h3 style={{ color: '#fff', marginBottom: '8px' }}>Save Notes for Later</h3>
+          <p style={{ fontSize: '0.9rem' }}>When you bookmark a post or study note, it will be stored securely here in your private Nipix collection.</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>

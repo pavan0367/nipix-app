@@ -10,6 +10,7 @@ import {
   ArrowRight,
   X
 } from 'lucide-react';
+import NipixLogo from '../../components/NipixLogo';
 
 const NEWS_CATEGORIES = [
   'All News',
@@ -102,17 +103,7 @@ const NewsFeed = () => {
         {/* News Editorial Header */}
         <div className="glass-card" style={{ padding: '28px', marginBottom: '28px', borderLeft: '4px solid var(--accent-amber)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '10px',
-              background: 'rgba(245, 158, 11, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Newspaper size={24} color="#f59e0b" />
-            </div>
+            <NipixLogo size={46} style={{ borderRadius: '10px' }} glow />
             <div>
               <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Science & Technology News Wire

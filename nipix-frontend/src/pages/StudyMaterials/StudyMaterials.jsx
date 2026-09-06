@@ -14,6 +14,7 @@ import {
   Layers,
   FileText
 } from 'lucide-react';
+import NipixLogo from '../../components/NipixLogo';
 
 const CATEGORIES = [
   'All Materials',
@@ -180,17 +181,7 @@ const StudyMaterials = () => {
         {/* Hub Header */}
         <div className="glass-card" style={{ padding: '28px', marginBottom: '28px', borderLeft: '4px solid var(--accent-emerald)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '10px' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '10px',
-              background: 'rgba(16, 185, 129, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <BookOpen size={24} color="#10b981" />
-            </div>
+            <NipixLogo size={46} style={{ borderRadius: '10px' }} glow />
             <div>
               <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Study Materials & Academic Notes

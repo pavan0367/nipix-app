@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../store/slices/authSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User as UserIcon, AtSign, Sparkles, AlertCircle } from 'lucide-react';
+import NipixLogo from '../../components/NipixLogo';
 
 const Register = () => {
   const [formData, setFormData] = useState({ username: '', email: '', password: '', full_name: '' });
@@ -35,7 +36,10 @@ const Register = () => {
     }}>
       <div className="glass-card" style={{ width: '100%', maxWidth: '420px', padding: '36px 32px' }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <h1 className="brand-logo" style={{ fontSize: '3rem', marginBottom: '8px' }}>Nipix</h1>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+            <NipixLogo size={72} style={{ borderRadius: '16px' }} glow />
+          </div>
+          <h1 className="brand-logo" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Nipix</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             Sign up to see photos and videos from your friends.
           </p>

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { Settings as SettingsIcon, Sun, Moon, Laptop, Lock, Check } from 'lucide-react';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import NipixLogo from '../../components/NipixLogo';
 
 const Settings = () => {
   const currentUser = useSelector((state) => state.auth?.user);
@@ -41,9 +42,17 @@ const Settings = () => {
     <div className="page-theme-settings" style={{ minHeight: '100vh', padding: '30px 16px' }}>
       <div style={{ maxWidth: '640px', margin: '0 auto' }}>
         <div className="glass-card" style={{ padding: '32px' }}>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <SettingsIcon size={22} color="var(--accent-blue)" /> Platform & Account Settings
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+            <NipixLogo size={46} style={{ borderRadius: '10px' }} glow />
+            <div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
+                Platform & Account Settings
+              </h2>
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                Nipix AI Scholar Workspace Preferences
+              </p>
+            </div>
+          </div>
 
           {/* ========================================================== */}
           {/* THEME SELECTION: LIGHT / DARK / SAME AS DEVICE             */}
@@ -226,6 +235,11 @@ const Settings = () => {
               {loading ? 'Saving Changes...' : 'Save Profile Settings'}
             </button>
           </form>
+
+          <div style={{ textAlign: 'center', marginTop: '32px', paddingTop: '20px', borderTop: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+            <NipixLogo size={24} style={{ borderRadius: '6px', marginBottom: '6px' }} />
+            <div>Nipix AI Scholar Platform • Learn • Explore • Create • Beyond</div>
+          </div>
         </div>
       </div>
     </div>

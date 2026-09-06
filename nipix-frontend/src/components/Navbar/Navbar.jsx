@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, MessageSquare, BookOpen, User, LogIn, Compass, Newspaper, Film, Sun, Moon, Laptop } from 'lucide-react';
+import { MessageSquare, BookOpen, User, LogIn, Compass, Newspaper, Film, Sun, Moon, Laptop } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import NipixLogo from '../NipixLogo';
 
 const Navbar = ({ currentUser }) => {
   const location = useLocation();
@@ -35,18 +36,7 @@ const Navbar = ({ currentUser }) => {
       {/* Brand & Scholar Level */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <Link to="/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            background: 'var(--scholar-gradient)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 12px rgba(37, 99, 235, 0.3)'
-          }}>
-            <Sparkles size={18} color="#ffffff" />
-          </div>
+          <NipixLogo size={32} style={{ borderRadius: '8px' }} />
           <span className="brand-logo" style={{ fontSize: '1.25rem' }}>
             Nipix <span style={{ fontSize: '0.8rem', opacity: 0.8, fontWeight: 500, color: 'var(--text-dim)' }}>AI Scholar</span>
           </span>

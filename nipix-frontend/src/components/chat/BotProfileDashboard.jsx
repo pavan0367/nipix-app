@@ -20,6 +20,7 @@ import {
   Lock,
   MessageSquare
 } from 'lucide-react';
+import NipixLogo from '../NipixLogo';
 
 /**
  * Nipix Bot Profile Dashboard
@@ -370,9 +371,14 @@ const BotProfileDashboard = ({
           </div>
 
           {/* Online status indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#10b981', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#10b981', marginBottom: '6px' }}>
             <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
             <span>Active now</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: '#94a3b8', marginBottom: '24px' }}>
+            <NipixLogo size={14} style={{ borderRadius: '3px' }} />
+            <span>Official Nipix AI Specialist</span>
           </div>
 
           {/* ---------------------------------------------------- */}
@@ -1296,8 +1302,8 @@ const BotProfileDashboard = ({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Info size={20} color="#38bdf8" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <NipixLogo size={24} style={{ borderRadius: '6px' }} />
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800' }}>About {bot.name}</h3>
               </div>
               <button

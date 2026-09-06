@@ -11,9 +11,9 @@ import {
   Settings,
   User,
   LogOut,
-  Sparkles,
   LogIn
 } from 'lucide-react';
+import NipixLogo from '../NipixLogo';
 
 const Sidebar = ({ currentUser, onLogout }) => {
   return (
@@ -22,21 +22,7 @@ const Sidebar = ({ currentUser, onLogout }) => {
         {/* Brand Header */}
         <div style={{ marginBottom: '28px', padding: '0 8px' }}>
           <Link to="/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(124, 58, 237, 0.4)',
-              color: '#ffffff',
-              fontSize: '1.4rem',
-              fontWeight: 'bold'
-            }}>
-              ✦
-            </div>
+            <NipixLogo size={44} style={{ borderRadius: '10px' }} glow />
             <div>
               <span className="brand-logo" style={{ fontSize: '1.35rem', fontWeight: '800', lineHeight: '1.1', background: 'linear-gradient(135deg, #a855f7 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 Nipix

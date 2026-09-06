@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import NipixLogo from '../NipixLogo';
 
 const Loader = ({ text = 'Loading...' }) => {
   return (
@@ -10,10 +10,10 @@ const Loader = ({ text = 'Loading...' }) => {
       justifyContent: 'center',
       padding: '40px',
       color: 'var(--text-muted)',
-      gap: '12px'
+      gap: '14px'
     }}>
-      <Sparkles size={28} className="animate-spin" color="var(--accent-blue)" />
-      <p style={{ margin: 0, fontSize: '0.9rem', color: '#fff' }}>{text}</p>
+      <NipixLogo size={48} style={{ borderRadius: '12px' }} glow />
+      <p style={{ margin: 0, fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>{text}</p>
     </div>
   );
 };

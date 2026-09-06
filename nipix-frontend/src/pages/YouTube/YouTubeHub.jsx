@@ -11,6 +11,7 @@ import {
   Share2,
   X
 } from 'lucide-react';
+import NipixLogo from '../../components/NipixLogo';
 
 const LECTURE_PLAYLISTS = [
   'All Lectures',
@@ -91,17 +92,7 @@ const YouTubeHub = () => {
         {/* Hub Header */}
         <div className="glass-card" style={{ padding: '24px', marginBottom: '24px', borderLeft: '4px solid var(--accent-rose)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '10px',
-              background: 'rgba(244, 63, 94, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Film size={24} color="#f43f5e" />
-            </div>
+            <NipixLogo size={46} style={{ borderRadius: '10px' }} glow />
             <div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Interactive Video Lecture Studio

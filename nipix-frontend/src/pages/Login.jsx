@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, registerUser } from '../store/slices/authSlice';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Lock, User as UserIcon, AtSign, Eye, EyeOff, Sparkles, AlertCircle, KeyRound, Shield } from 'lucide-react';
+import NipixLogo from '../components/NipixLogo';
 
 const Login = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -78,17 +79,8 @@ const Login = () => {
 
         {/* Brand & Title */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '12px',
-            background: isHiddenChatRedirect ? 'var(--vault-gradient)' : 'var(--scholar-gradient)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 12px auto'
-          }}>
-            {isHiddenChatRedirect ? <KeyRound size={22} color="#fff" /> : <Sparkles size={22} color="#fff" />}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+            <NipixLogo size={70} style={{ borderRadius: '16px' }} glow />
           </div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 6px 0' }}>
             {isHiddenChatRedirect ? 'Vault Channel Login' : (isRegister ? 'Create Scholar Account' : 'Sign In to Nipix')}

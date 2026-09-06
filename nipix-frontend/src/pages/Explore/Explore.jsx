@@ -11,6 +11,7 @@ import {
   Atom,
   Check
 } from 'lucide-react';
+import NipixLogo from '../../components/NipixLogo';
 
 const EXPLORE_STUDY_CARDS = [
   {
@@ -80,17 +81,7 @@ const Explore = () => {
         {/* Explore Header */}
         <div className="glass-card" style={{ padding: '24px', marginBottom: '28px', borderLeft: '4px solid var(--accent-cyan)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '10px',
-              background: 'rgba(0, 242, 254, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Compass size={24} color="#00f2fe" />
-            </div>
+            <NipixLogo size={46} style={{ borderRadius: '10px' }} glow />
             <div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
                 Explore Educational Visuals & Science Cards

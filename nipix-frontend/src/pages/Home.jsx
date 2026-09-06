@@ -18,6 +18,7 @@ import {
   TrendingUp,
   BrainCircuit
 } from 'lucide-react';
+import NipixLogo from '../components/NipixLogo';
 
 const Home = () => {
   const currentUser = useSelector((state) => state.auth?.user);
@@ -68,7 +69,7 @@ const Home = () => {
                 marginBottom: '16px',
                 border: '1px solid rgba(124, 58, 237, 0.25)'
               }}>
-                <BrainCircuit size={14} /> ✦ AI STUDY CO-PILOT ACTIVE ●
+                <NipixLogo size={16} style={{ borderRadius: '4px' }} /> ✦ AI STUDY CO-PILOT ACTIVE ●
               </div>
               
               <h1 style={{ fontSize: '2.4rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1.2', margin: '0 0 14px 0', letterSpacing: '-0.02em' }}>

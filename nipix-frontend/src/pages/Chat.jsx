@@ -15,6 +15,7 @@ import {
 import { sendAiChatMessageStream } from '../services/aiService';
 import MarkdownMessage from '../components/chat/MarkdownMessage';
 import BotProfileDashboard from '../components/chat/BotProfileDashboard';
+import NipixLogo from '../components/NipixLogo';
 
 // Helper to identify error messages that should not be saved or previewed
 const isErrorMessage = (text) => {
@@ -1085,8 +1086,16 @@ const Chat = () => {
             </div>
             )
           ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
-              Select an AI bot to start chatting.
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', padding: '24px', textAlign: 'center', gap: '14px' }}>
+              <NipixLogo size={80} style={{ borderRadius: '18px' }} glow />
+              <div>
+                <h3 style={{ margin: '0 0 6px 0', color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: '800' }}>
+                  Nipix AI Scholar Workspace
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                  Select an AI bot to start chatting.
+                </p>
+              </div>
             </div>
           )}
         </div>

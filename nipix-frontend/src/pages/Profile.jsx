@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchProfile, followUser } from '../store/slices/userSlice';
 import api from '../services/api';
 import { User, Grid, Bookmark, Heart, Settings, UserPlus, UserCheck, Image as ImageIcon } from 'lucide-react';
+import NipixLogo from '../components/NipixLogo';
 
 const Profile = ({ currentUser: propCurrentUser }) => {
   const { username, id } = useParams();
@@ -137,10 +138,14 @@ const Profile = ({ currentUser: propCurrentUser }) => {
 
           {/* Profile Details */}
           <div style={{ flex: 1, minWidth: '260px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: '1.6rem', fontWeight: '700', color: '#fff', margin: 0 }}>
                 @{profileUsername}
               </h2>
+
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '9999px', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', fontSize: '0.76rem', color: 'var(--accent-blue)', fontWeight: '600' }}>
+                <NipixLogo size={14} style={{ borderRadius: '3px' }} /> Nipix Scholar
+              </span>
 
               {isOwnProfile ? (
                 <button className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
