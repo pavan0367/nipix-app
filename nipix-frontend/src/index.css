@@ -616,6 +616,20 @@ body.chat-route-active {
   border-left: 3px solid var(--accent-indigo);
 }
 
+/* Subtle Secondary Metadata Timestamp in Left Bot List */
+.bot-meta-right {
+  font-size: 0.64rem;
+  line-height: 1;
+  color: var(--text-dim);
+  opacity: 0.65;
+  flex-shrink: 0;
+  margin-left: 8px;
+  text-align: right;
+  white-space: nowrap;
+  user-select: none;
+  letter-spacing: 0.01em;
+}
+
 /* Avatar with Overlapping Active Green Dot */
 .avatar-wrapper {
   position: relative;

@@ -58,39 +58,41 @@ const Navbar = ({ currentUser }) => {
 
       {/* Right Controls: THEME TOGGLE & PROMINENT CHAT BUTTON in TOP-RIGHT CORNER */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* 3-Option Theme Control (Light, Dark, Device) */}
-        <div className="theme-segmented-control" title="Choose appearance theme">
-          <button
-            type="button"
-            onClick={() => changeTheme('light')}
-            className={`theme-segmented-btn ${themeMode === 'light' ? 'active' : ''}`}
-            aria-label="Light Mode"
-            title="Light Mode"
-          >
-            <Sun size={14} />
-            <span className="theme-btn-text">Light</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => changeTheme('dark')}
-            className={`theme-segmented-btn ${themeMode === 'dark' ? 'active' : ''}`}
-            aria-label="Dark Mode"
-            title="Dark Mode"
-          >
-            <Moon size={14} />
-            <span className="theme-btn-text">Dark</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => changeTheme('system')}
-            className={`theme-segmented-btn ${themeMode === 'system' ? 'active' : ''}`}
-            aria-label="Device Theme"
-            title="Same as Device"
-          >
-            <Laptop size={14} />
-            <span className="theme-btn-text">Device</span>
-          </button>
-        </div>
+        {/* 3-Option Theme Control (Light, Dark, Device) - Hidden exclusively on Chat UI */}
+        {!(location.pathname.startsWith('/chat') || location.pathname === '/hidden-chat') && (
+          <div className="theme-segmented-control" title="Choose appearance theme">
+            <button
+              type="button"
+              onClick={() => changeTheme('light')}
+              className={`theme-segmented-btn ${themeMode === 'light' ? 'active' : ''}`}
+              aria-label="Light Mode"
+              title="Light Mode"
+            >
+              <Sun size={14} />
+              <span className="theme-btn-text">Light</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => changeTheme('dark')}
+              className={`theme-segmented-btn ${themeMode === 'dark' ? 'active' : ''}`}
+              aria-label="Dark Mode"
+              title="Dark Mode"
+            >
+              <Moon size={14} />
+              <span className="theme-btn-text">Dark</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => changeTheme('system')}
+              className={`theme-segmented-btn ${themeMode === 'system' ? 'active' : ''}`}
+              aria-label="Device Theme"
+              title="Same as Device"
+            >
+              <Laptop size={14} />
+              <span className="theme-btn-text">Device</span>
+            </button>
+          </div>
+        )}
 
         {/* Prominent Chat Option */}
         <Link to="/chat" className="top-chat-btn" title="Open AI & Secret Chat">

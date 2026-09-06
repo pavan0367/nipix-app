@@ -75,3 +75,25 @@
 2026-09-06 12:52:12.895: [INFO] BookmarksLoadDropped droppedNodes=0
 2026-09-06 12:52:12.895: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
 2026-09-06 12:52:12.965: [INFO] Sync initialization duration: 10ms
+2026-09-06 14:18:55.239: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 14:18:55.239: [INFO] Profiles total count: 1
+2026-09-06 14:18:55.239: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:52:12.877Z
+2026-09-06 14:18:55.239: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 14:18:55.239: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:52:12.877Z
+2026-09-06 14:18:55.239: [INFO] VisibilityChanged: 0
+2026-09-06 14:18:55.264: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 14:18:55.264: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 14:18:55.264: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 14:18:55.264: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 14:18:55.361: [INFO] Sync initialization duration: 12ms
+2026-09-06 14:19:34.945: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 14:19:34.945: [INFO] Profiles total count: 1
+2026-09-06 14:19:34.945: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:18:55.246Z
+2026-09-06 14:19:34.945: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 14:19:34.945: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T14:18:55.246Z
+2026-09-06 14:19:34.945: [INFO] VisibilityChanged: 0
+2026-09-06 14:19:34.971: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 14:19:34.971: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 14:19:34.971: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 14:19:34.971: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 14:19:35.044: [INFO] Sync initialization duration: 11ms

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 
 jest.mock('react-markdown', () => ({ children }) => <div className="markdown-body">{children}</div>);
@@ -142,9 +142,91 @@ describe('Nipix AI Bots UX Consistency & Feature Tests', () => {
       expect(html).toContain('aria-label="Chat options"');
       // Contains the personalized intro text
       expect(html).toContain("Hello! I&#x27;m ByteBot AI, your Programming &amp; Software Engineering assistant. What would you like me to help you with today?");
-      // Timestamp styling has smaller font size 0.62rem
+      // Timestamp styling has smaller font size 0.62rem inside message bubble
       expect(html).toContain('font-size:0.62rem');
       expect(html).toContain('opacity:0.65');
+      // Left-side bot list has subtle small timestamp with bot-meta-right class and 0.64rem
+      expect(html).toContain('bot-meta-right');
+      expect(html).toContain('font-size:0.64rem');
+    });
+
+    test('AI bots registry contains ZERO hardcoded static lastTime timestamps', () => {
+      AI_BOTS.forEach((bot) => {
+        expect(bot.lastTime).toBeUndefined();
+      });
+    });
+  });
+
+  describe('5. 1-Hour Inactivity Timeout & Session Reset Architecture', () => {
+    test('INACTIVITY_TIMEOUT_MS is 3,600,000 ms (exactly 1 hour)', () => {
+      const { INACTIVITY_TIMEOUT_MS } = require('../../pages/Chat');
+      expect(INACTIVITY_TIMEOUT_MS).toBe(3600000);
+      expect(INACTIVITY_TIMEOUT_MS).toBe(60 * 60 * 1000);
+    });
+
+    test('when user returns after > 1 hour of inactivity, previous messages remain intact and fresh intro is appended', () => {
+      const store = createMockStore();
+      const oneHourAgo = Date.now() - (3600 * 1000 + 10000); // 1 hr + 10s
+
+      // Simulate prior conversation with Spark_X stored in localStorage
+      const priorHistory = {
+        spark_x: [
+          { id: '1', sender: 'Spark_X', isUser: false, text: 'Hello! I am Spark_X...', time: '10:00 AM' },
+          { id: '2', sender: 'Learner', isUser: true, text: "What is Ohm's Law?", time: '10:01 AM' },
+          { id: '3', sender: 'Spark_X', isUser: false, text: 'Ohm\'s law states V = I * R.', time: '10:01 AM' }
+        ]
+      };
+      localStorage.setItem('nipix_chat_messages_v6', JSON.stringify(priorHistory));
+      localStorage.setItem('nipix_bot_last_interaction', JSON.stringify({ spark_x: oneHourAgo }));
+
+      const html = ReactDOMServer.renderToStaticMarkup(
+        <Provider store={store}>
+          <MemoryRouter initialEntries={['/chat/spark_x']}>
+            <Routes>
+              <Route path="/chat/:botId" element={<Chat />} />
+            </Routes>
+          </MemoryRouter>
+        </Provider>
+      );
+
+      // Verify old conversation is 100% preserved
+      expect(html).toContain("What is Ohm&#x27;s Law?");
+      expect(html).toContain("Ohm&#x27;s law states V = I * R.");
+      // Verify fresh session intro for Spark_X is displayed
+      expect(html).toContain("What would you like me to help you with today?");
+    });
+  });
+
+  describe('6. Navbar Theme Controls Hiding on Chat', () => {
+    test('Navbar does NOT render Light/Dark/Device theme controls when on /chat', () => {
+      const Navbar = require('../Navbar/Navbar').default;
+      const { ThemeProvider } = require('../../context/ThemeContext');
+      const html = ReactDOMServer.renderToStaticMarkup(
+        <ThemeProvider>
+          <MemoryRouter initialEntries={['/chat']}>
+            <Navbar />
+          </MemoryRouter>
+        </ThemeProvider>
+      );
+      expect(html).not.toContain('theme-segmented-control');
+      expect(html).not.toContain('aria-label="Light Mode"');
+      expect(html).not.toContain('aria-label="Device Theme"');
+    });
+
+    test('Navbar DOES render Light/Dark/Device theme controls on non-chat pages', () => {
+      const Navbar = require('../Navbar/Navbar').default;
+      const { ThemeProvider } = require('../../context/ThemeContext');
+      const html = ReactDOMServer.renderToStaticMarkup(
+        <ThemeProvider>
+          <MemoryRouter initialEntries={['/home']}>
+            <Navbar />
+          </MemoryRouter>
+        </ThemeProvider>
+      );
+      expect(html).toContain('theme-segmented-control');
+      expect(html).toContain('Light');
+      expect(html).toContain('Dark');
+      expect(html).toContain('Device');
     });
   });
 });

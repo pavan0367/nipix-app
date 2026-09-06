@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
@@ -117,13 +117,18 @@ export const CHAT_THEMES = {
   }
 };
 
+// 1-Hour Inactivity Timeout Threshold (3,600,000 ms)
+export const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
+
 // Generate a bot-specific personalized welcome message with live system time
 export const createBotWelcomeMessage = (bot) => ({
   id: `${bot.id}-intro-${Date.now()}`,
   sender: bot.name,
   isUser: false,
   text: bot.introText,
-  time: getCurrentSystemTime()
+  time: getCurrentSystemTime(),
+  isSessionIntro: true,
+  timestamp: Date.now()
 });
 
 // Helper to identify error messages that should not be saved or previewed
@@ -177,8 +182,7 @@ export const AI_BOTS = [
     ],
     introText: "Hello! I'm ByteBot AI, your Programming & Software Engineering assistant. What would you like me to help you with today?",
     previewText: "Hello! I'm ByteBot AI, your Programming & Software Engineering assistant.",
-    ageText: 'Just now',
-    lastTime: '08:42 AM'
+    ageText: 'Just now'
   },
   {
     id: 'cipher_09',
@@ -202,8 +206,7 @@ export const AI_BOTS = [
     ],
     introText: "Hello! I'm Cipher_09, your Research, Cryptography & Cybersecurity assistant. What would you like me to help you with today?",
     previewText: "Hello! I'm Cipher_09, your Research, Cryptography & Cybersecurity assistant.",
-    ageText: '12 min ago',
-    lastTime: '03:14 AM'
+    ageText: '12 min ago'
   },
   {
     id: 'spark_x',
@@ -227,8 +230,7 @@ export const AI_BOTS = [
     ],
     introText: "Hello! I'm Spark_X, your Electrical Engineering, Physics & Circuit Theory assistant. What would you like me to help you with today?",
     previewText: "Hello! I'm Spark_X, your Electrical Engineering, Physics & Circuit Theory assistant.",
-    ageText: '25 min ago',
-    lastTime: '10:15 AM'
+    ageText: '25 min ago'
   },
   {
     id: 'archivist',
@@ -252,8 +254,7 @@ export const AI_BOTS = [
     ],
     introText: "Hello! I'm Archivist, your Study, Knowledge & Research assistant. What would you like me to help you with today?",
     previewText: "Hello! I'm Archivist, your Study, Knowledge & Research assistant.",
-    ageText: '1 hr ago',
-    lastTime: '11:30 AM'
+    ageText: '1 hr ago'
   },
   {
     id: 'novamind',
@@ -277,8 +278,7 @@ export const AI_BOTS = [
     ],
     introText: "Hello! I'm NovaMind, your General AI & Learning assistant. What would you like me to help you with today?",
     previewText: "Hello! I'm NovaMind, your General AI & Learning assistant.",
-    ageText: '15 min ago',
-    lastTime: '01:05 PM'
+    ageText: '15 min ago'
   },
   {
     id: 'aether',
@@ -302,8 +302,7 @@ export const AI_BOTS = [
     ],
     introText: "Hello! I'm Aether, your Science, Innovation & Technology assistant. What would you like me to help you with today?",
     previewText: "Hello! I'm Aether, your Science, Innovation & Technology assistant.",
-    ageText: '5 min ago',
-    lastTime: '02:20 PM'
+    ageText: '5 min ago'
   },
   {
     id: 'sakura',
@@ -327,8 +326,7 @@ export const AI_BOTS = [
     ],
     introText: "Hello! 🌸 I'm Sakura, your Japanese Language & JLPT assistant. What would you like me to help you with today?",
     previewText: "Hello! 🌸 I'm Sakura, your Japanese Language & JLPT assistant.",
-    ageText: 'Just now',
-    lastTime: '12:00 PM'
+    ageText: 'Just now'
   }
 ];
 
@@ -338,7 +336,7 @@ const HIDDEN_VAULT_MESSAGES = [
     id: 'v-1',
     sender: 'Lead Researcher (Dr. K. Vance)',
     role: 'Quantum Architect',
-    time: '11:45 AM',
+    time: getCurrentSystemTime(),
     text: 'Decrypted Channel Active: The topological qubit test benchmarks have matched theoretical parity. Access token for Shard 4 is 0x7F4A92B.',
     isPrivate: true
   },
@@ -346,7 +344,7 @@ const HIDDEN_VAULT_MESSAGES = [
     id: 'v-2',
     sender: 'Cipher_09',
     role: 'Security Fellow',
-    time: '12:10 PM',
+    time: getCurrentSystemTime(),
     text: 'Verified: Multi-agent consensus protocol verified for distributed study graph. All private transcripts are locked to authenticated keys.',
     isPrivate: true
   }
@@ -362,8 +360,14 @@ const Chat = () => {
   const searchParams = new URLSearchParams(location.search);
   const requestedHiddenView = searchParams.get('view') === 'hidden' || location.pathname === '/hidden-chat';
 
-  // Active Chat & UI States (Default to ByteBot AI)
-  const [activeBot, setActiveBot] = useState(AI_BOTS[0]);
+  // Active Chat & UI States (Defaults to URL botId if provided, else ByteBot AI)
+  const [activeBot, setActiveBot] = useState(() => {
+    if (botId) {
+      const found = AI_BOTS.find((b) => b.id.toLowerCase() === botId.toLowerCase());
+      if (found) return found;
+    }
+    return AI_BOTS[0];
+  });
   const [searchQuery, setSearchQuery] = useState('');
   
   // Clean initialization: initialize all bots with personalized intro & dynamic system time
@@ -389,7 +393,29 @@ const Chat = () => {
               if (cleanList.length === 0 || (cleanList.length === 1 && !cleanList[0].isUser && isOldIntroMessage(cleanList[0].text))) {
                 sanitized[bot.id] = [createBotWelcomeMessage(bot)];
               } else {
-                sanitized[bot.id] = cleanList;
+                // Check if 1-hour inactivity timeout elapsed on cached conversation
+                let lastActive = 0;
+                try {
+                  const savedInteractions = JSON.parse(localStorage.getItem('nipix_bot_last_interaction') || '{}');
+                  lastActive = savedInteractions[bot.id] || 0;
+                } catch (e) {}
+
+                const now = Date.now();
+                const hasUserMsgs = cleanList.some((m) => m && m.isUser);
+                if (hasUserMsgs && lastActive > 0 && (now - lastActive) >= INACTIVITY_TIMEOUT_MS) {
+                  const freshIntro = {
+                    id: `${bot.id}-session-intro-${now}`,
+                    sender: bot.name,
+                    isUser: false,
+                    text: bot.introText,
+                    time: getCurrentSystemTime(),
+                    isSessionIntro: true,
+                    timestamp: now
+                  };
+                  sanitized[bot.id] = [...cleanList, freshIntro];
+                } else {
+                  sanitized[bot.id] = cleanList;
+                }
               }
             } else {
               sanitized[bot.id] = [createBotWelcomeMessage(bot)];
@@ -538,6 +564,142 @@ const Chat = () => {
     }
   };
 
+  // Check and apply 1-hour inactivity timeout / fresh entry timing for a bot
+  // If > 1 hour of inactivity on an existing conversation:
+  // - Keeps all existing messages intact!
+  // - Appends a fresh domain intro message with current system time at that moment
+  // - Resets active conversational session/state for AI context
+  const checkInactivityAndInitSession = useCallback((targetBotId) => {
+    if (!targetBotId) return;
+    const bot = AI_BOTS.find((b) => b.id === targetBotId);
+    if (!bot) return;
+
+    const now = Date.now();
+
+    // Directly read from localStorage to guarantee precise, real-time timestamp comparison
+    let lastActive = 0;
+    try {
+      const savedInteractions = JSON.parse(localStorage.getItem('nipix_bot_last_interaction') || '{}');
+      lastActive = savedInteractions[targetBotId] || 0;
+    } catch (e) {}
+
+    setChatMessages((prevMessages) => {
+      const currentMsgs = prevMessages[targetBotId] || [];
+      const hasUserMessages = currentMsgs.some((m) => m && m.isUser);
+
+      // Inactivity timeout: user talked to bot previously, but inactive >= 1 hour (3,600,000 ms)
+      if (hasUserMessages && lastActive > 0 && (now - lastActive) >= INACTIVITY_TIMEOUT_MS) {
+        // Prevent duplicate intro if user rapidly clicks or switches back and forth
+        const lastMsg = currentMsgs[currentMsgs.length - 1];
+        if (lastMsg && lastMsg.isSessionIntro && (now - (lastMsg.timestamp || 0)) < 3000) {
+          return prevMessages;
+        }
+
+        const freshIntro = {
+          id: `${targetBotId}-session-intro-${now}`,
+          sender: bot.name,
+          isUser: false,
+          text: bot.introText,
+          time: getCurrentSystemTime(),
+          isSessionIntro: true,
+          timestamp: now
+        };
+
+        // Update interaction and session start timestamps for this bot
+        try {
+          const savedInteractions = JSON.parse(localStorage.getItem('nipix_bot_last_interaction') || '{}');
+          savedInteractions[targetBotId] = now;
+          localStorage.setItem('nipix_bot_last_interaction', JSON.stringify(savedInteractions));
+        } catch (e) {}
+
+        try {
+          const savedSessions = JSON.parse(localStorage.getItem('nipix_bot_session_start') || '{}');
+          savedSessions[targetBotId] = now;
+          localStorage.setItem('nipix_bot_session_start', JSON.stringify(savedSessions));
+        } catch (e) {}
+
+        const updated = {
+          ...prevMessages,
+          [targetBotId]: [...currentMsgs, freshIntro]
+        };
+
+        try {
+          localStorage.setItem('nipix_chat_messages_v6', JSON.stringify(updated));
+        } catch (e) {}
+
+        return updated;
+      }
+
+      // If bot has no messages at all, initialize fresh intro message at current system time
+      if (currentMsgs.length === 0) {
+        const freshIntro = {
+          id: `${targetBotId}-intro-${now}`,
+          sender: bot.name,
+          isUser: false,
+          text: bot.introText,
+          time: getCurrentSystemTime(),
+          isSessionIntro: true,
+          timestamp: now
+        };
+
+        const updated = {
+          ...prevMessages,
+          [targetBotId]: [freshIntro]
+        };
+
+        try {
+          localStorage.setItem('nipix_chat_messages_v6', JSON.stringify(updated));
+        } catch (e) {}
+
+        return updated;
+      }
+
+      // If bot only has 1 message (initial intro) and user hasn't interacted yet,
+      // refresh its timestamp to the current system time at the exact moment of entering/opening
+      if (!hasUserMessages && currentMsgs.length === 1 && !currentMsgs[0].isUser && !lastActive) {
+        const currentSysTime = getCurrentSystemTime();
+        if (currentMsgs[0].time !== currentSysTime) {
+          const updated = {
+            ...prevMessages,
+            [targetBotId]: [{
+              ...currentMsgs[0],
+              time: currentSysTime,
+              timestamp: now
+            }]
+          };
+          try {
+            localStorage.setItem('nipix_chat_messages_v6', JSON.stringify(updated));
+          } catch (e) {}
+          return updated;
+        }
+      }
+
+      return prevMessages;
+    });
+  }, []);
+
+  // Run inactivity check whenever active bot changes or route opens
+  useEffect(() => {
+    if (activeBot?.id && !isVaultView) {
+      checkInactivityAndInitSession(activeBot.id);
+    }
+  }, [activeBot?.id, isVaultView, checkInactivityAndInitSession]);
+
+  // Tab visibility change and window focus listener to trigger timeout on return
+  useEffect(() => {
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible' && activeBot?.id && !isVaultView) {
+        checkInactivityAndInitSession(activeBot.id);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [activeBot?.id, isVaultView, checkInactivityAndInitSession]);
+
   // Scroll to bottom only when switching bot or when user sends message
   useEffect(() => {
     autoScrollEnabledRef.current = true;
@@ -564,6 +726,7 @@ const Chat = () => {
     setShowAboutModal(false);
     setShowThemeModal(false);
     setChatError(null);
+    checkInactivityAndInitSession(bot.id);
   };
 
   // Clear active bot's conversation after confirmation and restore fresh intro message with live system time
@@ -578,6 +741,7 @@ const Chat = () => {
       handleStopGeneration();
     }
     const botId = activeBot.id;
+    const now = Date.now();
     const freshIntroMessage = createBotWelcomeMessage(activeBot);
     setChatMessages((prev) => {
       const updated = {
@@ -589,6 +753,19 @@ const Chat = () => {
       } catch (err) {}
       return updated;
     });
+
+    try {
+      const savedInteractions = JSON.parse(localStorage.getItem('nipix_bot_last_interaction') || '{}');
+      savedInteractions[botId] = now;
+      localStorage.setItem('nipix_bot_last_interaction', JSON.stringify(savedInteractions));
+    } catch (e) {}
+
+    try {
+      const savedSessions = JSON.parse(localStorage.getItem('nipix_bot_session_start') || '{}');
+      savedSessions[botId] = now;
+      localStorage.setItem('nipix_bot_session_start', JSON.stringify(savedSessions));
+    } catch (e) {}
+
     setUserInput('');
     setChatError(null);
   };
@@ -656,23 +833,40 @@ const Chat = () => {
       (m) => m && m.text && !isErrorMessage(m.text)
     );
 
+    // Isolate active conversational session context for AI model:
+    // If an inactivity session reset occurred, only pass messages from the current active session
+    let sessionHistory = currentHistory;
+    const lastSessionIntroIdx = currentHistory.map((m) => !!m.isSessionIntro).lastIndexOf(true);
+    if (lastSessionIntroIdx !== -1) {
+      sessionHistory = currentHistory.slice(lastSessionIntroIdx);
+    }
+
     // Save prompt for retry support
     lastSentPromptRef.current = userText;
 
     // Immediately display user message
     if (!retryText) {
+      const now = Date.now();
       const newUserMsg = {
-        id: Date.now().toString(),
+        id: now.toString(),
         sender: currentUser?.username || 'Learner',
         isUser: true,
         text: userText,
-        time: getCurrentSystemTime()
+        time: getCurrentSystemTime(),
+        timestamp: now
       };
       setChatMessages((prev) => ({
         ...prev,
         [botId]: [...(prev[botId] || []), newUserMsg]
       }));
       setUserInput('');
+
+      // Update interaction timestamp for this bot
+      try {
+        const savedInteractions = JSON.parse(localStorage.getItem('nipix_bot_last_interaction') || '{}');
+        savedInteractions[botId] = now;
+        localStorage.setItem('nipix_bot_last_interaction', JSON.stringify(savedInteractions));
+      } catch (e) {}
     }
 
     // Set active streaming state
@@ -692,7 +886,7 @@ const Chat = () => {
       const response = await sendAiChatMessageStream({
         botId,
         message: userText,
-        history: currentHistory,
+        history: sessionHistory,
         signal: abortController.signal,
         onChunk: (currentStreamedText) => {
           pendingChunkBufferRef.current = currentStreamedText;
@@ -732,18 +926,27 @@ const Chat = () => {
       }
 
       // Commit finalized assistant message to conversation history
+      const replyNow = Date.now();
       const assistantMsg = {
-        id: (Date.now() + 1).toString(),
+        id: (replyNow + 1).toString(),
         sender: activeBot.name,
         isUser: false,
         text: finalReply,
-        time: getCurrentSystemTime()
+        time: getCurrentSystemTime(),
+        timestamp: replyNow
       };
 
       setChatMessages((prev) => ({
         ...prev,
         [botId]: [...(prev[botId] || []), assistantMsg]
       }));
+
+      // Update interaction timestamp for this bot
+      try {
+        const savedInteractions = JSON.parse(localStorage.getItem('nipix_bot_last_interaction') || '{}');
+        savedInteractions[botId] = replyNow;
+        localStorage.setItem('nipix_bot_last_interaction', JSON.stringify(savedInteractions));
+      } catch (e) {}
 
     } catch (err) {
       if (abortController.signal.aborted) {
@@ -856,7 +1059,7 @@ const Chat = () => {
               );
               const lastMsg = cleanMsgs.slice(-1)[0];
               const previewText = lastMsg ? lastMsg.text : bot.previewText;
-              const lastTime = lastMsg ? lastMsg.time : bot.lastTime;
+              const lastTime = lastMsg ? lastMsg.time : '';
 
               return (
                 <div
@@ -888,8 +1091,22 @@ const Chat = () => {
                     </div>
                   </div>
 
-                  {/* Far Right Chat Timestamp */}
-                  <div className="bot-meta-right">
+                  {/* Far Right Chat Timestamp - Subtle Small Secondary Metadata */}
+                  <div
+                    className="bot-meta-right"
+                    style={{
+                      fontSize: '0.64rem',
+                      lineHeight: '1',
+                      color: 'var(--text-dim)',
+                      opacity: 0.65,
+                      flexShrink: 0,
+                      marginLeft: '8px',
+                      textAlign: 'right',
+                      whiteSpace: 'nowrap',
+                      userSelect: 'none',
+                      letterSpacing: '0.01em'
+                    }}
+                  >
                     {lastTime}
                   </div>
                 </div>
