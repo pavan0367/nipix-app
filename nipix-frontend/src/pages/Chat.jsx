@@ -10,12 +10,121 @@ import {
   Smile,
   Paperclip,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  MoreHorizontal,
+  Info,
+  Palette,
+  Trash2,
+  X
 } from 'lucide-react';
 import { sendAiChatMessageStream } from '../services/aiService';
 import MarkdownMessage from '../components/chat/MarkdownMessage';
 import BotProfileDashboard from '../components/chat/BotProfileDashboard';
 import NipixLogo from '../components/NipixLogo';
+
+// Format current local system/browser time dynamically (e.g. 3:48 PM, 10:12 AM)
+export const getCurrentSystemTime = () => {
+  try {
+    return new Date().toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (e) {
+    const d = new Date();
+    let hours = d.getHours();
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
+  }
+};
+
+// Centralized Bot Chat Theme Configurations
+export const CHAT_THEMES = {
+  cyber: {
+    id: 'cyber',
+    name: 'Cyber Indigo (Default)',
+    color: '#3b82f6',
+    bg: '#0b0f19',
+    headerBg: '#0f1422',
+    composerBg: '#0f1422',
+    userBubble: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    aiBubble: '#161d2f',
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    accent: '#3b82f6'
+  },
+  neon: {
+    id: 'neon',
+    name: 'Midnight Violet',
+    color: '#8b5cf6',
+    bg: '#0c0919',
+    headerBg: '#130e26',
+    composerBg: '#130e26',
+    userBubble: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+    aiBubble: '#1a1334',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+    accent: '#8b5cf6'
+  },
+  emerald: {
+    id: 'emerald',
+    name: 'Scholar Emerald',
+    color: '#10b981',
+    bg: '#061610',
+    headerBg: '#0b2118',
+    composerBg: '#0b2118',
+    userBubble: 'linear-gradient(135deg, #10b981, #047857)',
+    aiBubble: '#0f2c20',
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+    accent: '#10b981'
+  },
+  amber: {
+    id: 'amber',
+    name: 'Solar Circuit',
+    color: '#f59e0b',
+    bg: '#140f06',
+    headerBg: '#1f170a',
+    composerBg: '#1f170a',
+    userBubble: 'linear-gradient(135deg, #f59e0b, #b45309)',
+    aiBubble: '#291f0e',
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+    accent: '#f59e0b'
+  },
+  obsidian: {
+    id: 'obsidian',
+    name: 'Obsidian Minimal',
+    color: '#94a3b8',
+    bg: '#08090c',
+    headerBg: '#101217',
+    composerBg: '#101217',
+    userBubble: 'linear-gradient(135deg, #475569, #334155)',
+    aiBubble: '#181b22',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    accent: '#94a3b8'
+  },
+  sakura: {
+    id: 'sakura',
+    name: 'Sakura Blossom',
+    color: '#ec4899',
+    bg: '#160b14',
+    headerBg: '#21101e',
+    composerBg: '#21101e',
+    userBubble: 'linear-gradient(135deg, #ec4899, #be185d)',
+    aiBubble: '#2b1627',
+    borderColor: 'rgba(236, 72, 153, 0.25)',
+    accent: '#ec4899'
+  }
+};
+
+// Generate a bot-specific personalized welcome message with live system time
+export const createBotWelcomeMessage = (bot) => ({
+  id: `${bot.id}-intro-${Date.now()}`,
+  sender: bot.name,
+  isUser: false,
+  text: bot.introText,
+  time: getCurrentSystemTime()
+});
 
 // Helper to identify error messages that should not be saved or previewed
 const isErrorMessage = (text) => {
@@ -30,133 +139,171 @@ const isErrorMessage = (text) => {
   );
 };
 
-// Exactly 6 Nipix AI Bot Personas with original roles, personalities, and welcome messages
-const AI_BOTS = [
+// Helper to detect legacy static intro messages for automatic upgrade
+const isOldIntroMessage = (text) => {
+  if (!text || typeof text !== 'string') return false;
+  return (
+    text.startsWith("Hello developer! 👋 I am ByteBot AI") ||
+    text.startsWith("Greetings! I am Cipher_09") ||
+    text.startsWith("Frequency locked! I am Spark_X") ||
+    text.startsWith("Welcome scholar. I am Archivist") ||
+    text.startsWith("Greetings! I am NovaMind") ||
+    text.startsWith("Hello visionary! I am Aether") ||
+    text.startsWith("Konnichiwa! 🌸 I am Sakura (@sakura_jp)")
+  );
+};
+
+// All 7 Nipix AI Bot Personas with personalized intro greetings and domain specialties
+export const AI_BOTS = [
   {
     id: 'bytebot_ai',
     name: 'ByteBot AI',
+    username: '@bytebot_ai',
     role: 'Programming & Software Engineering',
     avatar: '🤖',
     badgeClass: 'badge-bytebot',
     accentColor: '#3b82f6',
     specialty: 'Programming, Software Engineering & Code Intelligence',
-    previewText: 'Hello developer! Ask me any question—coding, tech, or anything you need.',
+    description: 'Advanced software engineering assistant specialized in full-stack web development, system architecture, algorithm optimization, and debugging.',
+    specialtiesList: [
+      'Full-Stack Development',
+      'Python & JavaScript',
+      'React & Modern Frontend',
+      'Node.js & Backend APIs',
+      'Algorithms & Data Structures',
+      'Debugging & Code Review',
+      'System Architecture',
+      'Database Design & SQL'
+    ],
+    introText: "Hello! I'm ByteBot AI, your Programming & Software Engineering assistant. What would you like me to help you with today?",
+    previewText: "Hello! I'm ByteBot AI, your Programming & Software Engineering assistant.",
     ageText: 'Just now',
-    lastTime: '08:42 AM',
-    initialMessages: [
-      {
-        id: 'b-1',
-        sender: 'ByteBot AI',
-        isUser: false,
-        text: 'Hello developer! 👋 I am ByteBot AI, your programming and software engineering assistant. Feel free to ask me anything—whether it is code in Python, Java, React, debugging, algorithms, or any other topic you have in mind!',
-        time: '08:42 AM'
-      }
-    ]
+    lastTime: '08:42 AM'
   },
   {
     id: 'cipher_09',
     name: 'Cipher_09',
+    username: '@cipher_09',
     role: 'Research, Cryptography & Cybersecurity',
     avatar: '🔮',
     badgeClass: 'badge-cipher',
     accentColor: '#8b5cf6',
     specialty: 'Research, Cryptography, Security & Logic',
-    previewText: 'Greetings! Ask me any research, security, or general question.',
+    description: 'Elite cryptography and cybersecurity research intelligence specialized in secure computation, vulnerability assessments, and discrete mathematical logic.',
+    specialtiesList: [
+      'Cryptography & Ciphers',
+      'Cybersecurity Protocols',
+      'Network Security',
+      'Vulnerability Assessment',
+      'Discrete Mathematics',
+      'Security Audits',
+      'Logic & Formal Proofs',
+      'Data Privacy & Encryption'
+    ],
+    introText: "Hello! I'm Cipher_09, your Research, Cryptography & Cybersecurity assistant. What would you like me to help you with today?",
+    previewText: "Hello! I'm Cipher_09, your Research, Cryptography & Cybersecurity assistant.",
     ageText: '12 min ago',
-    lastTime: '03:14 AM',
-    initialMessages: [
-      {
-        id: 'c-1',
-        sender: 'Cipher_09',
-        isUser: false,
-        text: 'Greetings! I am Cipher_09, your research and security assistant. You can ask me any question—from cryptography, cybersecurity, and logic to any general knowledge or inquiry!',
-        time: '03:14 AM'
-      }
-    ]
+    lastTime: '03:14 AM'
   },
   {
     id: 'spark_x',
     name: 'Spark_X',
+    username: '@spark_x',
     role: 'Electrical Engineering, Physics & Circuit Theory',
     avatar: '⚡',
     badgeClass: 'badge-spark',
     accentColor: '#f59e0b',
     specialty: 'Electrical Engineering, Electronics, Circuits & Physics',
-    previewText: 'Frequency locked! Ask me any engineering, science, or general question!',
+    description: 'High-energy electrical engineering and physics assistant focused on circuit analysis, electromagnetism, semiconductor physics, and hardware design.',
+    specialtiesList: [
+      'Circuit Theory & Analysis',
+      'Electronics & Semiconductors',
+      'Electromagnetism & Waves',
+      'Classical & Quantum Physics',
+      'Microcontrollers & Embedded',
+      'Signal Processing',
+      'Power Systems',
+      'Robotics Hardware'
+    ],
+    introText: "Hello! I'm Spark_X, your Electrical Engineering, Physics & Circuit Theory assistant. What would you like me to help you with today?",
+    previewText: "Hello! I'm Spark_X, your Electrical Engineering, Physics & Circuit Theory assistant.",
     ageText: '25 min ago',
-    lastTime: '10:15 AM',
-    initialMessages: [
-      {
-        id: 's-1',
-        sender: 'Spark_X',
-        isUser: false,
-        text: 'Frequency locked! I am Spark_X, your engineering and physical sciences assistant. Ask me anything—from circuit theory and physics to math, coding, or any question you have!',
-        time: '10:15 AM'
-      }
-    ]
+    lastTime: '10:15 AM'
   },
   {
     id: 'archivist',
     name: 'Archivist',
+    username: '@archivist',
     role: 'Study, Knowledge & Research',
     avatar: '📚',
     badgeClass: 'badge-mentor',
     accentColor: '#10b981',
     specialty: 'Study Materials, History, Literature & General Knowledge',
-    previewText: 'Welcome scholar. What question or topic shall we explore today?',
+    description: 'Comprehensive academic research and study materials librarian covering historical analysis, literature, philosophy, and scholarly writing.',
+    specialtiesList: [
+      'Academic Research',
+      'Study Materials & Notes',
+      'World History & Civilizations',
+      'Literature & Linguistics',
+      'Philosophy & Ethics',
+      'Scientific Citations',
+      'Exam Preparation',
+      'Essay Writing & Structure'
+    ],
+    introText: "Hello! I'm Archivist, your Study, Knowledge & Research assistant. What would you like me to help you with today?",
+    previewText: "Hello! I'm Archivist, your Study, Knowledge & Research assistant.",
     ageText: '1 hr ago',
-    lastTime: '11:30 AM',
-    initialMessages: [
-      {
-        id: 'a-1',
-        sender: 'Archivist',
-        isUser: false,
-        text: 'Welcome scholar. I am Archivist, your research and study assistant. Ask me anything you want to learn about—literature, history, study materials, or any other subject!',
-        time: '11:30 AM'
-      }
-    ]
+    lastTime: '11:30 AM'
   },
   {
     id: 'novamind',
     name: 'NovaMind',
+    username: '@novamind',
     role: 'General AI / Learning Assistant',
     avatar: '🧠',
     badgeClass: 'badge-cipher',
     accentColor: '#ec4899',
     specialty: 'General Learning, Educational Guidance & Logical Reasoning',
-    previewText: 'Greetings! Ask me any math, science, or general knowledge question!',
+    description: 'Versatile multidisciplinary learning companion offering intuitive breakdowns of complex concepts, reasoning methodologies, and educational tutoring.',
+    specialtiesList: [
+      'Mathematical Foundations',
+      'Multidisciplinary Learning',
+      'Conceptual Analogies',
+      'Step-by-Step Problem Solving',
+      'Cognitive Learning Techniques',
+      'Critical Thinking',
+      'General Sciences',
+      'Study Roadmaps'
+    ],
+    introText: "Hello! I'm NovaMind, your General AI & Learning assistant. What would you like me to help you with today?",
+    previewText: "Hello! I'm NovaMind, your General AI & Learning assistant.",
     ageText: '15 min ago',
-    lastTime: '01:05 PM',
-    initialMessages: [
-      {
-        id: 'n-1',
-        sender: 'NovaMind',
-        isUser: false,
-        text: 'Greetings! I am NovaMind, your versatile learning and reasoning companion. Feel free to ask me any question across math, science, general education, or any topic!',
-        time: '01:05 PM'
-      }
-    ]
+    lastTime: '01:05 PM'
   },
   {
     id: 'aether',
     name: 'Aether',
+    username: '@aether',
     role: 'Science / Innovation / Technology',
     avatar: '🌌',
     badgeClass: 'badge-spark',
     accentColor: '#06b6d4',
     specialty: 'Science, Innovation, Emerging Tech & Future Engineering',
-    previewText: 'Hello visionary! Ask me any question about tech, science, or ideas!',
+    description: 'Visionary frontier science and emerging technology assistant exploring deep tech, space exploration, nanotechnology, and future engineering breakthroughs.',
+    specialtiesList: [
+      'Frontier & Emerging Tech',
+      'Astrophysics & Space Exploration',
+      'Nanotechnology & Materials',
+      'Artificial Intelligence & Robotics',
+      'Biotechnology & Genetics',
+      'Quantum Computing',
+      'Renewable Energy Innovation',
+      'Futurism & Deep Tech'
+    ],
+    introText: "Hello! I'm Aether, your Science, Innovation & Technology assistant. What would you like me to help you with today?",
+    previewText: "Hello! I'm Aether, your Science, Innovation & Technology assistant.",
     ageText: '5 min ago',
-    lastTime: '02:20 PM',
-    initialMessages: [
-      {
-        id: 'ae-1',
-        sender: 'Aether',
-        isUser: false,
-        text: 'Hello visionary! I am Aether, your innovation and future technology assistant. Ask me any question—from emerging tech and creative problem-solving to any topic you are curious about!',
-        time: '02:20 PM'
-      }
-    ]
+    lastTime: '02:20 PM'
   },
   {
     id: 'sakura',
@@ -167,18 +314,21 @@ const AI_BOTS = [
     badgeClass: 'badge-cipher',
     accentColor: '#ec4899',
     specialty: 'Japanese Grammar, Vocabulary, Kanji, Hiragana, Katakana, JLPT & Translation',
-    previewText: 'Konnichiwa! Ask me any Japanese language, grammar, or JLPT question.',
+    description: 'Dedicated Japanese language sensei and JLPT mentor specialized in grammar, vocabulary, Kanji, reading comprehension, and conversational fluency.',
+    specialtiesList: [
+      'Japanese Grammar',
+      'Vocabulary & Expressions',
+      'Kanji Mastery',
+      'Hiragana & Katakana',
+      'JLPT N5 to N1 Preparation',
+      'Keigo & Formal Japanese',
+      'Accurate Translation',
+      'Conversational Fluency'
+    ],
+    introText: "Hello! 🌸 I'm Sakura, your Japanese Language & JLPT assistant. What would you like me to help you with today?",
+    previewText: "Hello! 🌸 I'm Sakura, your Japanese Language & JLPT assistant.",
     ageText: 'Just now',
-    lastTime: '12:00 PM',
-    initialMessages: [
-      {
-        id: 'sk-1',
-        sender: 'Sakura',
-        isUser: false,
-        text: 'Konnichiwa! 🌸 I am Sakura (@sakura_jp), your dedicated Japanese Language & JLPT sensei. Ask me anything—from Hiragana, Katakana, and Kanji to complex grammar, Keigo, translations, and JLPT preparation. Yoroshiku onegaishimasu!',
-        time: '12:00 PM'
-      }
-    ]
+    lastTime: '12:00 PM'
   }
 ];
 
@@ -216,7 +366,7 @@ const Chat = () => {
   const [activeBot, setActiveBot] = useState(AI_BOTS[0]);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Clean initialization: purge stale caches and initialize all 6 bots cleanly
+  // Clean initialization: initialize all bots with personalized intro & dynamic system time
   const [chatMessages, setChatMessages] = useState(() => {
     try {
       localStorage.removeItem('nipix_scholar_chat_history');
@@ -235,9 +385,14 @@ const Chat = () => {
             if (Array.isArray(list)) {
               // Filter out any stored error messages
               const cleanList = list.filter((m) => m && m.text && !isErrorMessage(m.text));
-              sanitized[bot.id] = cleanList.length > 0 ? cleanList : [...bot.initialMessages];
+              // If empty or only contains the legacy static welcome message, upgrade to personalized intro with current time
+              if (cleanList.length === 0 || (cleanList.length === 1 && !cleanList[0].isUser && isOldIntroMessage(cleanList[0].text))) {
+                sanitized[bot.id] = [createBotWelcomeMessage(bot)];
+              } else {
+                sanitized[bot.id] = cleanList;
+              }
             } else {
-              sanitized[bot.id] = [...bot.initialMessages];
+              sanitized[bot.id] = [createBotWelcomeMessage(bot)];
             }
           });
           return sanitized;
@@ -249,7 +404,7 @@ const Chat = () => {
 
     const initialMap = {};
     AI_BOTS.forEach((bot) => {
-      initialMap[bot.id] = [...bot.initialMessages];
+      initialMap[bot.id] = [createBotWelcomeMessage(bot)];
     });
     return initialMap;
   });
@@ -276,6 +431,42 @@ const Chat = () => {
     }
   });
   const [streamingEnabled, setStreamingEnabled] = useState(true);
+
+  // Top-Right Options dropdown and modal dialog states
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const optionsMenuRef = useRef(null);
+
+  // Dismiss Options dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (optionsMenuRef.current && !optionsMenuRef.current.contains(e.target)) {
+        setShowOptionsMenu(false);
+      }
+    };
+    if (showOptionsMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showOptionsMenu]);
+
+  // Active theme calculation and synchronized updating
+  const currentThemeId = botThemes[activeBot?.id] || (activeBot?.id === 'sakura' ? 'sakura' : 'cyber');
+  const currentTheme = CHAT_THEMES[currentThemeId] || CHAT_THEMES.cyber;
+
+  const handleSelectTheme = (themeId) => {
+    if (!activeBot) return;
+    setBotThemes((prev) => {
+      const updated = { ...prev, [activeBot.id]: themeId };
+      try {
+        localStorage.setItem('nipix_bot_themes', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
 
   // Dedicated active streaming state to prevent re-rendering the full conversation array
   const [streamingText, setStreamingText] = useState('');
@@ -369,21 +560,36 @@ const Chat = () => {
     setActiveBot(bot);
     setShowMobileChat(true);
     setShowProfile(false);
+    setShowOptionsMenu(false);
+    setShowAboutModal(false);
+    setShowThemeModal(false);
     setChatError(null);
   };
 
-  // Reset active bot's conversation to clean initial state
-  const handleResetActiveBot = (e) => {
+  // Clear active bot's conversation after confirmation and restore fresh intro message with live system time
+  const handleClearCurrentBotChat = (e) => {
     if (e) e.preventDefault();
     if (!activeBot) return;
+    const botDisplayName = nicknames[activeBot.id] || activeBot.name;
+    const confirmed = window.confirm(`Clear chat conversation with ${botDisplayName}?`);
+    if (!confirmed) return;
+
     if (isGenerating && streamingBotId === activeBot.id) {
       handleStopGeneration();
     }
     const botId = activeBot.id;
-    setChatMessages((prev) => ({
-      ...prev,
-      [botId]: [...activeBot.initialMessages]
-    }));
+    const freshIntroMessage = createBotWelcomeMessage(activeBot);
+    setChatMessages((prev) => {
+      const updated = {
+        ...prev,
+        [botId]: [freshIntroMessage]
+      };
+      try {
+        localStorage.setItem('nipix_chat_messages_v6', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
+    setUserInput('');
     setChatError(null);
   };
 
@@ -415,7 +621,7 @@ const Chat = () => {
         sender: activeBot?.name || 'Assistant',
         isUser: false,
         text: partialContent,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: getCurrentSystemTime()
       };
       setChatMessages((prev) => ({
         ...prev,
@@ -460,7 +666,7 @@ const Chat = () => {
         sender: currentUser?.username || 'Learner',
         isUser: true,
         text: userText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: getCurrentSystemTime()
       };
       setChatMessages((prev) => ({
         ...prev,
@@ -531,7 +737,7 @@ const Chat = () => {
         sender: activeBot.name,
         isUser: false,
         text: finalReply,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: getCurrentSystemTime()
       };
 
       setChatMessages((prev) => ({
@@ -799,7 +1005,7 @@ const Chat = () => {
               <BotProfileDashboard
                 bot={activeBot}
                 onBack={() => setShowProfile(false)}
-                onClearChat={handleResetActiveBot}
+                onClearChat={handleClearCurrentBotChat}
                 onOpenSearch={() => {
                   setShowProfile(false);
                   const searchInput = document.querySelector('.chat-search-input');
@@ -815,72 +1021,215 @@ const Chat = () => {
                     return updated;
                   });
                 }}
-                activeTheme={botThemes[activeBot.id] || 'cyber'}
-                onSelectTheme={(themeId) => {
-                  setBotThemes((prev) => {
-                    const updated = { ...prev, [activeBot.id]: themeId };
-                    try {
-                      localStorage.setItem('nipix_bot_themes', JSON.stringify(updated));
-                    } catch (e) {}
-                    return updated;
-                  });
-                }}
+                activeTheme={currentThemeId}
+                onSelectTheme={handleSelectTheme}
                 streamingEnabled={streamingEnabled}
                 onToggleStreaming={() => setStreamingEnabled((prev) => !prev)}
               />
             ) : (
-            <div className="chat-conversation">
+            <div className="chat-conversation" style={{ background: currentTheme.bg }}>
               
-              {/* Conversation Header: [Avatar ●] Bot Name + Role + Reset Chat */}
-              <div className="chat-header">
-                <button
-                  type="button"
-                  onClick={() => setShowMobileChat(false)}
-                  className="btn-secondary"
-                  style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-                >
-                  <ArrowLeft size={16} />
-                </button>
+              {/* Conversation Header: [Avatar ●] Bot Name + Role + Restored Top-Right Options Icon */}
+              <div
+                className="chat-header"
+                style={{
+                  background: currentTheme.headerBg,
+                  borderBottom: `1px solid ${currentTheme.borderColor}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  position: 'relative'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileChat(false)}
+                    className="btn-secondary"
+                    style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
 
-                {/* Clickable Bot Profile Area (Avatar + Name + Role) */}
-                <div
-                  onClick={() => setShowProfile(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    flex: 1,
-                    minWidth: 0,
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    borderRadius: '8px',
-                    transition: 'background 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                  title={`View ${nicknames[activeBot.id] || activeBot.name}'s profile & details`}
-                >
-                  {/* Profile Avatar + Overlapping Active Green Dot */}
-                  <div className="avatar-wrapper">
-                    <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
-                      {activeBot.avatar}
+                  {/* Clickable Bot Profile Area (Avatar + Name + Role) */}
+                  <div
+                    onClick={() => setShowProfile(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      flex: 1,
+                      minWidth: 0,
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      borderRadius: '8px',
+                      transition: 'background 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    title={`View ${nicknames[activeBot.id] || activeBot.name}'s profile & details`}
+                  >
+                    {/* Profile Avatar + Overlapping Active Green Dot */}
+                    <div className="avatar-wrapper">
+                      <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '38px', height: '38px', fontSize: '1.1rem' }}>
+                        {activeBot.avatar}
+                      </div>
+                      <div className="active-dot-badge" />
                     </div>
-                    <div className="active-dot-badge" />
-                  </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {nicknames[activeBot.id] || activeBot.name}
-                    </h3>
-                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {activeBot.role}
-                    </p>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ fontSize: '0.96rem', fontWeight: '800', color: '#ffffff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {nicknames[activeBot.id] || activeBot.name}
+                      </h3>
+                      <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {activeBot.role}
+                      </p>
+                    </div>
                   </div>
+                </div>
+
+                {/* Top-Right Options Icon Button and Dropdown Menu */}
+                <div style={{ position: 'relative' }} ref={optionsMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowOptionsMenu((prev) => !prev)}
+                    className="btn-secondary"
+                    aria-label="Chat options"
+                    title="Options"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#cbd5e1',
+                      border: `1px solid ${currentTheme.borderColor}`,
+                      background: showOptionsMenu ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <MoreHorizontal size={18} />
+                  </button>
+
+                  {/* Clean Dismissible Options Dropdown Popup */}
+                  {showOptionsMenu && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        right: 0,
+                        width: '180px',
+                        background: '#161926',
+                        border: '1px solid rgba(255, 255, 255, 0.14)',
+                        borderRadius: '10px',
+                        boxShadow: '0 12px 28px rgba(0, 0, 0, 0.6)',
+                        padding: '6px',
+                        zIndex: 100,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px'
+                      }}
+                    >
+                      {/* About Bot */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          setShowAboutModal(true);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#f8fafc',
+                          fontSize: '0.84rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Info size={16} color="var(--accent-blue)" />
+                        <span>About Bot</span>
+                      </button>
+
+                      {/* Theme */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          setShowThemeModal(true);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#f8fafc',
+                          fontSize: '0.84rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Palette size={16} color="#8b5cf6" />
+                        <span>Theme</span>
+                      </button>
+
+                      <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.08)', margin: '4px 0' }} />
+
+                      {/* Clear Chat */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          handleClearCurrentBotChat();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#f87171',
+                          fontSize: '0.84rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Trash2 size={16} color="#ef4444" />
+                        <span>Clear Chat</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Chat Messages Workspace (Independently Scrollable via container ref) */}
-              <div ref={messagesContainerRef} onScroll={handleContainerScroll} className="chat-messages">
+              <div ref={messagesContainerRef} onScroll={handleContainerScroll} className="chat-messages" style={{ background: currentTheme.bg }}>
                 {(chatMessages[activeBot.id] || [])
                   .filter((msg) => msg && msg.text && msg.text.trim().length > 0 && !isErrorMessage(msg.text))
                   .map((msg) => (
@@ -903,20 +1252,24 @@ const Chat = () => {
                       maxWidth: '82%',
                       padding: '10px 16px',
                       borderRadius: msg.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      background: msg.isUser ? 'var(--chat-bubble-user)' : 'var(--chat-bubble-ai)',
-                      color: msg.isUser ? '#ffffff' : 'var(--text-main)',
-                      border: msg.isUser ? 'none' : '1px solid var(--border-color)',
+                      background: msg.isUser ? currentTheme.userBubble : currentTheme.aiBubble,
+                      color: msg.isUser ? '#ffffff' : '#f8fafc',
+                      border: msg.isUser ? 'none' : `1px solid ${currentTheme.borderColor}`,
                       fontSize: '0.88rem',
                       lineHeight: '1.55',
                       boxShadow: 'var(--shadow-sm)'
                     }}>
                       <MarkdownMessage content={msg.text} isUser={msg.isUser} />
+                      {/* Subtle reduced-size secondary timestamp */}
                       <div style={{
-                        fontSize: '0.68rem',
+                        fontSize: '0.62rem',
+                        lineHeight: '1',
+                        letterSpacing: '0.01em',
                         textAlign: 'right',
                         marginTop: '4px',
-                        opacity: 0.75,
-                        color: msg.isUser ? '#e0e7ff' : 'var(--text-dim)'
+                        opacity: 0.65,
+                        color: msg.isUser ? '#e0e7ff' : 'var(--text-dim)',
+                        userSelect: 'none'
                       }}>
                         {msg.time}
                       </div>
@@ -942,20 +1295,24 @@ const Chat = () => {
                       maxWidth: '82%',
                       padding: '10px 16px',
                       borderRadius: '16px 16px 16px 4px',
-                      background: 'var(--chat-bubble-ai)',
+                      background: currentTheme.aiBubble,
                       color: 'var(--text-main)',
-                      border: '1px solid var(--border-color)',
+                      border: `1px solid ${currentTheme.borderColor}`,
                       fontSize: '0.88rem',
                       lineHeight: '1.55',
                       boxShadow: 'var(--shadow-sm)'
                     }}>
                       <MarkdownMessage content={streamingText} isUser={false} />
+                      {/* Subtle reduced-size secondary timestamp */}
                       <div style={{
-                        fontSize: '0.68rem',
+                        fontSize: '0.62rem',
+                        lineHeight: '1',
+                        letterSpacing: '0.01em',
                         textAlign: 'right',
                         marginTop: '4px',
-                        opacity: 0.75,
-                        color: 'var(--text-dim)'
+                        opacity: 0.65,
+                        color: 'var(--text-dim)',
+                        userSelect: 'none'
                       }}>
                         Streaming...
                       </div>
@@ -1017,7 +1374,7 @@ const Chat = () => {
               </div>
 
               {/* ALWAYS VISIBLE FIXED BOTTOM COMPOSER: [ 😊 Ask Bot Name anything... 📎 ➤ / Stop ] */}
-              <form onSubmit={handleSendMessage} className="chat-composer">
+              <form onSubmit={handleSendMessage} className="chat-composer" style={{ background: currentTheme.composerBg, borderTop: `1px solid ${currentTheme.borderColor}` }}>
                 <button
                   type="button"
                   className="btn-secondary"
@@ -1096,8 +1453,8 @@ const Chat = () => {
                       justifyContent: 'center',
                       opacity: !userInput.trim() ? 0.45 : 1,
                       cursor: !userInput.trim() ? 'not-allowed' : 'pointer',
-                      background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
-                      boxShadow: '0 2px 8px rgba(124, 58, 237, 0.35)'
+                      background: currentTheme.userBubble,
+                      boxShadow: `0 2px 8px ${currentTheme.accent}55`
                     }}
                     title="Send Message"
                   >
@@ -1121,6 +1478,244 @@ const Chat = () => {
             </div>
           )}
         </div>
+
+        {/* -------------------------------------------------------- */}
+        {/* ABOUT BOT MODAL (DYNAMIC INFORMATION PER BOT)            */}
+        {/* -------------------------------------------------------- */}
+        {showAboutModal && activeBot && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.72)',
+              backdropFilter: 'blur(5px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px'
+            }}
+            onClick={() => setShowAboutModal(false)}
+          >
+            <div
+              style={{
+                background: '#131726',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '16px',
+                width: '100%',
+                maxWidth: '460px',
+                padding: '24px',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.65)',
+                position: 'relative'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className={`avatar-badge ${activeBot.badgeClass}`} style={{ width: '42px', height: '42px', fontSize: '1.25rem' }}>
+                    {activeBot.avatar}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>
+                      {nicknames[activeBot.id] || activeBot.name}
+                    </h3>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                      {activeBot.username || `@${activeBot.id}`} · {activeBot.role}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAboutModal(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#94a3b8',
+                    cursor: 'pointer'
+                  }}
+                  title="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <p style={{ fontSize: '0.86rem', color: '#e2e8f0', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                {activeBot.description}
+              </p>
+
+              <div style={{ marginBottom: '18px' }}>
+                <h4 style={{ fontSize: '0.78rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: currentTheme.color, margin: '0 0 10px 0' }}>
+                  Specializes in:
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {(activeBot.specialtiesList || []).map((spec, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        fontSize: '0.76rem',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: `1px solid ${currentTheme.borderColor}`,
+                        color: '#cbd5e1',
+                        fontWeight: '500'
+                      }}
+                    >
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAboutModal(false)}
+                className="btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  fontSize: '0.88rem',
+                  fontWeight: '700',
+                  background: currentTheme.userBubble,
+                  border: 'none'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* -------------------------------------------------------- */}
+        {/* CHAT THEME PICKER MODAL                                  */}
+        {/* -------------------------------------------------------- */}
+        {showThemeModal && activeBot && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.72)',
+              backdropFilter: 'blur(5px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px'
+            }}
+            onClick={() => setShowThemeModal(false)}
+          >
+            <div
+              style={{
+                background: '#131726',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '16px',
+                width: '100%',
+                maxWidth: '440px',
+                padding: '24px',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.65)',
+                position: 'relative'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Palette size={20} color={currentTheme.color} />
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>
+                    Chat Theme — {nicknames[activeBot.id] || activeBot.name}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowThemeModal(false)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#94a3b8',
+                    cursor: 'pointer'
+                  }}
+                  title="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                {Object.values(CHAT_THEMES).map((t) => {
+                  const isSelected = currentThemeId === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleSelectTheme(t.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        border: isSelected ? `2px solid ${t.color}` : '1px solid rgba(255, 255, 255, 0.08)',
+                        background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: t.color,
+                            boxShadow: `0 0 10px ${t.color}55`
+                          }}
+                        />
+                        <span style={{ fontSize: '0.88rem', fontWeight: isSelected ? '700' : '500', color: isSelected ? '#ffffff' : '#e2e8f0' }}>
+                          {t.name}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <span style={{ color: t.color, fontWeight: '700', fontSize: '0.82rem' }}>
+                          ✓ Active
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowThemeModal(false)}
+                className="btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  fontSize: '0.88rem',
+                  fontWeight: '700',
+                  background: currentTheme.userBubble,
+                  border: 'none'
+                }}
+              >
+                Apply Theme
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

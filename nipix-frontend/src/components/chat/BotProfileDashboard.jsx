@@ -66,7 +66,8 @@ const BotProfileDashboard = ({
     { id: 'neon', name: 'Midnight Violet', color: '#8b5cf6', bg: '#090814' },
     { id: 'emerald', name: 'Scholar Emerald', color: '#10b981', bg: '#06140e' },
     { id: 'amber', name: 'Solar Circuit', color: '#f59e0b', bg: '#140f06' },
-    { id: 'obsidian', name: 'Obsidian Minimal', color: '#94a3b8', bg: '#050507' }
+    { id: 'obsidian', name: 'Obsidian Minimal', color: '#94a3b8', bg: '#050507' },
+    { id: 'sakura', name: 'Sakura Blossom', color: '#ec4899', bg: '#160b14' }
   ];
 
   const allPeerBots = [
@@ -1332,6 +1333,30 @@ const BotProfileDashboard = ({
                 <div style={{ color: '#38bdf8', fontWeight: '600' }}>Google Gemini (gemini-3.5-flash-lite) + Groq Fallback</div>
                 <div style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '2px' }}>Full markdown, code formatting, multi-turn context retention</div>
               </div>
+
+              {Array.isArray(bot.specialtiesList) && bot.specialtiesList.length > 0 && (
+                <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '0.74rem', marginBottom: '6px' }}>Key Specialties</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {bot.specialtiesList.map((spec, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: '0.74rem',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(56, 189, 248, 0.1)',
+                          border: '1px solid rgba(56, 189, 248, 0.25)',
+                          color: '#7dd3fc',
+                          fontWeight: '500'
+                        }}
+                      >
+                        {spec}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button

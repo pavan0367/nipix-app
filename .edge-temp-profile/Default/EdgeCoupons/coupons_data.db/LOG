@@ -1,0 +1,6 @@
+2026/09/06-18:22:20.987 6d8 Reusing MANIFEST d:\Clg\vs\Nipix\.edge-temp-profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/09/06-18:22:20.988 6d8 Recovering log #13
+2026/09/06-18:22:20.988 6d8 Reusing old log d:\Clg\vs\Nipix\.edge-temp-profile\Default\EdgeCoupons/coupons_data.db/000013.log 
+2026/09/06-18:22:21.210 28d0 Level-0 table #17: started
+2026/09/06-18:22:21.214 28d0 Level-0 table #17: 683444 bytes OK
+2026/09/06-18:22:21.216 28d0 Delete type=0 #13

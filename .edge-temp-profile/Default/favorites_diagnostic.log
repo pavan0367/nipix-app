@@ -1,0 +1,77 @@
+2026-09-06 12:32:04.829: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:32:04.829: [INFO] Profiles total count: 1
+2026-09-06 12:32:04.829: [INFO] Profile: name=Profile 1 path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=null
+2026-09-06 12:32:04.829: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:32:04.829: [INFO] VisibilityChanged: 0
+2026-09-06 12:32:04.837: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.838: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.838: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.839: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.839: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.839: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.840: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.840: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.840: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.841: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:04.855: [INFO] BookmarkNodeAdded, ABU: 0
+2026-09-06 12:32:04.855: [INFO] BookmarkNodeAdded, ABU: 0
+2026-09-06 12:32:04.855: [INFO] OnDoneLoading sync enabled: 0
+2026-09-06 12:32:04.856: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 12:32:04.856: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 12:32:04.856: [INFO] BookmarksSnapshot Startup total=2 bar=2 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 12:32:04.908: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:05.430: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 0
+2026-09-06 12:32:05.432: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-09-06 12:32:05.433: [INFO] Primary account changed.
+2026-09-06 12:32:05.433: [INFO] OnPrimaryAccountChanged PrimaryAccountChangeEvent::Type::kSet
+2026-09-06 12:32:05.437: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-09-06 12:32:05.457: [INFO] RecordSyncInitDuration has_sync_been_enabled: 0 state: 3
+2026-09-06 12:32:08.395: [INFO] BookmarkNodeAdded, ABU: 0
+2026-09-06 12:32:08.395: [INFO] BookmarkNodeAdded, ABU: 0
+2026-09-06 12:32:08.395: [INFO] BookmarkNodeAdded, ABU: 0
+2026-09-06 12:32:08.396: [INFO] BookmarkNodeAdded, ABU: 0
+2026-09-06 12:32:09.572: [INFO] Sync initialization duration: 4059ms
+2026-09-06 12:47:23.062: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:47:23.062: [INFO] Profiles total count: 1
+2026-09-06 12:47:23.062: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:32:04.836Z
+2026-09-06 12:47:23.062: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:47:23.062: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:32:04.836Z
+2026-09-06 12:47:23.062: [INFO] VisibilityChanged: 0
+2026-09-06 12:47:23.076: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 12:47:23.077: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 12:47:23.077: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 12:47:23.077: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 12:47:23.178: [INFO] Sync initialization duration: 11ms
+2026-09-06 12:51:00.274: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:51:00.274: [INFO] Profiles total count: 1
+2026-09-06 12:51:00.274: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:47:23.071Z
+2026-09-06 12:51:00.274: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:51:00.274: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:47:23.071Z
+2026-09-06 12:51:00.274: [INFO] VisibilityChanged: 0
+2026-09-06 12:51:00.301: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 12:51:00.301: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 12:51:00.301: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 12:51:00.301: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 12:51:00.386: [INFO] Sync initialization duration: 12ms
+2026-09-06 12:51:29.351: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:51:29.351: [INFO] Profiles total count: 1
+2026-09-06 12:51:29.351: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:51:00.282Z
+2026-09-06 12:51:29.351: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:51:29.351: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:51:00.282Z
+2026-09-06 12:51:29.351: [INFO] VisibilityChanged: 0
+2026-09-06 12:51:29.375: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 12:51:29.375: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 12:51:29.375: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 12:51:29.375: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 12:51:29.447: [INFO] Sync initialization duration: 10ms
+2026-09-06 12:52:12.870: [INFO] CurrentProfilePath: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:52:12.870: [INFO] Profiles total count: 1
+2026-09-06 12:52:12.870: [INFO] Profile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:51:29.358Z
+2026-09-06 12:52:12.870: [INFO] LastUsedProfileDir: d:\Clg\vs\Nipix\.edge-temp-profile\Default
+2026-09-06 12:52:12.870: [INFO] MostRecentlyActiveProfile: name=Personal path=d:\Clg\vs\Nipix\.edge-temp-profile\Default lastActive=2026-09-06T12:51:29.358Z
+2026-09-06 12:52:12.870: [INFO] VisibilityChanged: 0
+2026-09-06 12:52:12.895: [INFO] OnDoneLoading sync enabled: 1
+2026-09-06 12:52:12.895: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-09-06 12:52:12.895: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-09-06 12:52:12.895: [INFO] BookmarksSnapshot Startup total=6 bar=6 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-09-06 12:52:12.965: [INFO] Sync initialization duration: 10ms
