@@ -7,16 +7,11 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import AppRoutes from './routes/AppRoutes';
 import { ThemeProvider } from './context/ThemeContext';
+import { API_BASE } from './utils/constants';
 import './index.css';
 import './App.css';
 
-// Prioritize local backend when testing on localhost
-const isLocalhost = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-axios.defaults.baseURL = (isLocalhost && !process.env.REACT_APP_FORCE_REMOTE)
-  ? 'http://localhost:5000/api'
-  : (process.env.REACT_APP_API_URL || 'http://localhost:5000/api');
+axios.defaults.baseURL = API_BASE;
 
 function AppContent() {
   const dispatch = useDispatch();

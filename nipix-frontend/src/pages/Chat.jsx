@@ -536,6 +536,20 @@ const Chat = () => {
     }
   };
 
+  // Keyboard Input Handler for Chat Composer
+  const handleKeyDown = (e) => {
+    // Enter without Shift -> send user's message
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      // Prevent send during IME composition (e.g., Asian script input)
+      if (e.nativeEvent && e.nativeEvent.isComposing) return;
+      // Do not send empty/whitespace-only messages or duplicate sends while generating
+      if (!userInput.trim() || isGenerating) return;
+      handleSendMessage(e);
+    }
+    // Shift + Enter preserves standard textarea multi-line break
+  };
+
   // Send message in Secret Vault
   const handleSendVaultMessage = (e) => {
     e.preventDefault();

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SOCKET_URL } from '../utils/constants';
 
-const API_BASE = process.env.REACT_APP_SOCKET_URL || (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000');
+const API_BASE = SOCKET_URL;
 
 const StoryViewer = ({ stories = [], user = {}, currentIndex = 0, onClose }) => {
     const [currentStoryIndex, setCurrentStoryIndex] = useState(0);

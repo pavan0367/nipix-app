@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../utils/constants';
 
 const useSocket = (userId) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
     if (userId) {
-      socketRef.current = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000');
+      socketRef.current = io(SOCKET_URL);
       socketRef.current.emit('joinUserRoom', userId);
 
       socketRef.current.on('receiveMessage', (message) => {

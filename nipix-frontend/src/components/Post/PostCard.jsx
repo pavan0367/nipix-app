@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { toggleLike, addComment } from '../../services/postService';
 import { updatePostLike } from '../../store/slices/postSlice';
 import { Heart, MessageCircle, Send, Bookmark, User, Share2 } from 'lucide-react';
+import { SOCKET_URL } from '../../utils/constants';
 
-const API_BASE = process.env.REACT_APP_SOCKET_URL || (process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000');
+const API_BASE = SOCKET_URL;
 
 const PostCard = ({ post, currentUser }) => {
   const [commentText, setCommentText] = useState('');

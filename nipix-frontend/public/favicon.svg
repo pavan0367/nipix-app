@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="nipixGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#nipixGrad)" />
+  <path d="M16 5 C16 11 11 16 5 16 C11 16 16 21 16 27 C16 21 21 16 27 16 C21 16 16 11 16 5 Z" fill="#ffffff" />
+  <circle cx="23" cy="9" r="1.5" fill="#ffffff" opacity="0.85" />
+</svg>
