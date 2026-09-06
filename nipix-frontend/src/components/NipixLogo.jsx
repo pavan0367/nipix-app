@@ -3,32 +3,31 @@ import logoImage from '../assets/images/nipix-logo.png';
 
 /**
  * Official Nipix Brand Logo Component
- * Uses the official glowing futuristic brand logo asset.
- * Maintains exact aspect ratio, no stretching or distortion (object-fit: contain).
+ * Renders ONLY the isolated glowing "N" logo image without background, borders, or container.
+ * Preserves exact aspect ratio and visual footprint.
  */
 const NipixLogo = ({
-  size = 40,
+  size = 38,
   width,
   height,
   className = '',
   style = {},
   alt = 'Nipix Logo',
-  glow = false,
-  variant = 'icon',
   ...props
 }) => {
-  const resolvedWidth = width || (variant === 'full' ? '180px' : (typeof size === 'number' ? `${size}px` : size));
-  const resolvedHeight = height || (variant === 'full' ? 'auto' : (typeof size === 'number' ? `${size}px` : size));
+  const resolvedHeight = height || (typeof size === 'number' ? `${size}px` : size);
+  const resolvedWidth = width || (height ? 'auto' : (typeof size === 'number' ? `${Math.round(size * 1.21)}px` : 'auto'));
 
   const baseStyle = {
     display: 'inline-block',
     objectFit: 'contain',
-    width: resolvedWidth,
     height: resolvedHeight,
+    width: resolvedWidth,
     maxWidth: '100%',
     verticalAlign: 'middle',
-    borderRadius: style.borderRadius || (variant === 'full' ? '12px' : '10px'),
-    boxShadow: glow ? '0 0 20px rgba(59, 130, 246, 0.45)' : undefined,
+    background: 'transparent',
+    border: 'none',
+    boxShadow: 'none',
     userSelect: 'none',
     ...style
   };

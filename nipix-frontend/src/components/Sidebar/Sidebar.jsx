@@ -22,7 +22,7 @@ const Sidebar = ({ currentUser, onLogout }) => {
         {/* Brand Header */}
         <div style={{ marginBottom: '28px', padding: '0 8px' }}>
           <Link to="/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <NipixLogo size={44} style={{ borderRadius: '10px' }} glow />
+            <NipixLogo size={38} />
             <div>
               <span className="brand-logo" style={{ fontSize: '1.35rem', fontWeight: '800', lineHeight: '1.1', background: 'linear-gradient(135deg, #a855f7 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 Nipix

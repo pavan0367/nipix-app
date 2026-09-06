@@ -36,7 +36,7 @@ const Navbar = ({ currentUser }) => {
       {/* Brand & Scholar Level */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <Link to="/home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <NipixLogo size={32} style={{ borderRadius: '8px' }} />
+          <NipixLogo size={30} />
           <span className="brand-logo" style={{ fontSize: '1.25rem' }}>
             Nipix <span style={{ fontSize: '0.8rem', opacity: 0.8, fontWeight: 500, color: 'var(--text-dim)' }}>AI Scholar</span>
           </span>

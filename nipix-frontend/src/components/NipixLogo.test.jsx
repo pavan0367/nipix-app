@@ -8,28 +8,28 @@ describe('NipixLogo Component Tests', () => {
     expect(html).toContain('<img');
     expect(html).toContain('alt="Nipix Logo"');
     expect(html).toContain('object-fit:contain');
-    expect(html).toContain('width:40px');
+    expect(html).toContain('height:38px');
+    expect(html).toContain('width:46px');
+    expect(html).toContain('background:transparent');
+    expect(html).toContain('border:none');
+  });
+
+  test('respects custom size and custom dimensions', () => {
+    const html = ReactDOMServer.renderToStaticMarkup(
+      <NipixLogo size={40} />
+    );
+    expect(html).toContain('<img');
     expect(html).toContain('height:40px');
-  });
-
-  test('respects custom size and custom styling', () => {
-    const html = ReactDOMServer.renderToStaticMarkup(
-      <NipixLogo size={64} style={{ borderRadius: '14px' }} glow />
-    );
-    expect(html).toContain('<img');
-    expect(html).toContain('width:64px');
-    expect(html).toContain('height:64px');
-    expect(html).toContain('border-radius:14px');
+    expect(html).toContain('width:48px');
     expect(html).toContain('object-fit:contain');
-    expect(html).toContain('box-shadow:');
   });
 
-  test('renders full banner variant when requested', () => {
+  test('allows explicit width or height overrides', () => {
     const html = ReactDOMServer.renderToStaticMarkup(
-      <NipixLogo variant="full" />
+      <NipixLogo height="30px" width="36px" />
     );
     expect(html).toContain('<img');
-    expect(html).toContain('width:180px');
-    expect(html).toContain('height:auto');
+    expect(html).toContain('height:30px');
+    expect(html).toContain('width:36px');
   });
 });
