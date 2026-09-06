@@ -37,6 +37,12 @@ export const BOT_PERSONAS = {
     role: 'Artificial Intelligence, Quantum & Future Innovation',
     tagline: 'Neural Computation & Future Technology',
     accent: '🌌'
+  },
+  sakura: {
+    name: 'Sakura',
+    role: 'Japanese Language & JLPT',
+    tagline: 'Japanese Language, Grammar, Kanji & JLPT Sensei',
+    accent: '🌸'
   }
 };
 

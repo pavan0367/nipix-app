@@ -157,6 +157,28 @@ const AI_BOTS = [
         time: '02:20 PM'
       }
     ]
+  },
+  {
+    id: 'sakura',
+    name: 'Sakura',
+    username: '@sakura_jp',
+    role: 'Japanese Language & JLPT',
+    avatar: '🌸',
+    badgeClass: 'badge-cipher',
+    accentColor: '#ec4899',
+    specialty: 'Japanese Grammar, Vocabulary, Kanji, Hiragana, Katakana, JLPT & Translation',
+    previewText: 'Konnichiwa! Ask me any Japanese language, grammar, or JLPT question.',
+    ageText: 'Just now',
+    lastTime: '12:00 PM',
+    initialMessages: [
+      {
+        id: 'sk-1',
+        sender: 'Sakura',
+        isUser: false,
+        text: 'Konnichiwa! 🌸 I am Sakura (@sakura_jp), your dedicated Japanese Language & JLPT sensei. Ask me anything—from Hiragana, Katakana, and Kanji to complex grammar, Keigo, translations, and JLPT preparation. Yoroshiku onegaishimasu!',
+        time: '12:00 PM'
+      }
+    ]
   }
 ];
 

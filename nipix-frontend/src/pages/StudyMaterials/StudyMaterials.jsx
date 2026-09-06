@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   BookOpen,
   Code2,
@@ -15,9 +16,11 @@ import {
   FileText
 } from 'lucide-react';
 import NipixLogo from '../../components/NipixLogo';
+import JapaneseDashboard from '../../components/JapaneseLearning/JapaneseDashboard';
 
 const CATEGORIES = [
   'All Materials',
+  'Japanese 🇯🇵',
   'Computer Science & AI',
   'Engineering & Math',
   'Web & Systems',
@@ -150,11 +153,20 @@ export const fetchResource = createAsyncThunk('res/fetch', async (id, { rejectWi
   }
 ];
 
-const StudyMaterials = () => {
-  const [activeCategory, setActiveCategory] = useState('All Materials');
+const StudyMaterials = ({ defaultCategory }) => {
+  const location = useLocation();
+  const [activeCategory, setActiveCategory] = useState(
+    defaultCategory || (location.pathname.includes('/japanese') ? 'Japanese 🇯🇵' : 'All Materials')
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [savedNotes, setSavedNotes] = useState({});
+
+  useEffect(() => {
+    if (location.pathname.includes('/japanese') || defaultCategory === 'Japanese 🇯🇵') {
+      setActiveCategory('Japanese 🇯🇵');
+    }
+  }, [location.pathname, defaultCategory]);
 
   const filteredMaterials = STUDY_MATERIALS.filter((mat) => {
     const matchesCategory = activeCategory === 'All Materials' || mat.category === activeCategory;
@@ -179,31 +191,35 @@ const StudyMaterials = () => {
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         
         {/* Hub Header */}
-        <div className="glass-card" style={{ padding: '28px', marginBottom: '28px', borderLeft: '4px solid var(--accent-emerald)' }}>
+        <div className="glass-card" style={{ padding: '28px', marginBottom: '28px', borderLeft: activeCategory === 'Japanese 🇯🇵' ? '4px solid #ec4899' : '4px solid var(--accent-emerald)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '10px' }}>
             <NipixLogo size={46} style={{ borderRadius: '10px' }} glow />
             <div>
               <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
-                Study Materials & Academic Notes
+                {activeCategory === 'Japanese 🇯🇵' ? 'Japanese Language Learning Hub' : 'Study Materials & Academic Notes'}
               </h1>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-                Curated lecture notes, algorithm blueprints, math proofs, and engineering cheatsheets.
+                {activeCategory === 'Japanese 🇯🇵'
+                  ? 'Complete JLPT N5–N1 curriculum, Kana, Kanji, Vocabulary, Grammar, and AI Sensei Tutor.'
+                  : 'Curated lecture notes, algorithm blueprints, math proofs, and engineering cheatsheets.'}
               </p>
             </div>
           </div>
 
-          {/* Search bar */}
-          <div style={{ position: 'relative', marginTop: '18px' }}>
-            <Search size={18} color="var(--text-dim)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              type="text"
-              placeholder="Search concepts, algorithms, formulas, or programming topics..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field"
-              style={{ paddingLeft: '46px', borderRadius: 'var(--radius-full)' }}
-            />
-          </div>
+          {/* Search bar (for general materials) */}
+          {activeCategory !== 'Japanese 🇯🇵' && (
+            <div style={{ position: 'relative', marginTop: '18px' }}>
+              <Search size={18} color="var(--text-dim)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                type="text"
+                placeholder="Search concepts, algorithms, formulas, or programming topics..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input-field"
+                style={{ paddingLeft: '46px', borderRadius: 'var(--radius-full)' }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Category Filter Pills */}
@@ -219,8 +235,11 @@ const StudyMaterials = () => {
           ))}
         </div>
 
-        {/* Materials List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+        {/* Japanese Section OR General Materials List */}
+        {activeCategory === 'Japanese 🇯🇵' ? (
+          <JapaneseDashboard />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
           {filteredMaterials.map((mat) => (
             <div key={mat.id} className="glass-card glass-card-interactive" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
@@ -318,6 +337,7 @@ const StudyMaterials = () => {
             </div>
           ))}
         </div>
+        )}
 
       </div>
     </div>

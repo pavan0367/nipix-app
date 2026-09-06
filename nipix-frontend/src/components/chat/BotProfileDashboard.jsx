@@ -57,7 +57,7 @@ const BotProfileDashboard = ({
 
   if (!bot) return null;
 
-  const username = `@${bot.id}`;
+  const username = bot.username || `@${bot.id}`;
   const category = bot.role || 'AI Assistant';
   const displayName = customNickname || bot.name;
 
@@ -75,7 +75,8 @@ const BotProfileDashboard = ({
     { id: 'spark_x', name: 'Spark_X', avatar: '⚡', role: 'Electrical / Physics' },
     { id: 'archivist', name: 'Archivist', avatar: '📚', role: 'Research / History' },
     { id: 'novamind', name: 'NovaMind', avatar: '🧠', role: 'Mathematics' },
-    { id: 'aether', name: 'Aether', avatar: '🌌', role: 'Innovation / Future Tech' }
+    { id: 'aether', name: 'Aether', avatar: '🌌', role: 'Innovation / Future Tech' },
+    { id: 'sakura', name: 'Sakura', avatar: '🌸', role: 'Japanese Language & JLPT' }
   ];
 
   const handleToggleMute = () => {

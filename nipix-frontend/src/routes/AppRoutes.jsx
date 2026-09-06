@@ -22,7 +22,9 @@ const AppRoutes = () => {
       <Route path="/" element={<Home />} />
       <Route path="/home" element={<Home />} />
       <Route path="/study" element={<StudyMaterials />} />
+      <Route path="/study/japanese" element={<StudyMaterials defaultCategory="Japanese 🇯🇵" />} />
       <Route path="/study-materials" element={<StudyMaterials />} />
+      <Route path="/study-materials/japanese" element={<StudyMaterials defaultCategory="Japanese 🇯🇵" />} />
       <Route path="/news" element={<NewsFeed />} />
       <Route path="/youtube" element={<YouTubeHub />} />
       <Route path="/lectures" element={<YouTubeHub />} />
