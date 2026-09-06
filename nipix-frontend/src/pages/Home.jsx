@@ -21,7 +21,8 @@ import {
   BrainCircuit,
   TrendingUp,
   AlertCircle,
-  Zap
+  Zap,
+  Video
 } from 'lucide-react';
 import NipixLogo from '../components/NipixLogo';
 
@@ -250,151 +251,172 @@ const Home = () => {
         </div>
 
         {/* ========================================================== */}
-        {/* 3. INTRODUCTION VIDEO: WELCOME TO NIPIX                    */}
+        {/* 3. RECOMMENDED STUDY MODULES (PRESERVED 100%)              */}
         {/* ========================================================== */}
-        <div className="glass-card" style={{
-          padding: '28px',
-          marginBottom: '32px',
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--radius-lg)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
-            <div>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-full)',
-                background: 'rgba(59, 130, 246, 0.12)',
-                color: 'var(--accent-blue)',
-                fontSize: '0.74rem',
-                fontWeight: '700',
-                marginBottom: '8px',
-                border: '1px solid rgba(59, 130, 246, 0.25)'
-              }}>
-                ✦ PLATFORM WALKTHROUGH
-              </div>
-              <h2 style={{ fontSize: '1.45rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 4px 0', letterSpacing: '-0.01em' }}>
-                Welcome to Nipix
-              </h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0 }}>
-                A quick introduction to your AI-powered study platform
-              </p>
-            </div>
-            <Link to="/chat" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.82rem', gap: '6px' }}>
-              <Sparkles size={14} color="var(--accent-cyan)" /> Ask AI Co-Pilot
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp size={18} color="var(--accent-cyan)" /> Recommended Study Modules
+            </h2>
+            <Link to="/study" style={{ fontSize: '0.82rem', color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: '600' }}>
+              View All
             </Link>
           </div>
 
-          {/* Video Container (Polished embedded player style) */}
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            borderRadius: '14px',
-            overflow: 'hidden',
-            background: '#0a0c14',
-            border: '1px solid var(--border-color)',
-            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35)'
-          }}>
-            <video
-              ref={videoRef}
-              src="/intro.mp4"
-              autoPlay
-              muted
-              playsInline
-              loop
-              controls
-              preload="auto"
-              style={{
-                width: '100%',
-                maxHeight: '520px',
-                display: 'block',
-                objectFit: 'contain',
-                background: '#0a0c14'
-              }}
-            >
-              Your browser does not support the video tag.
-            </video>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>COMPUTER SCIENCE</span>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: '4px 0 6px 0' }}>
+                Deep Learning & Transformer Mechanics
+              </h3>
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+                Detailed mathematical formulations of self-attention matrices, positional encodings, and gradient propagation.
+              </p>
+              <Link to="/study" className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
+                Open Study Guide <ArrowRight size={12} />
+              </Link>
+            </div>
+
+            <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: '700' }}>MATHEMATICS</span>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: '4px 0 6px 0' }}>
+                Multivariable Calculus & Green’s Vector Theorem
+              </h3>
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+                Planar vector integrals, divergence theorem, and Maxwell equations visual foundations.
+              </p>
+              <Link to="/study" className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
+                Open Study Guide <ArrowRight size={12} />
+              </Link>
+            </div>
           </div>
         </div>
 
         {/* ========================================================== */}
-        {/* 4. HIGHLIGHTED STUDY TRACKS (PRESERVED 100%)               */}
+        {/* 4. INTRO VIDEO (LEFT) & DAILY LEARNING STREAK (RIGHT)      */}
         {/* ========================================================== */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '32px' }} className="theatre-layout">
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '32px', alignItems: 'stretch' }} className="theatre-layout">
           
-          {/* Left Column: Recommended Learning Tracks */}
-          <div>
+          {/* Left Column: Compact Introduction Video Card */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <TrendingUp size={18} color="var(--accent-cyan)" /> Recommended Study Modules
+                <Video size={18} color="var(--accent-blue)" /> Welcome to Nipix
               </h2>
-              <Link to="/study" style={{ fontSize: '0.82rem', color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: '600' }}>
-                View All
-              </Link>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '3px 10px',
+                borderRadius: 'var(--radius-full)',
+                background: 'rgba(59, 130, 246, 0.12)',
+                color: 'var(--accent-blue)',
+                fontSize: '0.72rem',
+                fontWeight: '700',
+                border: '1px solid rgba(59, 130, 246, 0.25)'
+              }}>
+                ✦ PLATFORM INTRO
+              </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
-                <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>COMPUTER SCIENCE</span>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: '4px 0 6px 0' }}>
-                  Deep Learning & Transformer Mechanics
-                </h3>
-                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
-                  Detailed mathematical formulations of self-attention matrices, positional encodings, and gradient propagation.
-                </p>
-                <Link to="/study" className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
-                  Open Study Guide <ArrowRight size={12} />
+            <div className="glass-card" style={{
+              padding: '16px 20px',
+              borderRadius: 'var(--radius-lg)',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px', gap: '10px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.02rem', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 2px 0' }}>
+                    Welcome to Nipix
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                    A quick introduction to your AI-powered study platform
+                  </p>
+                </div>
+                <Link to="/chat" className="btn-secondary" style={{ padding: '5px 12px', fontSize: '0.76rem', gap: '5px', flexShrink: 0 }}>
+                  <Sparkles size={12} color="var(--accent-cyan)" /> Ask AI
                 </Link>
               </div>
 
-              <div className="glass-card glass-card-interactive" style={{ padding: '18px' }}>
-                <span style={{ fontSize: '0.72rem', color: 'var(--accent-emerald)', fontWeight: '700' }}>MATHEMATICS</span>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: '4px 0 6px 0' }}>
-                  Multivariable Calculus & Green’s Vector Theorem
-                </h3>
-                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
-                  Planar vector integrals, divergence theorem, and Maxwell equations visual foundations.
-                </p>
-                <Link to="/study" className="btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
-                  Open Study Guide <ArrowRight size={12} />
-                </Link>
+              {/* Compact Video Player Container (Height constrained to match Streak card) */}
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                height: '155px',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                background: '#0a0c14',
+                border: '1px solid var(--border-color)',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <video
+                  ref={videoRef}
+                  src="/intro.mp4"
+                  autoPlay
+                  muted
+                  playsInline
+                  loop
+                  controls
+                  preload="auto"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                    background: '#0a0c14'
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
               </div>
             </div>
           </div>
 
           {/* Right Column: Scholar Progress & Daily Streak */}
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Flame size={18} color="#f59e0b" /> Daily Learning Streak
             </h2>
 
-            <div className="glass-card" style={{ padding: '22px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div className="glass-card" style={{
+              padding: '20px',
+              borderRadius: 'var(--radius-lg)',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
-                  <span style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-main)' }}>5 Days</span>
+                  <span style={{ fontSize: '1.9rem', fontWeight: '800', color: 'var(--text-main)' }}>5 Days</span>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>Keep the momentum going!</p>
                 </div>
-                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Flame size={24} color="#f59e0b" />
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Flame size={22} color="#f59e0b" />
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#cbd5e1', display: 'block', marginBottom: '8px' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }}>
+                <span style={{ fontSize: '0.76rem', fontWeight: '700', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>
                   Today's Milestones:
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#34d399', marginBottom: '6px' }}>
-                  <CheckCircle2 size={14} /> 1 Algorithm Review Completed
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#34d399', marginBottom: '4px' }}>
+                  <CheckCircle2 size={13} /> 1 Algorithm Review Completed
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-dim)' }}>
-                  <Clock size={14} /> 1 Video Lecture Scheduled
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                  <Clock size={13} /> 1 Video Lecture Scheduled
                 </div>
               </div>
 
-              <Link to="/study" className="btn-primary" style={{ width: '100%', fontSize: '0.84rem' }}>
+              <Link to="/study" className="btn-primary" style={{ width: '100%', fontSize: '0.82rem', padding: '10px' }}>
                 Continue Learning Track
               </Link>
             </div>

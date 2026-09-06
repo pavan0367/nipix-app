@@ -1,6 +1,15 @@
-2026/09/06-21:35:55.953 69f8 Reusing MANIFEST d:\Clg\vs\Nipix\.edge-temp-profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/09/06-21:35:55.955 69f8 Recovering log #32
-2026/09/06-21:35:55.955 69f8 Reusing old log d:\Clg\vs\Nipix\.edge-temp-profile\Default\EdgeCoupons/coupons_data.db/000032.log 
-2026/09/06-21:35:56.038 10b4 Level-0 table #37: started
-2026/09/06-21:35:56.041 10b4 Level-0 table #37: 683444 bytes OK
-2026/09/06-21:35:56.042 10b4 Delete type=0 #32
+2026/09/06-22:22:09.490 414 Reusing MANIFEST d:\Clg\vs\Nipix\.edge-temp-profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/09/06-22:22:09.491 414 Recovering log #42
+2026/09/06-22:22:09.491 414 Reusing old log d:\Clg\vs\Nipix\.edge-temp-profile\Default\EdgeCoupons/coupons_data.db/000042.log 
+2026/09/06-22:22:09.613 c34 Level-0 table #46: started
+2026/09/06-22:22:09.617 c34 Level-0 table #46: 683444 bytes OK
+2026/09/06-22:22:09.618 c34 Delete type=0 #42
+2026/09/06-22:22:09.619 c34 Compacting 4@0 + 1@1 files
+2026/09/06-22:22:09.621 c34 Generated table #47@0: 4 keys, 683351 bytes
+2026/09/06-22:22:09.621 c34 Compacted 4@0 + 1@1 files => 683351 bytes
+2026/09/06-22:22:09.622 c34 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/09/06-22:22:09.622 c34 Delete type=2 #34
+2026/09/06-22:22:09.623 c34 Delete type=2 #37
+2026/09/06-22:22:09.623 c34 Delete type=2 #40
+2026/09/06-22:22:09.623 c34 Delete type=2 #43
+2026/09/06-22:22:09.623 c34 Delete type=2 #46
