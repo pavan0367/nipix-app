@@ -15,3 +15,12 @@
     display: none !important;
   }
 }
+
+/* Intro Video - Permanent Mute & Clean Controls (No volume / No download) */
+.intro-video-clean::-webkit-media-controls-mute-button,
+.intro-video-clean::-webkit-media-controls-volume-slider,
+.intro-video-clean::-webkit-media-controls-volume-slider-container {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
