@@ -364,7 +364,6 @@ const Home = () => {
                   muted
                   playsInline
                   loop
-                  controls
                   controlsList="nodownload"
                   disablePictureInPicture
                   disableRemotePlayback
