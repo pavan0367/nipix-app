@@ -11,11 +11,6 @@ const User = sequelize.define('User', {
   profile_image: { type: DataTypes.STRING(500), defaultValue: '' },
   is_private: { type: DataTypes.BOOLEAN, defaultValue: false },
   role: { type: DataTypes.ENUM('user', 'admin'), defaultValue: 'user' }
-}, {
-  tableName: 'users',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at'
-});
+}, { timestamps: true });
 
 module.exports = User;
