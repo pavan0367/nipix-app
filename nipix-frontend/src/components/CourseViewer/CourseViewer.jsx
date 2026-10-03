@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   BookOpen,
   CheckCircle2,
@@ -15,10 +16,12 @@ import {
   RotateCcw,
   Check,
   Video,
-  ExternalLink
+  ExternalLink,
+  Lock
 } from 'lucide-react';
 import useLearningProgress from '../../hooks/useLearningProgress';
 import { getCourseActivityCount } from '../../data/courses/coursesData';
+import LoginRequiredModal from '../LoginRequiredModal';
 
 const STAGES = [
   { id: 'intro', label: '1. Introduction', icon: BookOpen },
@@ -31,8 +34,11 @@ const STAGES = [
   { id: 'project', label: '8. Project', icon: Sparkles }
 ];
 
-const CourseViewer = ({ course, onClose }) => {
+const CourseViewer = ({ course, onClose, initialStage = 'intro' }) => {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const isAuthenticated = Boolean(user);
+
   const {
     completedActivities,
     isActivityCompleted,
@@ -46,18 +52,32 @@ const CourseViewer = ({ course, onClose }) => {
     getCourseProgress
   } = useLearningProgress();
 
-  const [activeStage, setActiveStage] = useState('intro');
+  const [activeStage, setActiveStage] = useState(initialStage || 'intro');
   const [activeLessonIdx, setActiveLessonIdx] = useState(0);
   const [practiceAnswers, setPracticeAnswers] = useState({});
   const [taskInputs, setTaskInputs] = useState({});
   const [testAnswers, setTestAnswers] = useState({});
   const [testResult, setTestResult] = useState(null);
   const [showHint, setShowHint] = useState(false);
+  const [loginModalConfig, setLoginModalConfig] = useState(null);
 
   if (!course) return null;
 
   const totalActivities = getCourseActivityCount(course);
   const progressPercent = getCourseProgress(course.id, totalActivities);
+
+  // Gated stage selection: Stages 1 & 2 are public previews; 3 through 8 require authentication
+  const handleStageSelect = (stageId) => {
+    if (stageId !== 'intro' && stageId !== 'fundamentals' && !isAuthenticated) {
+      setLoginModalConfig({
+        title: `Sign In to Access ${course.title} Lessons`,
+        description: 'Interactive lessons, practice questions, curated video lectures, tasks, and graded tests require an authenticated scholar account.',
+        returnUrl: `/study?course=${course.id}&stage=${stageId}`
+      });
+      return;
+    }
+    setActiveStage(stageId);
+  };
 
   // Lesson portion helpers
   const activeLesson = course.lessons?.[activeLessonIdx] || course.lessons?.[0];
@@ -65,6 +85,14 @@ const CourseViewer = ({ course, onClose }) => {
   const isCurrentLessonComplete = activeLesson ? isActivityCompleted(activeLesson.id) : false;
 
   const handleCompletePortion = (portionIdx) => {
+    if (!isAuthenticated) {
+      setLoginModalConfig({
+        title: 'Sign In to Complete Lesson',
+        description: 'Please sign in or create an account to record your portion progress and earn completion points.',
+        returnUrl: `/study?course=${course.id}&stage=lessons`
+      });
+      return;
+    }
     if (!activeLesson) return;
     completeLessonPortion(
       activeLesson.id,
@@ -77,14 +105,38 @@ const CourseViewer = ({ course, onClose }) => {
   };
 
   const handleCompleteVideo = (video) => {
+    if (!isAuthenticated) {
+      setLoginModalConfig({
+        title: 'Sign In to Complete Video',
+        description: 'Please sign in or create an account to record your video milestone and earn points.',
+        returnUrl: `/study?course=${course.id}&stage=videos`
+      });
+      return;
+    }
     completeVideo(video.id, course.id, course.subject, video.points);
   };
 
   const handleCompleteTask = (task) => {
+    if (!isAuthenticated) {
+      setLoginModalConfig({
+        title: 'Sign In to Submit Task',
+        description: 'Please sign in or create an account to submit your solution and record your task score.',
+        returnUrl: `/study?course=${course.id}&stage=tasks`
+      });
+      return;
+    }
     completeTask(task.id, course.id, course.subject, task.points);
   };
 
   const handleSubmitTest = (test) => {
+    if (!isAuthenticated) {
+      setLoginModalConfig({
+        title: 'Sign In to Submit Test',
+        description: 'Please sign in or create an account to record your test score and earn graded points.',
+        returnUrl: `/study?course=${course.id}&stage=tests`
+      });
+      return;
+    }
     let score = 0;
     test.questions.forEach((q, qIdx) => {
       if (testAnswers[qIdx] === q.correctIndex) {
@@ -105,6 +157,14 @@ const CourseViewer = ({ course, onClose }) => {
   };
 
   const handleCompleteProject = (proj) => {
+    if (!isAuthenticated) {
+      setLoginModalConfig({
+        title: 'Sign In to Submit Capstone Project',
+        description: 'Please sign in or create an account to verify your capstone milestone and earn completion points.',
+        returnUrl: `/study?course=${course.id}&stage=project`
+      });
+      return;
+    }
     completeProject(proj.id, course.id, course.subject, proj.points);
   };
 
@@ -218,7 +278,7 @@ const CourseViewer = ({ course, onClose }) => {
               <button
                 key={stg.id}
                 type="button"
-                onClick={() => setActiveStage(stg.id)}
+                onClick={() => handleStageSelect(stg.id)}
                 className={`category-pill ${isActive ? 'active' : ''}`}
                 style={{ fontSize: '0.78rem', padding: '6px 14px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
@@ -274,7 +334,7 @@ const CourseViewer = ({ course, onClose }) => {
                 <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
                   <button
                     type="button"
-                    onClick={() => setActiveStage('fundamentals')}
+                    onClick={() => handleStageSelect('fundamentals')}
                     className="btn-primary"
                     style={{ padding: '8px 20px', fontSize: '0.84rem', gap: '6px' }}
                   >
@@ -312,7 +372,7 @@ const CourseViewer = ({ course, onClose }) => {
               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
-                  onClick={() => setActiveStage('lessons')}
+                  onClick={() => handleStageSelect('lessons')}
                   className="btn-primary"
                   style={{ padding: '8px 20px', fontSize: '0.84rem', gap: '6px' }}
                 >
@@ -756,6 +816,16 @@ const CourseViewer = ({ course, onClose }) => {
 
         </div>
       </div>
+
+      {loginModalConfig && (
+        <LoginRequiredModal
+          isOpen={Boolean(loginModalConfig)}
+          onClose={() => setLoginModalConfig(null)}
+          title={loginModalConfig.title}
+          description={loginModalConfig.description}
+          returnUrl={loginModalConfig.returnUrl}
+        />
+      )}
     </div>
   );
 };

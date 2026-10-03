@@ -171,12 +171,23 @@ const StudyMaterials = ({ defaultCategory }) => {
   const [copiedId, setCopiedId] = useState(null);
   const [savedNotes, setSavedNotes] = useState({});
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedStage, setSelectedStage] = useState('intro');
 
   useEffect(() => {
     if (location.pathname.includes('/japanese') || defaultCategory === 'Japanese 🇯🇵') {
       setActiveCategory('Japanese 🇯🇵');
     }
-  }, [location.pathname, defaultCategory]);
+    const params = new URLSearchParams(location.search);
+    const courseId = params.get('course');
+    const stageId = params.get('stage');
+    if (courseId) {
+      const found = COURSES.find(c => c.id === courseId);
+      if (found) {
+        setSelectedCourse(found);
+        setSelectedStage(stageId || 'intro');
+      }
+    }
+  }, [location.pathname, location.search, defaultCategory]);
 
   const filteredCourses = COURSES.filter((crs) => {
     const matchesCat = activeCategory === 'All Courses & Materials' || crs.subject === activeCategory || crs.category === activeCategory;
@@ -457,7 +468,11 @@ const StudyMaterials = ({ defaultCategory }) => {
       {selectedCourse && (
         <CourseViewer
           course={selectedCourse}
-          onClose={() => setSelectedCourse(null)}
+          initialStage={selectedStage}
+          onClose={() => {
+            setSelectedCourse(null);
+            setSelectedStage('intro');
+          }}
         />
       )}
 

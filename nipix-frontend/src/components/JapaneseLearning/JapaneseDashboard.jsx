@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   BookOpen,
   Sparkles,
@@ -27,6 +28,7 @@ import JapaneseSearch from './JapaneseSearch';
 import ListeningView from './ListeningView';
 import WritingView from './WritingView';
 import useLearningProgress from '../../hooks/useLearningProgress';
+import LoginRequiredModal from '../LoginRequiredModal';
 
 const MODULE_TABS = [
   { id: 'overview', label: '🧭 Dashboard' },
@@ -45,9 +47,36 @@ const MODULE_TABS = [
 
 const JapaneseDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
+  const isAuthenticated = Boolean(user);
+
   const { getJapaneseStats } = useLearningProgress();
   const [activeTab, setActiveTab] = useState('overview');
+  const [loginModalConfig, setLoginModalConfig] = useState(null);
   const stats = getJapaneseStats();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    if (tabParam && MODULE_TABS.some((t) => t.id === tabParam)) {
+      if (isAuthenticated || tabParam === 'overview' || tabParam === 'search') {
+        setActiveTab(tabParam);
+      }
+    }
+  }, [location.search, isAuthenticated]);
+
+  const handleTabClick = (tabId) => {
+    if (tabId !== 'overview' && tabId !== 'search' && !isAuthenticated) {
+      setLoginModalConfig({
+        title: 'Sign In to Access Japanese Learning Track',
+        description: 'Interactive Kana studios, Kanji stroke diagrams, vocabulary audio drills, reading comprehension, listening studio, and JLPT quizzes require a scholar account.',
+        returnUrl: `/study/japanese?tab=${tabId}`
+      });
+      return;
+    }
+    setActiveTab(tabId);
+  };
 
   const handleStartAiChat = () => {
     navigate('/chat/sakura');
@@ -207,7 +236,7 @@ const JapaneseDashboard = () => {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabClick(tab.id)}
             className={`category-pill ${activeTab === tab.id ? 'active' : ''}`}
             style={{ fontSize: '0.84rem', padding: '7px 16px' }}
           >
@@ -337,7 +366,7 @@ const JapaneseDashboard = () => {
               ].map((card) => (
                 <div
                   key={card.id}
-                  onClick={() => setActiveTab(card.id)}
+                  onClick={() => handleTabClick(card.id)}
                   className="glass-card glass-card-interactive"
                   style={{ padding: '22px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                 >
@@ -413,7 +442,17 @@ const JapaneseDashboard = () => {
       {activeTab === 'quizzes' && <QuizzesView />}
 
       {/* SEARCH TAB */}
-      {activeTab === 'search' && <JapaneseSearch onNavigateTab={(tab) => setActiveTab(tab)} />}
+      {activeTab === 'search' && <JapaneseSearch onNavigateTab={(tab) => handleTabClick(tab)} />}
+
+      {loginModalConfig && (
+        <LoginRequiredModal
+          isOpen={Boolean(loginModalConfig)}
+          onClose={() => setLoginModalConfig(null)}
+          title={loginModalConfig.title}
+          description={loginModalConfig.description}
+          returnUrl={loginModalConfig.returnUrl}
+        />
+      )}
     </div>
   );
 };

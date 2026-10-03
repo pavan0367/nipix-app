@@ -6,19 +6,19 @@ import { Mail, Lock, User as UserIcon, AtSign, Eye, EyeOff, Sparkles, AlertCircl
 import NipixLogo from '../components/NipixLogo';
 
 const Login = () => {
-  const [isRegister, setIsRegister] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ username: '', email: '', password: '', full_name: '' });
-  
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { loading, error } = useSelector((state) => state.auth);
 
-  // Check if user came from the Secret Chat / Hidden Chat icon
   const queryParams = new URLSearchParams(location.search);
-  const redirectTarget = queryParams.get('redirect');
+  const redirectTarget = queryParams.get('redirect') || (location.state && location.state.from);
   const isHiddenChatRedirect = redirectTarget === 'hidden-chat';
+  const initialMode = queryParams.get('mode') === 'register';
+
+  const [isRegister, setIsRegister] = useState(initialMode);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({ username: '', email: '', password: '', full_name: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,9 +31,19 @@ const Login = () => {
     }
 
     if (result.meta.requestStatus === 'fulfilled') {
-      // AFTER SUCCESSFUL LOGIN: Take the user directly to the Hidden Chat / Secret Chat area!
-      if (isHiddenChatRedirect) {
-        navigate('/chat?view=hidden');
+      const loggedUser = result.payload?.user;
+      if (redirectTarget) {
+        if (isHiddenChatRedirect) {
+          navigate('/chat?view=hidden');
+        } else {
+          try {
+            navigate(decodeURIComponent(redirectTarget));
+          } catch (e) {
+            navigate(redirectTarget);
+          }
+        }
+      } else if (loggedUser?.role === 'admin' || loggedUser?.role === 'ADMIN') {
+        navigate('/admin');
       } else {
         navigate('/home');
       }

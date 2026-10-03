@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
+import AdminRoute from './AdminRoute';
 
 import Login from '../pages/Login';
 import Register from '../pages/Register';
@@ -14,6 +15,7 @@ import Chat from '../pages/Chat';
 import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
 import Saved from '../pages/Saved';
+import AdminDashboard from '../pages/Admin/AdminDashboard';
 
 const AppRoutes = () => {
   return (
@@ -44,7 +46,8 @@ const AppRoutes = () => {
       <Route path="/settings" element={<Settings />} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/profile/id/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      {/* Admin Route (Strictly Admin Only) */}
+      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/home" replace />} />

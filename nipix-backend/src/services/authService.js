@@ -15,8 +15,18 @@ const authService = {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = await User.create({ username, email, password: hashedPassword, full_name });
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'nipix_super_secret_key_2024', { expiresIn: '7d' });
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+      full_name,
+      role: 'user' // Strictly enforce normal user role to prevent privilege escalation
+    });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET || 'NipixSecret2024!!',
+      { expiresIn: '7d' }
+    );
     return { user, token };
   },
 
@@ -27,7 +37,11 @@ const authService = {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new Error('Invalid credentials');
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET || 'NipixSecret2024!!',
+      { expiresIn: '7d' }
+    );
     return { user, token };
   },
 

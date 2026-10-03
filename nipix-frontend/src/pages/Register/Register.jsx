@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../store/slices/authSlice';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User as UserIcon, AtSign, Sparkles, AlertCircle } from 'lucide-react';
 import NipixLogo from '../../components/NipixLogo';
 
@@ -9,13 +9,23 @@ const Register = () => {
   const [formData, setFormData] = useState({ username: '', email: '', password: '', full_name: '' });
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const redirectTarget = queryParams.get('redirect');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await dispatch(registerUser(formData));
     if (result.meta.requestStatus === 'fulfilled') {
-      navigate('/login');
+      if (redirectTarget) {
+        try {
+          navigate(decodeURIComponent(redirectTarget));
+        } catch (err) {
+          navigate(redirectTarget);
+        }
+      } else {
+        navigate('/home');
+      }
     }
   };
 

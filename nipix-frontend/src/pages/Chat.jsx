@@ -21,6 +21,7 @@ import { sendAiChatMessageStream } from '../services/aiService';
 import MarkdownMessage from '../components/chat/MarkdownMessage';
 import BotProfileDashboard from '../components/chat/BotProfileDashboard';
 import NipixLogo from '../components/NipixLogo';
+import LoginRequiredModal from '../components/LoginRequiredModal';
 
 // Format current local system/browser time dynamically (e.g. 3:48 PM, 10:12 AM)
 export const getCurrentSystemTime = () => {
@@ -456,6 +457,24 @@ const Chat = () => {
       return {};
     }
   });
+
+  // Login Required Modal for Guest Chat Gating
+  const [loginModalConfig, setLoginModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    description: '',
+    returnUrl: ''
+  });
+
+  const triggerLoginForBot = () => {
+    const botDisplayName = nicknames[activeBot?.id] || activeBot?.name || 'AI Assistant';
+    setLoginModalConfig({
+      isOpen: true,
+      title: `Sign In to Chat with ${botDisplayName}`,
+      description: `Create a free account or sign in to start chatting in real-time, maintain conversation history, and access personalized AI tutoring with ${botDisplayName}.`,
+      returnUrl: `/chat/${activeBot?.id || 'bytebot'}`
+    });
+  };
   const [streamingEnabled, setStreamingEnabled] = useState(true);
 
   // Top-Right Options dropdown and modal dialog states
@@ -817,6 +836,10 @@ const Chat = () => {
   // Retry last failed prompt
   const handleRetryLastMessage = (e) => {
     if (e) e.preventDefault();
+    if (!currentUser) {
+      triggerLoginForBot();
+      return;
+    }
     if (lastSentPromptRef.current && !isGenerating) {
       handleSendMessage(null, lastSentPromptRef.current);
     }
@@ -825,6 +848,10 @@ const Chat = () => {
   // High-Performance Stream Handler with Micro-Batching (Zero UI Freezing)
   const handleSendMessage = async (e, retryText) => {
     if (e) e.preventDefault();
+    if (!currentUser) {
+      triggerLoginForBot();
+      return;
+    }
     const userText = (typeof retryText === 'string' ? retryText : userInput).trim();
     if (!userText || !activeBot || isGenerating) return;
 
@@ -1603,9 +1630,24 @@ const Chat = () => {
 
                 <textarea
                   rows={1}
-                  placeholder={`Ask ${nicknames[activeBot.id] || activeBot.name} anything...`}
+                  placeholder={
+                    currentUser
+                      ? `Ask ${nicknames[activeBot.id] || activeBot.name} anything...`
+                      : `Sign in to chat with ${nicknames[activeBot.id] || activeBot.name}...`
+                  }
                   value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
+                  onChange={(e) => {
+                    if (!currentUser) {
+                      triggerLoginForBot();
+                      return;
+                    }
+                    setUserInput(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (!currentUser) {
+                      triggerLoginForBot();
+                    }
+                  }}
                   onKeyDown={handleKeyDown}
                   className="input-field"
                   style={{
@@ -1618,13 +1660,19 @@ const Chat = () => {
                     lineHeight: '1.4',
                     background: 'var(--bg-input)',
                     border: '1px solid var(--border-color)',
-                    color: 'var(--text-main)'
+                    color: 'var(--text-main)',
+                    cursor: currentUser ? 'text' : 'pointer'
                   }}
                 />
 
                 <button
                   type="button"
                   className="btn-secondary"
+                  onClick={() => {
+                    if (!currentUser) {
+                      triggerLoginForBot();
+                    }
+                  }}
                   style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'transparent', color: 'var(--text-muted)', flexShrink: 0, cursor: 'pointer' }}
                   title="Attach file"
                 >
@@ -1657,7 +1705,7 @@ const Chat = () => {
                 ) : (
                   <button
                     type="submit"
-                    disabled={!userInput.trim()}
+                    disabled={Boolean(currentUser && !userInput.trim())}
                     className="btn-primary"
                     style={{
                       borderRadius: '50%',
@@ -1668,12 +1716,12 @@ const Chat = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      opacity: !userInput.trim() ? 0.45 : 1,
-                      cursor: !userInput.trim() ? 'not-allowed' : 'pointer',
+                      opacity: Boolean(currentUser && !userInput.trim()) ? 0.45 : 1,
+                      cursor: Boolean(currentUser && !userInput.trim()) ? 'not-allowed' : 'pointer',
                       background: currentTheme.userBubble,
                       boxShadow: `0 2px 8px ${currentTheme.accent}55`
                     }}
-                    title="Send Message"
+                    title={currentUser ? "Send Message" : "Sign in to chat"}
                   >
                     <Send size={16} />
                   </button>
@@ -1933,6 +1981,15 @@ const Chat = () => {
             </div>
           </div>
         )}
+
+        {/* LOGIN REQUIRED MODAL FOR GUESTS */}
+        <LoginRequiredModal
+          isOpen={loginModalConfig.isOpen}
+          onClose={() => setLoginModalConfig((prev) => ({ ...prev, isOpen: false }))}
+          title={loginModalConfig.title}
+          description={loginModalConfig.description}
+          returnUrl={loginModalConfig.returnUrl}
+        />
 
       </div>
     </div>

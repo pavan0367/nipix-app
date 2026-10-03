@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
-import { logout } from './store/slices/authSlice';
+import { logout, loadUser } from './store/slices/authSlice';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import AppRoutes from './routes/AppRoutes';
@@ -37,8 +37,9 @@ function AppContent() {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       axios.defaults.headers.common['x-auth-token'] = token;
+      dispatch(loadUser());
     }
-  }, [token]);
+  }, [token, dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());

@@ -11,7 +11,8 @@ import {
   Settings,
   User,
   LogOut,
-  LogIn
+  LogIn,
+  ShieldAlert
 } from 'lucide-react';
 import NipixLogo from '../NipixLogo';
 
@@ -78,6 +79,14 @@ const Sidebar = ({ currentUser, onLogout }) => {
             </NavLink>
           )}
 
+          {/* Admin Dashboard: Strictly visible ONLY to verified administrators */}
+          {currentUser && (currentUser.role === 'admin' || currentUser.role === 'ADMIN') && (
+            <NavLink to="/admin" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} style={{ color: '#ec4899' }}>
+              <ShieldAlert size={19} color="#ec4899" />
+              <span style={{ fontWeight: '700' }}>Admin Dashboard</span>
+            </NavLink>
+          )}
+
           <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <Settings size={19} />
             <span>Settings</span>
@@ -94,7 +103,7 @@ const Sidebar = ({ currentUser, onLogout }) => {
                 width: '36px',
                 height: '36px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
+                background: (currentUser.role === 'admin' || currentUser.role === 'ADMIN') ? 'linear-gradient(135deg, #ec4899, #be185d)' : 'linear-gradient(135deg, #7c3aed, #3b82f6)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -108,7 +117,9 @@ const Sidebar = ({ currentUser, onLogout }) => {
                 <p style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                   {currentUser.username}
                 </p>
-                <p style={{ fontSize: '0.74rem', color: 'var(--accent-emerald)', margin: 0, fontWeight: '600' }}>Scholar Account</p>
+                <p style={{ fontSize: '0.74rem', color: (currentUser.role === 'admin' || currentUser.role === 'ADMIN') ? '#ec4899' : 'var(--accent-emerald)', margin: 0, fontWeight: '700' }}>
+                  {(currentUser.role === 'admin' || currentUser.role === 'ADMIN') ? '🛡️ Administrator' : 'Scholar Account'}
+                </p>
               </div>
             </div>
 

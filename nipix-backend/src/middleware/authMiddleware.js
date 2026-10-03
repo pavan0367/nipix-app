@@ -9,9 +9,9 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'nipix_secret_key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'NipixSecret2024!!');
     
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
     if (!user) return res.status(401).json({ success: false, message: 'User not found' });
 
     req.user = user;

@@ -27,6 +27,12 @@ server.listen(PORT, () => {
 });
 
 // Sync Database in background
-sequelize.sync({ force: false }).then(() => {
+sequelize.sync({ force: false }).then(async () => {
   console.log('✅ MySQL & Sequelize Connected');
+  try {
+    const { initAdmin } = require('./utils/initAdmin');
+    await initAdmin();
+  } catch (e) {
+    console.warn('Admin init skipped:', e.message);
+  }
 }).catch(err => console.error('❌ DB Error:', err.message));
