@@ -12,12 +12,17 @@ import {
   CALENDAR_DATA,
   TIME_AND_COUNTERS_DATA
 } from '../../data/japanese/basicsData';
-import { Sparkles, Copy, Check, Volume2, BookOpen, Layers } from 'lucide-react';
+import { Sparkles, Copy, Check, Volume2, BookOpen, Layers, CheckCircle2 } from 'lucide-react';
+import useLearningProgress from '../../hooks/useLearningProgress';
 
 const BasicsView = () => {
+  const { isItemMastered, toggleMasteredItem, masteredItems } = useLearningProgress();
   const [subTab, setSubTab] = useState('hiragana');
   const [selectedKana, setSelectedKana] = useState(HIRAGANA_DATA[0]);
   const [copiedText, setCopiedText] = useState(null);
+
+  const hiraganaMasteredCount = Object.keys(masteredItems?.hiragana || {}).length;
+  const katakanaMasteredCount = Object.keys(masteredItems?.katakana || {}).length;
 
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -105,23 +110,48 @@ const BasicsView = () => {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleCopy(selectedKana.kana, 'kana-spotlight')}
-                className="btn-secondary"
-                style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                {copiedText === 'kana-spotlight' ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
-                <span>{copiedText === 'kana-spotlight' ? 'Copied' : 'Copy Kana'}</span>
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => toggleMasteredItem('hiragana', selectedKana.kana, 2)}
+                  className={isItemMastered('hiragana', selectedKana.kana) ? 'btn-primary' : 'btn-secondary'}
+                  style={{
+                    fontSize: '0.8rem',
+                    padding: '8px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: isItemMastered('hiragana', selectedKana.kana) ? 'linear-gradient(135deg, #10b981, #059669)' : undefined,
+                    border: isItemMastered('hiragana', selectedKana.kana) ? 'none' : undefined
+                  }}
+                >
+                  <CheckCircle2 size={14} />
+                  <span>{isItemMastered('hiragana', selectedKana.kana) ? 'Mastered (+2 pts)' : 'Mark Mastered'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopy(selectedKana.kana, 'kana-spotlight')}
+                  className="btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {copiedText === 'kana-spotlight' ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+                  <span>{copiedText === 'kana-spotlight' ? 'Copied' : 'Copy Kana'}</span>
+                </button>
+              </div>
             </div>
           )}
 
           {/* 46 Basic Hiragana Grid */}
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sparkles size={16} color="#ec4899" /> 46 Standard Hiragana Characters (五十音図 - Gojūon)
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={16} color="#ec4899" /> 46 Standard Hiragana Characters (五十音図 - Gojūon)
+              </h3>
+              <span style={{ fontSize: '0.78rem', background: hiraganaMasteredCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)', color: hiraganaMasteredCount > 0 ? '#10b981' : 'var(--text-dim)', padding: '3px 10px', borderRadius: '12px', fontWeight: '700' }}>
+                {hiraganaMasteredCount} / 46 Mastered ({Math.round((hiraganaMasteredCount / 46) * 100)}%)
+              </span>
+            </div>
             <div
               style={{
                 display: 'grid',
@@ -131,18 +161,22 @@ const BasicsView = () => {
             >
               {HIRAGANA_DATA.map((item) => {
                 const isSelected = selectedKana?.kana === item.kana;
+                const mastered = isItemMastered('hiragana', item.kana);
                 return (
                   <button
                     key={item.kana}
                     type="button"
                     onClick={() => setSelectedKana(item)}
                     style={{
+                      position: 'relative',
                       padding: '12px 6px',
                       borderRadius: '12px',
                       background: isSelected
                         ? 'linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(168, 85, 247, 0.25))'
+                        : mastered
+                        ? 'rgba(16, 185, 129, 0.08)'
                         : 'rgba(255, 255, 255, 0.03)',
-                      border: isSelected ? '1px solid #ec4899' : '1px solid rgba(255, 255, 255, 0.07)',
+                      border: isSelected ? '1px solid #ec4899' : mastered ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.07)',
                       cursor: 'pointer',
                       display: 'flex',
                       flexDirection: 'column',
@@ -151,10 +185,13 @@ const BasicsView = () => {
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <span style={{ fontSize: '1.7rem', fontWeight: '800', color: isSelected ? '#ffffff' : 'var(--text-main)', fontFamily: '"Noto Sans JP", sans-serif' }}>
+                    {mastered && (
+                      <div style={{ position: 'absolute', top: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                    )}
+                    <span style={{ fontSize: '1.7rem', fontWeight: '800', color: isSelected ? '#ffffff' : mastered ? '#34d399' : 'var(--text-main)', fontFamily: '"Noto Sans JP", sans-serif' }}>
                       {item.kana}
                     </span>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: isSelected ? '#ec4899' : 'var(--text-dim)' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: isSelected ? '#ec4899' : mastered ? '#10b981' : 'var(--text-dim)' }}>
                       {item.romaji}
                     </span>
                   </button>
@@ -229,9 +266,14 @@ const BasicsView = () => {
       {subTab === 'katakana' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Layers size={16} color="var(--accent-cyan)" /> 46 Standard Katakana Characters (Foreign Loanwords & Emphasis)
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layers size={16} color="var(--accent-cyan)" /> 46 Standard Katakana Characters (Foreign Loanwords & Emphasis)
+              </h3>
+              <span style={{ fontSize: '0.78rem', background: katakanaMasteredCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)', color: katakanaMasteredCount > 0 ? '#10b981' : 'var(--text-dim)', padding: '3px 10px', borderRadius: '12px', fontWeight: '700' }}>
+                {katakanaMasteredCount} / 46 Mastered ({Math.round((katakanaMasteredCount / 46) * 100)}%)
+              </span>
+            </div>
             <div
               style={{
                 display: 'grid',
@@ -239,31 +281,43 @@ const BasicsView = () => {
                 gap: '10px'
               }}
             >
-              {KATAKANA_DATA.map((item) => (
-                <div
-                  key={item.kana}
-                  style={{
-                    padding: '12px 6px',
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.07)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <span style={{ fontSize: '1.7rem', fontWeight: '800', color: 'var(--text-main)', fontFamily: '"Noto Sans JP", sans-serif' }}>
-                    {item.kana}
-                  </span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--accent-cyan)' }}>
-                    {item.romaji}
-                  </span>
-                  <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textAlign: 'center', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.word.split(' ')[0]}
-                  </span>
-                </div>
-              ))}
+              {KATAKANA_DATA.map((item) => {
+                const mastered = isItemMastered('katakana', item.kana);
+                return (
+                  <button
+                    key={item.kana}
+                    type="button"
+                    onClick={() => toggleMasteredItem('katakana', item.kana, 2)}
+                    style={{
+                      position: 'relative',
+                      padding: '12px 6px',
+                      borderRadius: '12px',
+                      background: mastered ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                      border: mastered ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(255, 255, 255, 0.07)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title={mastered ? 'Mastered (+2 pts) - click to toggle' : 'Click to mark mastered'}
+                  >
+                    {mastered && (
+                      <div style={{ position: 'absolute', top: '4px', right: '4px', width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                    )}
+                    <span style={{ fontSize: '1.7rem', fontWeight: '800', color: mastered ? '#34d399' : 'var(--text-main)', fontFamily: '"Noto Sans JP", sans-serif' }}>
+                      {item.kana}
+                    </span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '600', color: mastered ? '#10b981' : 'var(--accent-cyan)' }}>
+                      {item.romaji}
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textAlign: 'center', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.word.split(' ')[0]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

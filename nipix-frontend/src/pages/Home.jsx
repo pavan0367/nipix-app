@@ -22,15 +22,42 @@ import {
   TrendingUp,
   AlertCircle,
   Zap,
-  Video
+  Video,
+  GraduationCap
 } from 'lucide-react';
 import NipixLogo from '../components/NipixLogo';
+import useLearningProgress from '../hooks/useLearningProgress';
+import { COURSES, getCourseActivityCount } from '../data/courses/coursesData';
 
 const Home = () => {
   const currentUser = useSelector((state) => state.auth?.user);
   const navigate = useNavigate();
   const [quickAiPrompt, setQuickAiPrompt] = useState('');
   const videoRef = useRef(null);
+
+  // Dynamic Learning Progress & Real Completion Stats
+  const {
+    streak,
+    earnedPoints,
+    completedToday,
+    getCourseProgress,
+    getJapaneseStats,
+    getGlobalProgress
+  } = useLearningProgress();
+
+  const jpStats = getJapaneseStats();
+  const jpProg = jpStats?.jlpt?.pct || 0;
+  const globalProgress = getGlobalProgress(120);
+
+  // Real progress for featured modules (genuine 0% for new user!)
+  const dsaCourse = COURSES.find(c => c.id === 'cs-dsa');
+  const dsaProg = getCourseProgress('cs-dsa', getCourseActivityCount(dsaCourse));
+
+  const pyCourse = COURSES.find(c => c.id === 'cs-python');
+  const pyProg = getCourseProgress('cs-python', getCourseActivityCount(pyCourse));
+
+  const eeCourse = COURSES.find(c => c.id === 'ee-digital');
+  const eeProg = getCourseProgress('ee-digital', getCourseActivityCount(eeCourse));
 
   useEffect(() => {
     if (videoRef.current) {
@@ -406,28 +433,38 @@ const Home = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
-                  <span style={{ fontSize: '1.9rem', fontWeight: '800', color: 'var(--text-main)' }}>5 Days</span>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>Keep the momentum going!</p>
+                  <span style={{ fontSize: '1.9rem', fontWeight: '800', color: 'var(--text-main)' }}>
+                    {streak === 1 ? '1 Day' : `${streak} Days`}
+                  </span>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                    {streak > 0 ? 'Keep the momentum going!' : 'Start a lesson to begin your streak!'}
+                  </p>
                 </div>
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Flame size={22} color="#f59e0b" />
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: streak > 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Flame size={22} color={streak > 0 ? '#f59e0b' : 'var(--text-dim)'} />
                 </div>
               </div>
 
               <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }}>
-                <span style={{ fontSize: '0.76rem', fontWeight: '700', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}>
-                  Today's Milestones:
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#34d399', marginBottom: '4px' }}>
-                  <CheckCircle2 size={13} /> 1 Algorithm Review Completed
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.76rem', fontWeight: '700', color: '#cbd5e1' }}>
+                    Today's Milestones:
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--accent-amber)', fontWeight: '700' }}>
+                    {earnedPoints} Points Earned
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: completedToday > 0 ? '#34d399' : 'var(--text-dim)', marginBottom: '4px' }}>
+                  <CheckCircle2 size={13} color={completedToday > 0 ? '#34d399' : 'var(--text-dim)'} />
+                  <span>{completedToday} {completedToday === 1 ? 'Activity' : 'Activities'} Completed Today</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                  <Clock size={13} /> 1 Video Lecture Scheduled
+                  <Clock size={13} /> Overall Learning Progress: {globalProgress}%
                 </div>
               </div>
 
               <Link to="/study" className="btn-primary" style={{ width: '100%', fontSize: '0.82rem', padding: '10px' }}>
-                Continue Learning Track
+                {streak > 0 ? 'Continue Learning Track' : 'Start Learning Track'}
               </Link>
             </div>
           </div>
@@ -462,7 +499,7 @@ const Home = () => {
                 <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--accent-cyan)', background: 'rgba(0, 242, 254, 0.1)', padding: '3px 8px', borderRadius: '4px' }}>
                   DATA STRUCTURES
                 </span>
-                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: 'var(--text-main)' }}>72%</span>
+                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: dsaProg > 0 ? '#10b981' : 'var(--text-dim)' }}>{dsaProg}%</span>
               </div>
               <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 6px 0' }}>
                 Binary Search Trees & Heaps
@@ -473,10 +510,10 @@ const Home = () => {
             </div>
             <div>
               <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '99px', overflow: 'hidden', marginBottom: '14px' }}>
-                <div style={{ width: '72%', height: '100%', background: 'linear-gradient(90deg, #00f2fe, #4facfe)', borderRadius: '99px' }} />
+                <div style={{ width: `${dsaProg}%`, height: '100%', background: dsaProg > 0 ? 'linear-gradient(90deg, #00f2fe, #4facfe)' : 'transparent', borderRadius: '99px' }} />
               </div>
               <Link to="/study" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px 12px' }}>
-                Continue <ArrowRight size={13} />
+                {dsaProg > 0 ? 'Continue' : 'Start Course'} <ArrowRight size={13} />
               </Link>
             </div>
           </div>
@@ -488,7 +525,7 @@ const Home = () => {
                 <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#ec4899', background: 'rgba(236, 72, 153, 0.1)', padding: '3px 8px', borderRadius: '4px' }}>
                   JAPANESE JLPT N5
                 </span>
-                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: 'var(--text-main)' }}>48%</span>
+                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: jpProg > 0 ? '#10b981' : 'var(--text-dim)' }}>{jpProg}%</span>
               </div>
               <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 6px 0' }}>
                 Particle Usage & Te-Form Verbs
@@ -499,10 +536,10 @@ const Home = () => {
             </div>
             <div>
               <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '99px', overflow: 'hidden', marginBottom: '14px' }}>
-                <div style={{ width: '48%', height: '100%', background: 'linear-gradient(90deg, #ec4899, #f43f5e)', borderRadius: '99px' }} />
+                <div style={{ width: `${jpProg}%`, height: '100%', background: jpProg > 0 ? 'linear-gradient(90deg, #ec4899, #f43f5e)' : 'transparent', borderRadius: '99px' }} />
               </div>
-              <Link to="/study" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px 12px' }}>
-                Continue <ArrowRight size={13} />
+              <Link to="/study/japanese" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px 12px' }}>
+                {jpProg > 0 ? 'Continue' : 'Start Course'} <ArrowRight size={13} />
               </Link>
             </div>
           </div>
@@ -514,7 +551,7 @@ const Home = () => {
                 <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '3px 8px', borderRadius: '4px' }}>
                   DIGITAL ELECTRONICS
                 </span>
-                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: 'var(--text-main)' }}>65%</span>
+                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: eeProg > 0 ? '#10b981' : 'var(--text-dim)' }}>{eeProg}%</span>
               </div>
               <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 6px 0' }}>
                 Combinational Logic & Multiplexers
@@ -525,10 +562,10 @@ const Home = () => {
             </div>
             <div>
               <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '99px', overflow: 'hidden', marginBottom: '14px' }}>
-                <div style={{ width: '65%', height: '100%', background: 'linear-gradient(90deg, #f59e0b, #d97706)', borderRadius: '99px' }} />
+                <div style={{ width: `${eeProg}%`, height: '100%', background: eeProg > 0 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'transparent', borderRadius: '99px' }} />
               </div>
               <Link to="/study" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px 12px' }}>
-                Continue <ArrowRight size={13} />
+                {eeProg > 0 ? 'Continue' : 'Start Course'} <ArrowRight size={13} />
               </Link>
             </div>
           </div>
@@ -540,7 +577,7 @@ const Home = () => {
                 <span style={{ fontSize: '0.72rem', fontWeight: '700', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '3px 8px', borderRadius: '4px' }}>
                   PYTHON PROGRAMMING
                 </span>
-                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: 'var(--text-main)' }}>81%</span>
+                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: pyProg > 0 ? '#10b981' : 'var(--text-dim)' }}>{pyProg}%</span>
               </div>
               <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)', margin: '0 0 6px 0' }}>
                 Decorators & Asyncio Pipelines
@@ -551,10 +588,10 @@ const Home = () => {
             </div>
             <div>
               <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '99px', overflow: 'hidden', marginBottom: '14px' }}>
-                <div style={{ width: '81%', height: '100%', background: 'linear-gradient(90deg, #10b981, #059669)', borderRadius: '99px' }} />
+                <div style={{ width: `${pyProg}%`, height: '100%', background: pyProg > 0 ? 'linear-gradient(90deg, #10b981, #059669)' : 'transparent', borderRadius: '99px' }} />
               </div>
               <Link to="/study" className="btn-secondary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px 12px' }}>
-                Continue <ArrowRight size={13} />
+                {pyProg > 0 ? 'Continue' : 'Start Course'} <ArrowRight size={13} />
               </Link>
             </div>
           </div>
@@ -582,172 +619,144 @@ const Home = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '0.76rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: '700' }}>
-              2 Completed
+              {Math.min(completedToday, 5)} Completed
             </span>
             <span style={{ fontSize: '0.76rem', color: 'var(--accent-cyan)', background: 'rgba(0, 242, 254, 0.1)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: '700' }}>
-              1 In Progress
+              {Math.min(completedToday, 5) < 5 ? (completedToday > 0 ? '1 In Progress' : '1 Ready') : 'All Done'}
             </span>
             <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontWeight: '700' }}>
-              2 Upcoming
+              {Math.max(0, 5 - Math.min(completedToday, 5) - (Math.min(completedToday, 5) < 5 ? 1 : 0))} Upcoming
             </span>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Item 1 */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'rgba(16, 185, 129, 0.06)',
-            border: '1px solid rgba(16, 185, 129, 0.2)',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                <CheckCircle2 size={18} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#10b981' }}>08:30 - 09:30 AM</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>• 60 min</span>
-                </div>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: '700', color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-                  Morning Study: Multivariable Calculus & Green's Theorem
-                </h4>
-              </div>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
-              Completed
-            </span>
-          </div>
+          {[
+            {
+              time: '08:30 - 09:30 AM',
+              duration: '60 min',
+              title: "Morning Study: Multivariable Calculus & Green's Theorem"
+            },
+            {
+              time: '10:30 - 11:45 AM',
+              duration: '75 min',
+              title: 'Programming Practice: LeetCode Graph Traversal & BFS/DFS'
+            },
+            {
+              time: '02:00 - 02:45 PM',
+              duration: '45 min',
+              title: 'Japanese Vocabulary: JLPT N5 Kanji & Essential Vocabulary'
+            },
+            {
+              time: '04:30 - 05:15 PM',
+              duration: '45 min',
+              title: 'Technical Reading: Transformer Attention Architecture Paper'
+            },
+            {
+              time: '07:00 - 07:30 PM',
+              duration: '30 min',
+              title: 'AI Revision: Dynamic Programming Co-Pilot Problem Drill'
+            }
+          ].map((item, idx) => {
+            const planDone = Math.min(completedToday, 5);
+            const isCompleted = idx < planDone;
+            const isActive = idx === planDone;
+            const activeLabel = completedToday > 0 ? 'Active Now' : 'Ready to Start';
 
-          {/* Item 2 */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'rgba(16, 185, 129, 0.06)',
-            border: '1px solid rgba(16, 185, 129, 0.2)',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                <CheckCircle2 size={18} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#10b981' }}>10:30 - 11:45 AM</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>• 75 min</span>
-                </div>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: '700', color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-                  Programming Practice: LeetCode Graph Traversal & BFS/DFS
-                </h4>
-              </div>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
-              Completed
-            </span>
-          </div>
+            const containerBg = isCompleted
+              ? 'rgba(16, 185, 129, 0.06)'
+              : isActive
+              ? 'rgba(0, 242, 254, 0.06)'
+              : 'rgba(255, 255, 255, 0.02)';
 
-          {/* Item 3 */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'rgba(0, 242, 254, 0.06)',
-            border: '1px solid rgba(0, 242, 254, 0.25)',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0, 242, 254, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
-                <div className="pulse-dot" style={{ position: 'static', margin: 0 }} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-cyan)' }}>02:00 - 02:45 PM</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>• 45 min</span>
-                </div>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: '700', color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-                  Japanese Vocabulary: JLPT N5 Kanji & Essential Vocabulary
-                </h4>
-              </div>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-cyan)', background: 'rgba(0, 242, 254, 0.15)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
-              Active Now
-            </span>
-          </div>
+            const containerBorder = isCompleted
+              ? '1px solid rgba(16, 185, 129, 0.2)'
+              : isActive
+              ? '1px solid rgba(0, 242, 254, 0.25)'
+              : '1px solid var(--border-color)';
 
-          {/* Item 4 */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid var(--border-color)',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
-                <Clock size={16} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-dim)' }}>04:30 - 05:15 PM</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>• 45 min</span>
-                </div>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-                  Technical Reading: Transformer Attention Architecture Paper
-                </h4>
-              </div>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.04)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
-              Upcoming
-            </span>
-          </div>
+            const iconBg = isCompleted
+              ? 'rgba(16, 185, 129, 0.2)'
+              : isActive
+              ? 'rgba(0, 242, 254, 0.15)'
+              : idx === 4
+              ? 'rgba(124, 58, 237, 0.1)'
+              : 'rgba(255, 255, 255, 0.05)';
 
-          {/* Item 5 */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid var(--border-color)',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(124, 58, 237, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-purple)' }}>
-                <Sparkles size={16} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-purple)' }}>07:00 - 07:30 PM</span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>• 30 min</span>
+            const iconColor = isCompleted
+              ? '#10b981'
+              : isActive
+              ? 'var(--accent-cyan)'
+              : idx === 4
+              ? 'var(--accent-purple)'
+              : 'var(--text-dim)';
+
+            const timeColor = isCompleted
+              ? '#10b981'
+              : isActive
+              ? 'var(--accent-cyan)'
+              : idx === 4
+              ? 'var(--accent-purple)'
+              : 'var(--text-dim)';
+
+            const badgeColor = isCompleted
+              ? '#10b981'
+              : isActive
+              ? 'var(--accent-cyan)'
+              : 'var(--text-dim)';
+
+            const badgeBg = isCompleted
+              ? 'rgba(16, 185, 129, 0.15)'
+              : isActive
+              ? 'rgba(0, 242, 254, 0.15)'
+              : 'rgba(255, 255, 255, 0.04)';
+
+            const badgeText = isCompleted
+              ? 'Completed'
+              : isActive
+              ? activeLabel
+              : 'Upcoming';
+
+            return (
+              <div key={idx} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 16px',
+                borderRadius: 'var(--radius-sm)',
+                background: containerBg,
+                border: containerBorder,
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: iconColor }}>
+                    {isCompleted ? (
+                      <CheckCircle2 size={18} />
+                    ) : isActive ? (
+                      <div className="pulse-dot" style={{ position: 'static', margin: 0 }} />
+                    ) : idx === 4 ? (
+                      <Sparkles size={16} />
+                    ) : (
+                      <Clock size={16} />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: timeColor }}>{item.time}</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>• {item.duration}</span>
+                    </div>
+                    <h4 style={{ fontSize: '0.92rem', fontWeight: isCompleted || isActive ? '700' : '600', color: 'var(--text-main)', margin: '2px 0 0 0' }}>
+                      {item.title}
+                    </h4>
+                  </div>
                 </div>
-                <h4 style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-                  AI Revision: Dynamic Programming Co-Pilot Problem Drill
-                </h4>
+                <span style={{ fontSize: '0.75rem', fontWeight: isCompleted || isActive ? '700' : '600', color: badgeColor, background: badgeBg, padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
+                  {badgeText}
+                </span>
               </div>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-dim)', background: 'rgba(255, 255, 255, 0.04)', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
-              Upcoming
-            </span>
-          </div>
+            );
+          })}
         </div>
       </div>
 
@@ -963,8 +972,12 @@ const Home = () => {
             </h2>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '1.15rem', fontWeight: '800', color: '#ec4899' }}>JLPT N5: 68%</span>
-            <p style={{ fontSize: '0.74rem', color: 'var(--text-dim)', margin: 0 }}>Target Exam: December</p>
+            <span style={{ fontSize: '1.15rem', fontWeight: '800', color: '#ec4899' }}>
+              JLPT N5: {jpStats.jlpt.count > 0 ? `${jpStats.jlpt.pct}%` : 'Not Started'}
+            </span>
+            <p style={{ fontSize: '0.74rem', color: 'var(--text-dim)', margin: 0 }}>
+              Overall Japanese: {jpStats.overallPct}%
+            </p>
           </div>
         </div>
 
@@ -973,56 +986,56 @@ const Home = () => {
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)' }}>Hiragana</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#10b981' }}>100%</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: jpStats.hiragana.pct > 0 ? '#10b981' : 'var(--text-dim)' }}>{jpStats.hiragana.pct}%</span>
             </div>
             <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden' }}>
-              <div style={{ width: '100%', height: '100%', background: '#10b981' }} />
+              <div style={{ width: `${jpStats.hiragana.pct}%`, height: '100%', background: jpStats.hiragana.pct > 0 ? '#10b981' : 'transparent' }} />
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>46/46 Mastered</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>{jpStats.hiragana.count}/{jpStats.hiragana.total} Mastered</span>
           </div>
 
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)' }}>Katakana</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#10b981' }}>100%</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: jpStats.katakana.pct > 0 ? '#10b981' : 'var(--text-dim)' }}>{jpStats.katakana.pct}%</span>
             </div>
             <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden' }}>
-              <div style={{ width: '100%', height: '100%', background: '#10b981' }} />
+              <div style={{ width: `${jpStats.katakana.pct}%`, height: '100%', background: jpStats.katakana.pct > 0 ? '#10b981' : 'transparent' }} />
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>46/46 Mastered</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>{jpStats.katakana.count}/{jpStats.katakana.total} Mastered</span>
           </div>
 
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)' }}>Kanji</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-cyan)' }}>41%</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: jpStats.kanji.pct > 0 ? 'var(--accent-cyan)' : 'var(--text-dim)' }}>{jpStats.kanji.pct}%</span>
             </div>
             <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden' }}>
-              <div style={{ width: '41%', height: '100%', background: 'var(--accent-cyan)' }} />
+              <div style={{ width: `${jpStats.kanji.pct}%`, height: '100%', background: jpStats.kanji.pct > 0 ? 'var(--accent-cyan)' : 'transparent' }} />
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>42/103 Characters</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>{jpStats.kanji.count}/{jpStats.kanji.total} Characters</span>
           </div>
 
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)' }}>Vocabulary</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-purple)' }}>26%</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: jpStats.vocab.pct > 0 ? 'var(--accent-purple)' : 'var(--text-dim)' }}>{jpStats.vocab.pct}%</span>
             </div>
             <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden' }}>
-              <div style={{ width: '26%', height: '100%', background: 'var(--accent-purple)' }} />
+              <div style={{ width: `${jpStats.vocab.pct}%`, height: '100%', background: jpStats.vocab.pct > 0 ? 'var(--accent-purple)' : 'transparent' }} />
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>210/800 Words</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>{jpStats.vocab.count}/{jpStats.vocab.total} Words</span>
           </div>
 
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)' }}>Grammar</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#f59e0b' }}>38%</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: jpStats.grammar.pct > 0 ? '#f59e0b' : 'var(--text-dim)' }}>{jpStats.grammar.pct}%</span>
             </div>
             <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '99px', overflow: 'hidden' }}>
-              <div style={{ width: '38%', height: '100%', background: '#f59e0b' }} />
+              <div style={{ width: `${jpStats.grammar.pct}%`, height: '100%', background: jpStats.grammar.pct > 0 ? '#f59e0b' : 'transparent' }} />
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>19/50 Patterns</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>{jpStats.grammar.count}/{jpStats.grammar.total} Patterns</span>
           </div>
         </div>
 

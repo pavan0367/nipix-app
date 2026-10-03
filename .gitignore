@@ -16,6 +16,7 @@ nipix-frontend/build/
 .cache/
 nipix-frontend/node_modules/.cache/
 
-# Ignore OS files
+# Ignore OS and browser test profiles
 .DS_Store
 Thumbs.db
+.edge-*

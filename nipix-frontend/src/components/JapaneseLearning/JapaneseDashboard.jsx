@@ -24,6 +24,9 @@ import ReadingView from './ReadingView';
 import ConversationView from './ConversationView';
 import QuizzesView from './QuizzesView';
 import JapaneseSearch from './JapaneseSearch';
+import ListeningView from './ListeningView';
+import WritingView from './WritingView';
+import useLearningProgress from '../../hooks/useLearningProgress';
 
 const MODULE_TABS = [
   { id: 'overview', label: '🧭 Dashboard' },
@@ -33,6 +36,8 @@ const MODULE_TABS = [
   { id: 'grammar', label: '📐 Grammar' },
   { id: 'jlpt', label: '🎯 JLPT (N5-N1)' },
   { id: 'reading', label: '📑 Reading' },
+  { id: 'listening', label: '🎧 Listening' },
+  { id: 'writing', label: '✍️ Writing Studio' },
   { id: 'conversation', label: '💬 Conversation' },
   { id: 'quizzes', label: '✍️ Quizzes' },
   { id: 'search', label: '🔍 Search' }
@@ -40,7 +45,9 @@ const MODULE_TABS = [
 
 const JapaneseDashboard = () => {
   const navigate = useNavigate();
+  const { getJapaneseStats } = useLearningProgress();
   const [activeTab, setActiveTab] = useState('overview');
+  const stats = getJapaneseStats();
 
   const handleStartAiChat = () => {
     navigate('/chat/sakura');
@@ -220,23 +227,39 @@ const JapaneseDashboard = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
             <div className="glass-card" style={{ padding: '18px' }}>
               <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', fontWeight: '700', textTransform: 'uppercase' }}>Kana Writing Systems</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>92 Characters</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--accent-emerald)' }}>46 Hiragana + 46 Katakana</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>
+                {stats.hiragana.count + stats.katakana.count} / 92 Mastered
+              </div>
+              <div style={{ fontSize: '0.78rem', color: stats.hiragana.count + stats.katakana.count > 0 ? 'var(--accent-emerald)' : 'var(--text-dim)' }}>
+                {stats.hiragana.count} Hiragana + {stats.katakana.count} Katakana
+              </div>
             </div>
             <div className="glass-card" style={{ padding: '18px' }}>
               <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', fontWeight: '700', textTransform: 'uppercase' }}>Essential Kanji</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>JLPT N5 – N1</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)' }}>On/Kun readings & radicals</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>
+                {stats.kanji.count} / {stats.kanji.total} Mastered
+              </div>
+              <div style={{ fontSize: '0.78rem', color: stats.kanji.count > 0 ? 'var(--accent-cyan)' : 'var(--text-dim)' }}>
+                {stats.kanji.pct}% JLPT N5 characters
+              </div>
             </div>
             <div className="glass-card" style={{ padding: '18px' }}>
               <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', fontWeight: '700', textTransform: 'uppercase' }}>Vocabulary Library</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>25+ Categories</div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--accent-amber)' }}>Tech, college, everyday</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>
+                {stats.vocab.count} / {stats.vocab.total} Words
+              </div>
+              <div style={{ fontSize: '0.78rem', color: stats.vocab.count > 0 ? 'var(--accent-amber)' : 'var(--text-dim)' }}>
+                {stats.vocab.pct}% Core words mastered
+              </div>
             </div>
             <div className="glass-card" style={{ padding: '18px' }}>
               <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', fontWeight: '700', textTransform: 'uppercase' }}>Grammar Lessons</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>3 Levels</div>
-              <div style={{ fontSize: '0.78rem', color: '#f472b6' }}>Beginner to Keigo Honorifics</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', margin: '4px 0' }}>
+                {stats.grammar.count} / {stats.grammar.total} Patterns
+              </div>
+              <div style={{ fontSize: '0.78rem', color: stats.grammar.count > 0 ? '#f472b6' : 'var(--text-dim)' }}>
+                {stats.grammar.pct}% Grammar mastered
+              </div>
             </div>
           </div>
 
@@ -376,6 +399,12 @@ const JapaneseDashboard = () => {
 
       {/* READING TAB */}
       {activeTab === 'reading' && <ReadingView />}
+
+      {/* LISTENING TAB */}
+      {activeTab === 'listening' && <ListeningView />}
+
+      {/* WRITING TAB */}
+      {activeTab === 'writing' && <WritingView />}
 
       {/* CONVERSATION TAB */}
       {activeTab === 'conversation' && <ConversationView />}

@@ -13,19 +13,27 @@ import {
   ExternalLink,
   Sparkles,
   Layers,
-  FileText
+  FileText,
+  Play,
+  ArrowRight,
+  GraduationCap
 } from 'lucide-react';
 import NipixLogo from '../../components/NipixLogo';
 import JapaneseDashboard from '../../components/JapaneseLearning/JapaneseDashboard';
+import CourseViewer from '../../components/CourseViewer/CourseViewer';
+import { COURSES, getCourseActivityCount } from '../../data/courses/coursesData';
+import useLearningProgress from '../../hooks/useLearningProgress';
 
 const CATEGORIES = [
-  'All Materials',
+  'All Courses & Materials',
   'Japanese 🇯🇵',
-  'Computer Science & AI',
-  'Engineering & Math',
-  'Web & Systems',
-  'Data Structures & Algo',
-  'Cheatsheets'
+  'Computer Science',
+  'Mathematics',
+  'Physics',
+  'Electrical / Electronics',
+  'Science & Technology',
+  'Research & Knowledge',
+  'Reference Guides & Cheatsheets'
 ];
 
 const STUDY_MATERIALS = [
@@ -155,12 +163,14 @@ export const fetchResource = createAsyncThunk('res/fetch', async (id, { rejectWi
 
 const StudyMaterials = ({ defaultCategory }) => {
   const location = useLocation();
+  const { getCourseProgress } = useLearningProgress();
   const [activeCategory, setActiveCategory] = useState(
-    defaultCategory || (location.pathname.includes('/japanese') ? 'Japanese 🇯🇵' : 'All Materials')
+    defaultCategory || (location.pathname.includes('/japanese') ? 'Japanese 🇯🇵' : 'All Courses & Materials')
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [savedNotes, setSavedNotes] = useState({});
+  const [selectedCourse, setSelectedCourse] = useState(null);
 
   useEffect(() => {
     if (location.pathname.includes('/japanese') || defaultCategory === 'Japanese 🇯🇵') {
@@ -168,8 +178,16 @@ const StudyMaterials = ({ defaultCategory }) => {
     }
   }, [location.pathname, defaultCategory]);
 
+  const filteredCourses = COURSES.filter((crs) => {
+    const matchesCat = activeCategory === 'All Courses & Materials' || crs.subject === activeCategory || crs.category === activeCategory;
+    const matchesSearch = !searchQuery || crs.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          crs.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          crs.subject.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
   const filteredMaterials = STUDY_MATERIALS.filter((mat) => {
-    const matchesCategory = activeCategory === 'All Materials' || mat.category === activeCategory;
+    const matchesCategory = activeCategory === 'All Courses & Materials' || activeCategory === 'Reference Guides & Cheatsheets' || mat.category.includes(activeCategory);
     const matchesSearch = mat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           mat.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           mat.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -196,12 +214,12 @@ const StudyMaterials = ({ defaultCategory }) => {
             <NipixLogo size={46} style={{ borderRadius: '10px' }} glow />
             <div>
               <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
-                {activeCategory === 'Japanese 🇯🇵' ? 'Japanese Language Learning Hub' : 'Study Materials & Academic Notes'}
+                {activeCategory === 'Japanese 🇯🇵' ? 'Japanese Language Learning Hub' : 'A-to-Z Learning Platform & Academic Notes'}
               </h1>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
                 {activeCategory === 'Japanese 🇯🇵'
                   ? 'Complete JLPT N5–N1 curriculum, Kana, Kanji, Vocabulary, Grammar, and AI Sensei Tutor.'
-                  : 'Curated lecture notes, algorithm blueprints, math proofs, and engineering cheatsheets.'}
+                  : 'Structured beginner-to-advanced curriculum courses, algorithm blueprints, math proofs, and engineering notes.'}
               </p>
             </div>
           </div>
@@ -212,7 +230,7 @@ const StudyMaterials = ({ defaultCategory }) => {
               <Search size={18} color="var(--text-dim)" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
-                placeholder="Search concepts, algorithms, formulas, or programming topics..."
+                placeholder="Search courses, concepts, algorithms, formulas, or programming topics..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="input-field"
@@ -239,7 +257,99 @@ const StudyMaterials = ({ defaultCategory }) => {
         {activeCategory === 'Japanese 🇯🇵' ? (
           <JapaneseDashboard />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            
+            {/* 1. STRUCTURED A-TO-Z CURRICULUM COURSES */}
+            {filteredCourses.length > 0 && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <GraduationCap size={22} color="var(--accent-blue)" /> Complete A-to-Z Structured Courses
+                    </h2>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)', margin: 0 }}>
+                      Complete 8-stage path: Introduction → Fundamentals → Lessons → Practice → Videos → Tasks → Tests → Project
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+                  {filteredCourses.map((crs) => {
+                    const totalActs = getCourseActivityCount(crs);
+                    const prog = getCourseProgress(crs.id, totalActs);
+
+                    return (
+                      <div
+                        key={crs.id}
+                        className="glass-card glass-card-interactive"
+                        style={{ padding: '22px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--accent-blue)', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                              {crs.subject}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: prog > 0 ? '#10b981' : 'var(--text-dim)' }}>
+                              {prog}%
+                            </span>
+                          </div>
+
+                          <h3 style={{ fontSize: '1.08rem', fontWeight: '800', color: '#ffffff', margin: '0 0 6px 0' }}>
+                            {crs.title}
+                          </h3>
+
+                          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 14px 0' }}>
+                            {crs.shortDescription}
+                          </p>
+                        </div>
+
+                        <div>
+                          {/* Real Progress Bar (Starts at 0%) */}
+                          <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '99px', overflow: 'hidden', marginBottom: '14px' }}>
+                            <div style={{
+                              width: `${prog}%`,
+                              height: '100%',
+                              background: prog > 0 ? 'linear-gradient(90deg, #10b981, #06b6d4)' : 'transparent',
+                              borderRadius: '99px'
+                            }} />
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                              8 Stages • {totalActs} Activities
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCourse(crs)}
+                              className="btn-primary"
+                              style={{ padding: '6px 14px', fontSize: '0.8rem', gap: '6px' }}
+                            >
+                              <span>{prog > 0 ? 'Continue' : 'Start Course'}</span>
+                              <ArrowRight size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 2. REFERENCE STUDY NOTES & CHEATSHEETS */}
+            {filteredMaterials.length > 0 && (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <BookOpen size={20} color="var(--accent-emerald)" /> Reference Study Guides & Cheatsheets
+                  </h2>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)', margin: 0 }}>
+                    Algorithm blueprints, math derivations, and architecture sheets
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
           {filteredMaterials.map((mat) => (
             <div key={mat.id} className="glass-card glass-card-interactive" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
@@ -337,7 +447,19 @@ const StudyMaterials = ({ defaultCategory }) => {
             </div>
           ))}
         </div>
-        )}
+      </div>
+      )}
+
+      </div>
+      )}
+
+      {/* Interactive Fullscreen/Modal Course Viewer */}
+      {selectedCourse && (
+        <CourseViewer
+          course={selectedCourse}
+          onClose={() => setSelectedCourse(null)}
+        />
+      )}
 
       </div>
     </div>

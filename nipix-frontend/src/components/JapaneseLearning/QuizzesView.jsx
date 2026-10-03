@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { QUIZ_CATEGORIES, QUIZ_QUESTIONS } from '../../data/japanese/quizzesData';
 import { Award, CheckCircle2, XCircle, RotateCcw, Sparkles, HelpCircle } from 'lucide-react';
+import useLearningProgress from '../../hooks/useLearningProgress';
 
 const QuizzesView = () => {
+  const { submitQuizOrTest, isActivityCompleted } = useLearningProgress();
   const [selectedCategory, setSelectedCategory] = useState('All Quizzes');
   const [userAnswers, setUserAnswers] = useState({});
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [quizResult, setQuizResult] = useState(null);
 
   const filteredQuestions = QUIZ_QUESTIONS.filter(
     (q) => selectedCategory === 'All Quizzes' || q.category === selectedCategory
@@ -15,6 +18,9 @@ const QuizzesView = () => {
   const questionKey = activeQuestion?.id;
   const selectedAnswer = userAnswers[questionKey];
   const isAnswered = selectedAnswer !== undefined;
+
+  const quizSessionId = `quiz_${selectedCategory.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+  const isPreviouslyCompleted = isActivityCompleted(quizSessionId);
 
   // Calculate score
   const answeredCount = Object.keys(userAnswers).length;
@@ -26,16 +32,30 @@ const QuizzesView = () => {
   });
 
   const handleSelectOption = (idx) => {
-    if (isAnswered) return;
+    if (isAnswered || quizResult) return;
     setUserAnswers((prev) => ({
       ...prev,
       [questionKey]: idx
     }));
   };
 
+  const handleSubmitQuiz = () => {
+    const res = submitQuizOrTest(
+      quizSessionId,
+      'japanese',
+      'languages',
+      score,
+      filteredQuestions.length,
+      60,
+      50
+    );
+    setQuizResult(res);
+  };
+
   const handleReset = () => {
     setUserAnswers({});
     setCurrentQuestionIdx(0);
+    setQuizResult(null);
   };
 
   return (
@@ -190,8 +210,44 @@ const QuizzesView = () => {
             </div>
           )}
 
+          {/* Quiz Result Banner */}
+          {quizResult && (
+            <div style={{
+              background: quizResult.passed ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              border: `1px solid ${quizResult.passed ? '#10b981' : '#ef4444'}`,
+              borderRadius: '12px',
+              padding: '18px 22px',
+              marginBottom: '20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div>
+                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: quizResult.passed ? '#34d399' : '#f87171', margin: '0 0 4px 0' }}>
+                  {quizResult.passed ? '🎉 Quiz Passed!' : 'Quiz Needs Revision'}
+                </h4>
+                <p style={{ fontSize: '0.84rem', color: '#cbd5e1', margin: 0 }}>
+                  You scored {score} / {filteredQuestions.length} ({quizResult.percentage}%).
+                  {quizResult.passed && quizResult.isNew && ' +50 points added to your scholar profile!'}
+                  {quizResult.passed && !quizResult.isNew && ' (Previously passed; score updated).'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="btn-secondary"
+                style={{ fontSize: '0.82rem', padding: '8px 16px' }}
+              >
+                Retake Quiz
+              </button>
+            </div>
+          )}
+
           {/* Next / Prev Navigation */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <button
               type="button"
               onClick={() => setCurrentQuestionIdx((prev) => Math.max(0, prev - 1))}
@@ -202,15 +258,32 @@ const QuizzesView = () => {
               Previous
             </button>
 
-            <button
-              type="button"
-              onClick={() => setCurrentQuestionIdx((prev) => Math.min(filteredQuestions.length - 1, prev + 1))}
-              disabled={currentQuestionIdx === filteredQuestions.length - 1}
-              className="btn-primary"
-              style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #ec4899, #be185d)' }}
-            >
-              {currentQuestionIdx === filteredQuestions.length - 1 ? 'Quiz Completed' : 'Next Question'}
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {currentQuestionIdx < filteredQuestions.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setCurrentQuestionIdx((prev) => Math.min(filteredQuestions.length - 1, prev + 1))}
+                  className="btn-primary"
+                  style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #ec4899, #be185d)' }}
+                >
+                  Next Question
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmitQuiz}
+                  disabled={answeredCount < filteredQuestions.length}
+                  className="btn-primary"
+                  style={{
+                    padding: '8px 22px',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    opacity: answeredCount < filteredQuestions.length ? 0.6 : 1
+                  }}
+                >
+                  Submit & Graded Score (+50 pts)
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
