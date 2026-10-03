@@ -4,6 +4,7 @@ import { loginUser, registerUser } from '../store/slices/authSlice';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Lock, User as UserIcon, AtSign, Eye, EyeOff, Sparkles, AlertCircle, KeyRound, Shield } from 'lucide-react';
 import NipixLogo from '../components/NipixLogo';
+import GoogleSignInButton from '../components/GoogleSignInButton/GoogleSignInButton';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -26,8 +27,16 @@ const Login = () => {
     let result;
     if (isRegister) {
       result = await dispatch(registerUser(formData));
+      if (result.payload?.requireVerification) {
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}${redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : ''}`);
+        return;
+      }
     } else {
       result = await dispatch(loginUser({ email: formData.email, password: formData.password }));
+      if (result.payload?.requireVerification) {
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}${redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : ''}`);
+        return;
+      }
     }
 
     if (result.meta.requestStatus === 'fulfilled') {
@@ -239,13 +248,12 @@ const Login = () => {
           {/* Forgot Password Link */}
           {!isRegister && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-4px' }}>
-              <button
-                type="button"
-                onClick={() => alert('Password reset link has been dispatched to your email address.')}
-                style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+              <Link
+                to="/forgot-password"
+                style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.82rem', textDecoration: 'none', cursor: 'pointer', fontWeight: '600' }}
               >
                 Forgot Password?
-              </button>
+              </Link>
             </div>
           )}
 
@@ -262,6 +270,20 @@ const Login = () => {
             ) : (isHiddenChatRedirect ? 'Authenticate & Open Hidden Chat' : (isRegister ? 'Complete Registration' : 'Sign In'))}
           </button>
         </form>
+
+        {/* Google Sign-in Divider and Button */}
+        <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0 6px 0', gap: '12px' }}>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>
+            or continue with
+          </span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+        </div>
+
+        <GoogleSignInButton
+          redirectTarget={redirectTarget}
+          buttonText={isRegister ? "Sign up with Google" : "Sign in with Google"}
+        />
 
         <p style={{ textAlign: 'center', marginTop: '22px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
           {isRegister ? 'Already have an account?' : "Don't have an account yet?"}{' '}

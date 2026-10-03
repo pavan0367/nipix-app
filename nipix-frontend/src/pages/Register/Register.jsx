@@ -4,6 +4,7 @@ import { registerUser } from '../../store/slices/authSlice';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User as UserIcon, AtSign, Sparkles, AlertCircle } from 'lucide-react';
 import NipixLogo from '../../components/NipixLogo';
+import GoogleSignInButton from '../../components/GoogleSignInButton/GoogleSignInButton';
 
 const Register = () => {
   const [formData, setFormData] = useState({ username: '', email: '', password: '', full_name: '' });
@@ -16,6 +17,10 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await dispatch(registerUser(formData));
+    if (result.payload?.requireVerification) {
+      navigate(`/verify-email?email=${encodeURIComponent(formData.email)}${redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : ''}`);
+      return;
+    }
     if (result.meta.requestStatus === 'fulfilled') {
       if (redirectTarget) {
         try {
@@ -133,12 +138,26 @@ const Register = () => {
             style={{ width: '100%', padding: '12px', marginTop: '8px', fontSize: '0.95rem' }}
           >
             {loading ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <Sparkles size={18} className="animate-spin" /> Creating Account...
               </span>
             ) : 'Sign Up'}
           </button>
         </form>
+
+        {/* Google Sign-up Divider & Button */}
+        <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0 6px 0', gap: '12px' }}>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>
+            or continue with
+          </span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+        </div>
+
+        <GoogleSignInButton
+          redirectTarget={redirectTarget}
+          buttonText="Sign up with Google"
+        />
 
         <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
           Have an account?{' '}

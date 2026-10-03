@@ -6,6 +6,11 @@ import AdminRoute from './AdminRoute';
 
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import VerifyEmail from '../pages/Auth/VerifyEmail';
+import ForgotPassword from '../pages/Auth/ForgotPassword';
+import VerifyResetOtp from '../pages/Auth/VerifyResetOtp';
+import ResetPassword from '../pages/Auth/ResetPassword';
+import PasswordUpdated from '../pages/Auth/PasswordUpdated';
 import Home from '../pages/Home';
 import StudyMaterials from '../pages/StudyMaterials';
 import NewsFeed from '../pages/News';
@@ -40,6 +45,11 @@ const AppRoutes = () => {
       {/* Auth Entry Routes */}
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/verify-reset-otp" element={<VerifyResetOtp />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/password-updated" element={<PasswordUpdated />} />
 
       {/* Protected Scholar Routes (Require Authentication) */}
       <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />

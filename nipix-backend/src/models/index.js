@@ -19,6 +19,7 @@ const Hashtag = require('./Hashtag');
 const PostHashtag = require('./PostHashtag');
 const BlockedUser = require('./BlockedUser');
 const SavedPost = require('./SavedPost');
+const Otp = require('./Otp');
 
 // User & Post Associations
 User.hasMany(Post, { foreignKey: 'userId', as: 'posts' });
@@ -114,5 +115,6 @@ module.exports = {
   Hashtag,
   PostHashtag,
   BlockedUser,
-  SavedPost
+  SavedPost,
+  Otp
 };
