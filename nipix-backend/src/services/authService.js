@@ -74,11 +74,11 @@ const authService = {
 
     // Generate & send verification code
     const code = await authService.generateOtp(cleanEmail, 'email_verification');
-    emailService.sendVerificationEmail({
+    await emailService.sendVerificationEmail({
       email: cleanEmail,
       code,
       name: user.full_name || user.username
-    }).catch(err => console.error('Verification email error:', err.message));
+    });
 
     return {
       requireVerification: true,

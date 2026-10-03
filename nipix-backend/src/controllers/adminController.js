@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { User, Post, Comment, Reel, Story, Report, sequelize } = require('../models');
 const { checkAIProviderConfig } = require('../services/llmService');
+const emailService = require('../services/emailService');
 
 const adminController = {
   // 1. Overview & Platform Analytics
@@ -213,9 +214,39 @@ const adminController = {
             status: 'connected',
             dialect: 'mysql (TiDB Cloud)'
           },
-          ai: aiStatus
+          ai: aiStatus,
+          email: emailService.checkConfig()
         }
       });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 7. Email Provider Status & Audit
+  getEmailStatus: async (req, res) => {
+    try {
+      const config = emailService.checkConfig();
+      const logs = emailService.getDeliveryLogs();
+      res.json({
+        success: true,
+        config,
+        logs
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 8. Admin Test Email Sender
+  sendTestEmail: async (req, res) => {
+    try {
+      const { to } = req.body;
+      if (!to) {
+        return res.status(400).json({ success: false, message: 'Recipient email is required.' });
+      }
+      const result = await emailService.sendTestEmail(to);
+      res.json({ success: true, result });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }

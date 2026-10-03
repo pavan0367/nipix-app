@@ -11,6 +11,8 @@ router.use(adminMiddleware);
 // Analytics & Overview
 router.get('/stats', adminController.getStats);
 router.get('/system', adminController.getSystemHealth);
+router.get('/email-status', adminController.getEmailStatus);
+router.post('/test-email', adminController.sendTestEmail);
 
 // User Management
 router.get('/users', adminController.getUsers);

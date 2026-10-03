@@ -33,3 +33,20 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      # Email Provider Configuration (Option A: Brevo REST API, Option B: SMTP)
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_SECURE
+        sync: false

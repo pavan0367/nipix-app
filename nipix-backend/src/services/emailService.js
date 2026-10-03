@@ -9,18 +9,19 @@ try {
 // In-memory Delivery Audit Log (last 100 entries, no passwords or plain OTPs)
 const emailDeliveryLogs = [];
 
-const logDelivery = ({ eventType, recipient, status, error = null, messageId = null }) => {
+const logDelivery = ({ eventType, recipient, status, error = null, messageId = null, provider = 'none' }) => {
   const entry = {
     eventType,
     recipient: recipient ? recipient.replace(/^(.)(.*)(@.*)$/, (_, a, b, c) => a + '***' + c) : 'unknown',
-    status, // 'SENT' | 'FAILED' | 'MOCKED'
+    status, // 'SENT' (actual provider accepted) | 'FAILED' (rejected or no provider) | 'MOCKED' (dev only)
+    provider, // 'brevo' | 'smtp' | 'mock' | 'none'
     messageId,
     error: error ? (error.message || String(error)) : null,
     timestamp: new Date().toISOString()
   };
   emailDeliveryLogs.unshift(entry);
   if (emailDeliveryLogs.length > 100) emailDeliveryLogs.pop();
-  console.log(`📧 [EMAIL_AUDIT] ${entry.status} - Type: "${eventType}" to ${entry.recipient} at ${entry.timestamp}`);
+  console.log(`📧 [EMAIL_AUDIT] [${entry.status}] Provider: ${entry.provider} - Type: "${eventType}" to ${entry.recipient} at ${entry.timestamp}${entry.error ? ' Error: ' + entry.error : ''}`);
 };
 
 /**
@@ -100,16 +101,19 @@ const sendMail = async ({ to, subject, html, text, eventType }) => {
         {
           headers: {
             'api-key': brevoApiKey,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           timeout: 10000
         }
       );
-      logDelivery({ eventType, recipient: to, status: 'SENT', messageId: response.data?.messageId || 'brevo-sent' });
-      return { success: true, provider: 'brevo', messageId: response.data?.messageId };
+      const messageId = response.data?.messageId || 'brevo-sent';
+      logDelivery({ eventType, recipient: to, status: 'SENT', provider: 'brevo', messageId });
+      return { success: true, provider: 'brevo', status: 'SENT', messageId };
     } catch (brevoErr) {
-      console.warn('⚠️ Brevo API delivery failed, attempting fallback:', brevoErr.response?.data || brevoErr.message);
-      logDelivery({ eventType, recipient: to, status: 'FAILED', error: brevoErr });
+      const errDetails = brevoErr.response?.data?.message || brevoErr.response?.data?.code || brevoErr.message;
+      console.error('🚨 [BREVO_DELIVERY_ERROR]:', errDetails, 'Status:', brevoErr.response?.status);
+      logDelivery({ eventType, recipient: to, status: 'FAILED', provider: 'brevo', error: errDetails });
     }
   }
 
@@ -134,26 +138,79 @@ const sendMail = async ({ to, subject, html, text, eventType }) => {
         text,
         html
       });
-      logDelivery({ eventType, recipient: to, status: 'SENT', messageId: info.messageId });
-      return { success: true, provider: 'smtp', messageId: info.messageId };
+      logDelivery({ eventType, recipient: to, status: 'SENT', provider: 'smtp', messageId: info.messageId });
+      return { success: true, provider: 'smtp', status: 'SENT', messageId: info.messageId };
     } catch (smtpErr) {
-      console.warn('⚠️ SMTP delivery failed:', smtpErr.message);
-      logDelivery({ eventType, recipient: to, status: 'FAILED', error: smtpErr });
+      console.error('🚨 [SMTP_DELIVERY_ERROR]:', smtpErr.message);
+      logDelivery({ eventType, recipient: to, status: 'FAILED', provider: 'smtp', error: smtpErr.message });
     }
   }
 
-  // 3. Mock Delivery (Dev / Safe Testing mode when provider not configured)
-  console.log(`\n================== [NIPX MOCK EMAIL TRANSMISSION] ==================`);
+  // 3. Truthful Production Handling: If NODE_ENV is production and NO email provider is configured
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (isProduction) {
+    const errorMsg = 'PRODUCTION_CONFIG_MISSING: No live email provider credentials configured on Render. Set BREVO_API_KEY (Option A) or SMTP_HOST/SMTP_USER/SMTP_PASS (Option B) in Render dashboard.';
+    console.error(`🚨 [EMAIL_UNDELIVERABLE] ${errorMsg} Target: ${to}`);
+    logDelivery({ eventType, recipient: to, status: 'FAILED', provider: 'none', error: errorMsg });
+    return { success: false, provider: 'none', status: 'FAILED', error: errorMsg };
+  }
+
+  // 4. Mock Delivery (ONLY in local development or test environments)
+  console.log(`\n================== [NIPX DEV MOCK EMAIL TRANSMISSION] ==================`);
   console.log(`To: ${to}`);
   console.log(`Subject: ${subject}`);
   console.log(`Event: ${eventType}`);
   console.log(`Summary:\n${text}`);
-  console.log(`====================================================================\n`);
-  logDelivery({ eventType, recipient: to, status: 'MOCKED', messageId: 'mock-' + Date.now() });
-  return { success: true, provider: 'mock', messageId: 'mock-' + Date.now() };
+  console.log(`========================================================================\n`);
+  logDelivery({ eventType, recipient: to, status: 'MOCKED', provider: 'mock', messageId: 'mock-' + Date.now() });
+  return { success: true, provider: 'mock', status: 'MOCKED', messageId: 'mock-' + Date.now() };
 };
 
 const emailService = {
+  // Check live email provider configuration status
+  checkConfig: () => {
+    const hasBrevoKey = Boolean(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY);
+    const hasSmtpHost = Boolean(process.env.SMTP_HOST);
+    const hasSmtpUser = Boolean(process.env.SMTP_USER);
+    const hasSmtpPass = Boolean(process.env.SMTP_PASS || process.env.SMTP_PASSWORD);
+    const fromEmail = process.env.EMAIL_FROM || process.env.BREVO_SENDER_EMAIL || 'noreply@nipix.app';
+    const fromName = process.env.EMAIL_FROM_NAME || 'Nipix AI Scholar';
+
+    let activeProvider = 'none';
+    if (hasBrevoKey) {
+      activeProvider = 'brevo';
+    } else if (hasSmtpHost && hasSmtpUser && hasSmtpPass) {
+      activeProvider = 'smtp';
+    }
+
+    return {
+      activeProvider,
+      isConfigured: activeProvider !== 'none',
+      hasBrevoKey,
+      hasSmtpHost,
+      hasSmtpUser,
+      hasSmtpPass,
+      fromEmail,
+      fromName,
+      nodeEnv: process.env.NODE_ENV || 'development',
+      requiredVarsHelp: {
+        optionA_Brevo: ['BREVO_API_KEY', 'EMAIL_FROM', 'EMAIL_FROM_NAME'],
+        optionB_SMTP: ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_SECURE', 'EMAIL_FROM', 'EMAIL_FROM_NAME']
+      }
+    };
+  },
+
+  // Send on-demand test email
+  sendTestEmail: async (toEmail) => {
+    return await sendMail({
+      to: toEmail,
+      subject: 'Nipix — Live Email Delivery Test',
+      html: `<h2>Nipix Email System Test</h2><p>This is a live test transmission from Nipix AI Scholar backend to verify provider connectivity.</p>`,
+      text: 'Nipix Email System Test: Live transmission verified.',
+      eventType: 'SYSTEM_TEST'
+    });
+  },
+
   // 1. Email Verification Code (Registration)
   sendVerificationEmail: async ({ email, code, name = 'Learner' }) => {
     const subject = 'Nipix — Verify Your Email';
