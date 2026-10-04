@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Send,
   Shield,
-  Lock,
   Smile,
   Paperclip,
   RotateCcw,
@@ -1145,19 +1144,6 @@ const Chat = () => {
                 No conversations found.
               </div>
             )}
-          </div>
-
-          {/* Secret Vault Bottom Action Button */}
-          <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-input)', flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={handleSecretWandClick}
-              className="btn-secondary"
-              style={{ width: '100%', fontSize: '0.78rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-            >
-              <Lock size={14} color="var(--accent-emerald)" />
-              <span>{currentUser ? (isVaultView ? 'Return to AI Bots' : 'Open Hidden Vault') : 'Hidden Chat Login'}</span>
-            </button>
           </div>
         </div>
 
