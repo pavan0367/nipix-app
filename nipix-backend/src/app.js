@@ -52,6 +52,7 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/vault', require('./routes/vaultRoutes'));
 
 // Centralized error handling middleware per SRS Section 25
 app.use(require('./middleware/errorMiddleware'));

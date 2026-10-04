@@ -19,6 +19,7 @@ import {
 import { sendAiChatMessageStream } from '../services/aiService';
 import MarkdownMessage from '../components/chat/MarkdownMessage';
 import BotProfileDashboard from '../components/chat/BotProfileDashboard';
+import SecretVault from '../components/chat/SecretVault';
 import NipixLogo from '../components/NipixLogo';
 import LoginRequiredModal from '../components/LoginRequiredModal';
 
@@ -1153,82 +1154,10 @@ const Chat = () => {
         <div className={`chat-active-workspace ${!showMobileChat ? 'hidden-mobile' : ''}`}>
           {isVaultView ? (
             /* SECRET VAULT VIEW (AUTHENTICATED) */
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-              <div style={{
-                padding: '10px 16px',
-                borderBottom: '1px solid var(--border-color)',
-                background: 'rgba(5, 150, 105, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: 'var(--text-main)',
-                fontSize: '0.86rem',
-                flexShrink: 0
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-emerald)', fontWeight: '700' }}>
-                  <Shield size={16} />
-                  <span>SECRET VAULT CHANNEL UNLOCKED</span>
-                </div>
-                <button
-                  onClick={() => setIsVaultView(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline' }}
-                >
-                  Back to AI Bots
-                </button>
-              </div>
-
-              <div ref={vaultContainerRef} className="chat-messages" style={{ flex: 1, minHeight: 0, padding: '18px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {vaultMessages.map((vMsg) => (
-                  <div
-                    key={vMsg.id}
-                    style={{
-                      padding: '12px 16px',
-                      borderRadius: 'var(--radius-md)',
-                      background: vMsg.isUser ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-input)',
-                      border: '1px solid var(--border-color)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: '700', fontSize: '0.84rem', color: 'var(--text-main)' }}>
-                        {vMsg.sender} <span style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginLeft: '4px' }}>[{vMsg.role}]</span>
-                      </span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{vMsg.time}</span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
-                      {vMsg.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <form onSubmit={handleSendVaultMessage} style={{
-                padding: '10px 16px',
-                borderTop: '1px solid var(--border-color)',
-                background: 'var(--bg-card)',
-                display: 'flex',
-                gap: '10px',
-                flexShrink: 0
-              }}>
-                <input
-                  type="text"
-                  placeholder="Broadcast encrypted transmission..."
-                  value={vaultInput}
-                  onChange={(e) => setVaultInput(e.target.value)}
-                  className="input-field"
-                  style={{ borderRadius: 'var(--radius-full)', padding: '10px 16px' }}
-                />
-                <button
-                  type="submit"
-                  className="btn-vault"
-                  style={{ borderRadius: 'var(--radius-full)', padding: '10px 18px', flexShrink: 0, fontSize: '0.84rem' }}
-                >
-                  Send
-                </button>
-              </form>
-            </div>
+            <SecretVault
+              currentUser={currentUser}
+              onClose={() => setIsVaultView(false)}
+            />
           ) : activeBot ? (
             /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
             showProfile ? (

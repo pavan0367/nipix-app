@@ -20,6 +20,7 @@ const PostHashtag = require('./PostHashtag');
 const BlockedUser = require('./BlockedUser');
 const SavedPost = require('./SavedPost');
 const Otp = require('./Otp');
+const VaultConfig = require('./VaultConfig');
 
 // User & Post Associations
 User.hasMany(Post, { foreignKey: 'userId', as: 'posts' });
@@ -94,6 +95,10 @@ Report.belongsTo(User, { foreignKey: 'reportedUserId', as: 'reportedUser' });
 Post.belongsToMany(Hashtag, { through: PostHashtag, foreignKey: 'postId' });
 Hashtag.belongsToMany(Post, { through: PostHashtag, foreignKey: 'hashtagId' });
 
+// Secret Vault Associations
+User.hasOne(VaultConfig, { foreignKey: 'userId', as: 'vaultConfig', onDelete: 'CASCADE' });
+VaultConfig.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -116,5 +121,6 @@ module.exports = {
   PostHashtag,
   BlockedUser,
   SavedPost,
-  Otp
+  Otp,
+  VaultConfig
 };
