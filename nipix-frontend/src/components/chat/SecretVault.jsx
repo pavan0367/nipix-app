@@ -613,7 +613,7 @@ const SecretVault = ({ currentUser, onClose }) => {
                 Choose your PIN recovery method
               </label>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 12px 0' }}>
-                Used to recover access without email or SMS verification codes.
+                Used to securely recover access using your registered date.
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
@@ -939,7 +939,7 @@ const SecretVault = ({ currentUser, onClose }) => {
               Reset Secret Vault PIN
             </h2>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-dim)', margin: 0 }}>
-              Verify your registered recovery details (No OTP required).
+              Verify your registered birthday or anniversary date.
             </p>
           </div>
 
