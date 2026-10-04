@@ -229,8 +229,24 @@ const authService = {
       throw new Error('Google identity validation failed: ' + (gErr.response?.data?.error_description || gErr.message));
     }
 
-    const { email, email_verified, name, sub, picture } = googleData;
-    if (!email_verified || !email) {
+    const { iss, aud, email, email_verified, name, sub, picture } = googleData;
+
+    // Validate issuer
+    if (iss && iss !== 'accounts.google.com' && iss !== 'https://accounts.google.com') {
+      throw new Error('Google identity validation failed: Invalid issuer.');
+    }
+
+    // Validate audience if GOOGLE_CLIENT_ID is configured in environment
+    const expectedAud = process.env.GOOGLE_CLIENT_ID || process.env.REACT_APP_GOOGLE_CLIENT_ID;
+    if (expectedAud && aud && aud !== expectedAud) {
+      throw new Error('Google identity validation failed: Audience mismatch.');
+    }
+
+    // Validate subject ID and verified email
+    if (!sub) {
+      throw new Error('Google identity validation failed: Missing subject ID.');
+    }
+    if (!email || (email_verified !== true && email_verified !== 'true')) {
       throw new Error('Google identity is not verified or email is missing.');
     }
 
