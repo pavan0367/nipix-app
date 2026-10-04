@@ -1,25 +1,63 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, Component } from 'react';
 import { useDispatch } from 'react-redux';
 import { googleAuthThunk } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
-const GoogleSignInButton = ({ redirectTarget, buttonText = "Sign in with Google" }) => {
+/**
+ * Error boundary to ensure Google Identity Services or third-party DOM issues
+ * never crash the React component tree or result in a blank screen.
+ */
+class GoogleSignInErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.warn('Google Sign-In Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ width: '100%', marginTop: '14px', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-dim, #94a3b8)', margin: 0 }}>
+            Google Sign-In is temporarily unavailable. Please sign in with your email.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const GoogleSignInButtonInner = ({ redirectTarget, buttonText = "Sign in with Google" }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const googleBtnContainerRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [isGsiReady, setIsGsiReady] = useState(false);
+  const [isGsiRendered, setIsGsiRendered] = useState(false);
+  const isMountedRef = useRef(true);
 
   // Read public Google OAuth Client ID from frontend environment
   const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
   const handleCredentialResponse = useCallback(async (response) => {
     if (!response || !response.credential) return;
+    if (!isMountedRef.current) return;
+
     setLoading(true);
     setErrorMsg('');
+
     try {
       const res = await dispatch(googleAuthThunk(response.credential));
+      if (!isMountedRef.current) return;
+
       if (res.meta.requestStatus === 'fulfilled') {
         const loggedUser = res.payload?.user;
         if (redirectTarget) {
@@ -29,8 +67,7 @@ const GoogleSignInButton = ({ redirectTarget, buttonText = "Sign in with Google"
           } catch {
             safeTarget = redirectTarget;
           }
-          // Validate safe relative redirect
-          if (safeTarget.startsWith('/') && !safeTarget.startsWith('//')) {
+          if (safeTarget && safeTarget.startsWith('/') && !safeTarget.startsWith('//')) {
             navigate(safeTarget);
             return;
           }
@@ -44,103 +81,129 @@ const GoogleSignInButton = ({ redirectTarget, buttonText = "Sign in with Google"
         setErrorMsg(res.payload?.message || 'Google authentication failed.');
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Google sign-in error.');
+      if (isMountedRef.current) {
+        setErrorMsg(err.message || 'Google sign-in error.');
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [dispatch, navigate, redirectTarget]);
 
   useEffect(() => {
-    // If no client ID configured yet, skip GIS initialization gracefully without errors or prompts
+    isMountedRef.current = true;
     if (!googleClientId) return;
 
     let checkInterval = null;
 
-    const initGsi = () => {
-      if (window.google?.accounts?.id && googleBtnContainerRef.current) {
-        try {
-          window.google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: handleCredentialResponse,
-            auto_select: false,
-            cancel_on_tap_outside: true,
-          });
+    const renderGsiButton = () => {
+      if (!isMountedRef.current || !googleBtnContainerRef.current) return;
+      if (!window.google?.accounts?.id) return;
 
-          // Measure container width and clamp between 200px and 400px (Google GIS constraints)
-          const measuredWidth = googleBtnContainerRef.current.parentElement?.offsetWidth || 356;
-          const clampedWidth = Math.min(Math.max(measuredWidth - 4, 200), 400);
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
 
-          googleBtnContainerRef.current.innerHTML = '';
-          window.google.accounts.id.renderButton(
-            googleBtnContainerRef.current,
-            {
-              type: 'standard',
-              theme: 'filled_black',
-              size: 'large',
-              text: buttonText.toLowerCase().includes('sign up') ? 'signup_with' : 'signin_with',
-              shape: 'rectangular',
-              logo_alignment: 'left',
-              width: clampedWidth
-            }
-          );
-
-          setIsGsiReady(true);
-
-          // Optionally activate One Tap for signed-in Google users
-          try {
-            window.google.accounts.id.prompt();
-          } catch {
-            // One Tap prompt can be silently ignored if dismissed/suppressed by browser
+        const container = googleBtnContainerRef.current;
+        if (container) {
+          // Safely clear any previously rendered Google nodes using native DOM API
+          while (container.firstChild) {
+            container.removeChild(container.firstChild);
           }
 
-          if (checkInterval) clearInterval(checkInterval);
-        } catch (e) {
-          console.warn('Google GSI initialization notice:', e.message);
+          const measuredWidth = container.parentElement?.offsetWidth || 356;
+          const clampedWidth = Math.min(Math.max(measuredWidth - 4, 200), 400);
+
+          window.google.accounts.id.renderButton(container, {
+            type: 'standard',
+            theme: 'filled_black',
+            size: 'large',
+            text: buttonText.toLowerCase().includes('sign up') ? 'signup_with' : 'signin_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+            width: clampedWidth
+          });
+
+          if (isMountedRef.current) {
+            setIsGsiRendered(true);
+          }
+
+          // Safely attempt One Tap without throwing on FedCM suppression
+          try {
+            window.google.accounts.id.prompt((notification) => {
+              // Notification state handled silently
+            });
+          } catch {
+            // FedCM / One Tap suppression is completely non-fatal
+          }
         }
+
+        if (checkInterval) clearInterval(checkInterval);
+      } catch (err) {
+        console.warn('Google GSI render notice:', err.message);
       }
     };
 
     if (window.google?.accounts?.id) {
-      initGsi();
+      renderGsiButton();
     } else {
       if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
         const script = document.createElement('script');
         script.src = 'https://accounts.google.com/gsi/client';
         script.async = true;
         script.defer = true;
-        script.onload = () => initGsi();
+        script.onload = () => {
+          if (isMountedRef.current) renderGsiButton();
+        };
         document.head.appendChild(script);
       } else {
         checkInterval = setInterval(() => {
           if (window.google?.accounts?.id) {
-            initGsi();
+            renderGsiButton();
           }
         }, 150);
       }
     }
 
     return () => {
+      isMountedRef.current = false;
       if (checkInterval) clearInterval(checkInterval);
+      // NOTE: Do NOT manually removeChild or mutate container during React unmount!
+      // React will naturally remove the wrapper element from DOM.
     };
   }, [googleClientId, buttonText, handleCredentialResponse]);
 
   return (
     <div style={{ width: '100%', marginTop: '14px' }}>
       {googleClientId ? (
-        <div
-          ref={googleBtnContainerRef}
-          style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            minHeight: '44px',
-            alignItems: 'center'
-          }}
-        >
-          {(!isGsiReady || loading) && (
+        <div style={{ position: 'relative', width: '100%', minHeight: '44px' }}>
+          {/* Isolated dedicated container for Google Identity Services. React NEVER renders children inside this! */}
+          <div
+            ref={googleBtnContainerRef}
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '44px',
+              visibility: (isGsiRendered && !loading) ? 'visible' : 'hidden'
+            }}
+          />
+
+          {/* Sibling loading / placeholder state - React manages this independently without touching Google's container */}
+          {(!isGsiRendered || loading) && (
             <div
               style={{
-                width: '100%',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -151,7 +214,8 @@ const GoogleSignInButton = ({ redirectTarget, buttonText = "Sign in with Google"
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: '#ffffff',
                 fontWeight: '600',
-                fontSize: '0.88rem'
+                fontSize: '0.88rem',
+                pointerEvents: 'none'
               }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -203,5 +267,11 @@ const GoogleSignInButton = ({ redirectTarget, buttonText = "Sign in with Google"
     </div>
   );
 };
+
+const GoogleSignInButton = (props) => (
+  <GoogleSignInErrorBoundary>
+    <GoogleSignInButtonInner {...props} />
+  </GoogleSignInErrorBoundary>
+);
 
 export default GoogleSignInButton;
