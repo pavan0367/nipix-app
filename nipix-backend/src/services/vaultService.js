@@ -1,6 +1,14 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { VaultConfig, User } = require('../models');
+const { Op } = require('sequelize');
+const { VaultConfig, User, Conversation, ConversationMember, Message, CallLog } = require('../models');
+
+let getIO;
+try {
+  getIO = require('../sockets/socket').getIO;
+} catch (e) {
+  getIO = () => null;
+}
 
 // Helper to normalize input date to standard YYYY-MM-DD string
 const normalizeDate = (dateStr) => {
@@ -303,6 +311,388 @@ const vaultService = {
       success: true,
       message: 'Recovery method updated successfully.',
       recoveryMethod: cleanMethod
+    };
+  },
+
+  // 8. Get Vault Conversations for current authenticated user
+  getConversations: async (userId) => {
+    // Find all conversations where current user is a member
+    const memberships = await ConversationMember.findAll({
+      where: { userId },
+      attributes: ['conversationId']
+    });
+
+    if (!memberships || memberships.length === 0) {
+      return []; // Return clean empty array for new users per Section 7
+    }
+
+    const convIds = memberships.map(m => m.conversationId);
+
+    // Fetch conversation details with all members and latest message
+    const conversations = await Conversation.findAll({
+      where: { id: { [Op.in]: convIds } },
+      include: [
+        {
+          model: ConversationMember,
+          as: 'members',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'username', 'full_name', 'profile_image', 'role']
+            }
+          ]
+        },
+        {
+          model: Message,
+          as: 'messages',
+          limit: 1,
+          order: [['createdAt', 'DESC']],
+          attributes: ['id', 'senderId', 'messageText', 'mediaUrl', 'mediaType', 'fileName', 'fileSize', 'isRead', 'createdAt']
+        }
+      ],
+      order: [['updatedAt', 'DESC']]
+    });
+
+    // Format for client consumption
+    const formatted = await Promise.all(conversations.map(async (conv) => {
+      const otherMemberObj = (conv.members || []).find(m => String(m.userId) !== String(userId));
+      const contactUser = otherMemberObj ? otherMemberObj.user : null;
+
+      // Count unread messages for this user in this conversation
+      const unreadCount = await Message.count({
+        where: {
+          conversationId: conv.id,
+          senderId: { [Op.ne]: userId },
+          isRead: false
+        }
+      });
+
+      const lastMsg = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null;
+
+      return {
+        id: conv.id,
+        contact: contactUser ? {
+          id: contactUser.id,
+          name: contactUser.full_name || contactUser.username,
+          username: contactUser.username,
+          avatar: contactUser.profile_image || (contactUser.full_name || contactUser.username || 'U')[0].toUpperCase(),
+          profile_image: contactUser.profile_image,
+          online: false
+        } : {
+          id: 0,
+          name: 'Scholar',
+          username: 'scholar',
+          avatar: 'S',
+          online: false
+        },
+        lastMessage: lastMsg ? {
+          id: lastMsg.id,
+          text: lastMsg.messageText,
+          mediaUrl: lastMsg.mediaUrl,
+          mediaType: lastMsg.mediaType || 'text',
+          fileName: lastMsg.fileName,
+          time: lastMsg.createdAt,
+          senderId: lastMsg.senderId,
+          isUser: String(lastMsg.senderId) === String(userId)
+        } : null,
+        unread: unreadCount,
+        updatedAt: conv.updatedAt
+      };
+    }));
+
+    return formatted;
+  },
+
+  // 9. Start or Get Conversation between authenticated user and target user
+  startConversation: async (userId, targetUserId) => {
+    if (!targetUserId) {
+      throw new Error('Target user ID is required.');
+    }
+    if (String(userId) === String(targetUserId)) {
+      throw new Error('Cannot start a private conversation with yourself.');
+    }
+
+    const targetUser = await User.findByPk(targetUserId, {
+      attributes: ['id', 'username', 'full_name', 'profile_image']
+    });
+    if (!targetUser) {
+      throw new Error('Target scholar was not found.');
+    }
+
+    // Check if conversation already exists between both users
+    const myConvs = await ConversationMember.findAll({
+      where: { userId },
+      attributes: ['conversationId']
+    });
+    const convIds = myConvs.map(c => c.conversationId);
+
+    let existingConv = null;
+    if (convIds.length > 0) {
+      const match = await ConversationMember.findOne({
+        where: {
+          userId: targetUserId,
+          conversationId: { [Op.in]: convIds }
+        }
+      });
+      if (match) {
+        existingConv = await Conversation.findByPk(match.conversationId);
+      }
+    }
+
+    if (!existingConv) {
+      // Create new conversation
+      existingConv = await Conversation.create();
+      await ConversationMember.bulkCreate([
+        { conversationId: existingConv.id, userId },
+        { conversationId: existingConv.id, userId: targetUserId }
+      ]);
+    }
+
+    return {
+      id: existingConv.id,
+      contact: {
+        id: targetUser.id,
+        name: targetUser.full_name || targetUser.username,
+        username: targetUser.username,
+        avatar: targetUser.profile_image || (targetUser.full_name || targetUser.username || 'U')[0].toUpperCase(),
+        profile_image: targetUser.profile_image,
+        online: false
+      },
+      lastMessage: null,
+      unread: 0,
+      updatedAt: existingConv.updatedAt
+    };
+  },
+
+  // 10. Get Messages for a specific conversation
+  getConversationMessages: async (userId, conversationId) => {
+    // SECURITY: Verify caller is a member of this conversation
+    const isMember = await ConversationMember.findOne({
+      where: { conversationId, userId }
+    });
+    if (!isMember) {
+      throw new Error('Access denied: You are not a participant in this encrypted conversation.');
+    }
+
+    // Mark messages sent to this user as read
+    await Message.update(
+      { isRead: true },
+      {
+        where: {
+          conversationId,
+          senderId: { [Op.ne]: userId },
+          isRead: false
+        }
+      }
+    );
+
+    const messages = await Message.findAll({
+      where: { conversationId },
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'full_name', 'profile_image']
+        }
+      ],
+      order: [['createdAt', 'ASC']]
+    });
+
+    return messages.map(msg => ({
+      id: msg.id,
+      conversationId: msg.conversationId,
+      senderId: msg.senderId,
+      senderName: msg.sender ? (msg.sender.full_name || msg.sender.username) : 'Scholar',
+      isUser: String(msg.senderId) === String(userId),
+      text: msg.messageText,
+      mediaUrl: msg.mediaUrl,
+      mediaType: msg.mediaType || 'text',
+      fileName: msg.fileName,
+      fileSize: msg.fileSize,
+      isRead: msg.isRead,
+      createdAt: msg.createdAt
+    }));
+  },
+
+  // 11. Send User-to-User Message (Text / Image / Video / Document / Audio / Location)
+  sendVaultMessage: async (userId, conversationId, { messageText, mediaUrl, mediaType, fileName, fileSize }) => {
+    // SECURITY: Verify caller is a member
+    const isMember = await ConversationMember.findOne({
+      where: { conversationId, userId }
+    });
+    if (!isMember) {
+      throw new Error('Access denied: You cannot send messages to this conversation.');
+    }
+
+    if (!messageText && !mediaUrl) {
+      throw new Error('Message cannot be empty.');
+    }
+
+    const message = await Message.create({
+      conversationId,
+      senderId: userId,
+      messageText: messageText || '',
+      mediaUrl: mediaUrl || null,
+      mediaType: mediaType || 'text',
+      fileName: fileName || null,
+      fileSize: fileSize || null,
+      isRead: false
+    });
+
+    // Touch conversation updatedAt
+    await Conversation.update({ updatedAt: new Date() }, { where: { id: conversationId } });
+
+    // Fetch sender info
+    const sender = await User.findByPk(userId, {
+      attributes: ['id', 'username', 'full_name', 'profile_image']
+    });
+
+    const formattedMsg = {
+      id: message.id,
+      conversationId: message.conversationId,
+      senderId: message.senderId,
+      senderName: sender ? (sender.full_name || sender.username) : 'Scholar',
+      isUser: true,
+      text: message.messageText,
+      mediaUrl: message.mediaUrl,
+      mediaType: message.mediaType,
+      fileName: message.fileName,
+      fileSize: message.fileSize,
+      isRead: false,
+      createdAt: message.createdAt
+    };
+
+    // Emit real-time event via socket
+    try {
+      if (getIO) {
+        const io = getIO();
+        if (io) {
+          const members = await ConversationMember.findAll({
+            where: { conversationId },
+            attributes: ['userId']
+          });
+          members.forEach(m => {
+            io.to(`user_${m.userId}`).emit('vaultMessage', formattedMsg);
+          });
+        }
+      }
+    } catch (sockErr) {
+      console.warn('Socket notification skipped:', sockErr.message);
+    }
+
+    return formattedMsg;
+  },
+
+  // 12. Search Scholars
+  searchScholars: async (userId, query) => {
+    const cleanQuery = String(query || '').trim();
+    if (!cleanQuery) return [];
+
+    const users = await User.findAll({
+      where: {
+        id: { [Op.ne]: userId },
+        [Op.or]: [
+          { username: { [Op.like]: `%${cleanQuery}%` } },
+          { full_name: { [Op.like]: `%${cleanQuery}%` } }
+        ]
+      },
+      attributes: ['id', 'username', 'full_name', 'profile_image'],
+      limit: 25
+    });
+
+    return users.map(u => ({
+      id: u.id,
+      name: u.full_name || u.username,
+      username: u.username,
+      avatar: u.profile_image || (u.full_name || u.username || 'U')[0].toUpperCase(),
+      profile_image: u.profile_image,
+      online: false
+    }));
+  },
+
+  // 13. Get Call Logs
+  getCallLogs: async (userId) => {
+    const logs = await CallLog.findAll({
+      where: { userId },
+      include: [
+        {
+          model: User,
+          as: 'contact',
+          attributes: ['id', 'username', 'full_name', 'profile_image']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return logs.map(l => ({
+      id: l.id,
+      contact: l.contact ? {
+        id: l.contact.id,
+        name: l.contact.full_name || l.contact.username,
+        username: l.contact.username,
+        avatar: l.contact.profile_image || (l.contact.full_name || l.contact.username || 'U')[0].toUpperCase()
+      } : {
+        id: 0,
+        name: 'Scholar',
+        username: 'scholar',
+        avatar: 'S'
+      },
+      callType: l.callType,
+      direction: l.direction,
+      status: l.status,
+      duration: l.duration,
+      createdAt: l.createdAt
+    }));
+  },
+
+  // 14. Record Call Log
+  recordCallLog: async (userId, { contactId, callType, direction, status, duration }) => {
+    if (!contactId) {
+      throw new Error('Contact ID is required.');
+    }
+
+    const log = await CallLog.create({
+      userId,
+      contactId,
+      callType: callType || 'audio',
+      direction: direction || 'outgoing',
+      status: status || 'completed',
+      duration: parseInt(duration, 10) || 0
+    });
+
+    // Also record incoming/outgoing counter-log for contact
+    try {
+      const counterDirection = direction === 'outgoing' ? 'incoming' : 'outgoing';
+      await CallLog.create({
+        userId: contactId,
+        contactId: userId,
+        callType: callType || 'audio',
+        direction: counterDirection,
+        status: status || 'completed',
+        duration: parseInt(duration, 10) || 0
+      });
+    } catch (e) {
+      console.warn('Counter call log creation warning:', e.message);
+    }
+
+    const contact = await User.findByPk(contactId, {
+      attributes: ['id', 'username', 'full_name', 'profile_image']
+    });
+
+    return {
+      id: log.id,
+      contact: contact ? {
+        id: contact.id,
+        name: contact.full_name || contact.username,
+        username: contact.username,
+        avatar: contact.profile_image || (contact.full_name || contact.username || 'U')[0].toUpperCase()
+      } : null,
+      callType: log.callType,
+      direction: log.direction,
+      status: log.status,
+      duration: log.duration,
+      createdAt: log.createdAt
     };
   }
 };

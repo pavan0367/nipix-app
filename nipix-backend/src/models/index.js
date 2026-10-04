@@ -21,6 +21,7 @@ const BlockedUser = require('./BlockedUser');
 const SavedPost = require('./SavedPost');
 const Otp = require('./Otp');
 const VaultConfig = require('./VaultConfig');
+const CallLog = require('./CallLog');
 
 // User & Post Associations
 User.hasMany(Post, { foreignKey: 'userId', as: 'posts' });
@@ -95,9 +96,19 @@ Report.belongsTo(User, { foreignKey: 'reportedUserId', as: 'reportedUser' });
 Post.belongsToMany(Hashtag, { through: PostHashtag, foreignKey: 'postId' });
 Hashtag.belongsToMany(Post, { through: PostHashtag, foreignKey: 'hashtagId' });
 
+// Conversation Member Associations
+Conversation.hasMany(ConversationMember, { foreignKey: 'conversationId', as: 'members' });
+ConversationMember.belongsTo(Conversation, { foreignKey: 'conversationId', as: 'conversation' });
+ConversationMember.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 // Secret Vault Associations
 User.hasOne(VaultConfig, { foreignKey: 'userId', as: 'vaultConfig', onDelete: 'CASCADE' });
 VaultConfig.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Secret Vault CallLog Associations
+User.hasMany(CallLog, { foreignKey: 'userId', as: 'callLogs', onDelete: 'CASCADE' });
+CallLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+CallLog.belongsTo(User, { foreignKey: 'contactId', as: 'contact' });
 
 module.exports = {
   sequelize,
@@ -122,5 +133,6 @@ module.exports = {
   BlockedUser,
   SavedPost,
   Otp,
-  VaultConfig
+  VaultConfig,
+  CallLog
 };

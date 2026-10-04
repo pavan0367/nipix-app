@@ -54,6 +54,41 @@ export const vaultApi = {
       recoveryDate
     });
     return res.data;
+  },
+
+  getConversations: async () => {
+    const res = await api.get('/vault/conversations');
+    return res.data;
+  },
+
+  startConversation: async (targetUserId) => {
+    const res = await api.post('/vault/conversations', { targetUserId });
+    return res.data;
+  },
+
+  getMessages: async (conversationId) => {
+    const res = await api.get(`/vault/conversations/${conversationId}/messages`);
+    return res.data;
+  },
+
+  sendMessage: async (conversationId, payload) => {
+    const res = await api.post(`/vault/conversations/${conversationId}/messages`, payload);
+    return res.data;
+  },
+
+  searchScholars: async (query) => {
+    const res = await api.get(`/vault/users/search?q=${encodeURIComponent(query || '')}`);
+    return res.data;
+  },
+
+  getCallLogs: async () => {
+    const res = await api.get('/vault/call-logs');
+    return res.data;
+  },
+
+  recordCallLog: async (payload) => {
+    const res = await api.post('/vault/call-logs', payload);
+    return res.data;
   }
 };
 

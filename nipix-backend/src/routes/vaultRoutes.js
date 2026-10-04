@@ -27,4 +27,19 @@ router.post('/change-pin', vaultController.changePin);
 // 7. Update Recovery Method from Settings
 router.put('/recovery-method', vaultController.updateRecoveryMethod);
 
+// 8. User-to-User Conversations
+router.get('/conversations', vaultController.getConversations);
+router.post('/conversations', vaultController.startConversation);
+
+// 9. Messages in Conversation
+router.get('/conversations/:id/messages', vaultController.getConversationMessages);
+router.post('/conversations/:id/messages', vaultController.sendVaultMessage);
+
+// 10. Scholar Search
+router.get('/users/search', vaultController.searchScholars);
+
+// 11. Call Logs
+router.get('/call-logs', vaultController.getCallLogs);
+router.post('/call-logs', vaultController.recordCallLog);
+
 module.exports = router;

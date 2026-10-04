@@ -8,6 +8,9 @@ const Message = sequelize.define('Message', {
   senderId: { type: DataTypes.BIGINT, allowNull: false },
   messageText: { type: DataTypes.TEXT },
   mediaUrl: { type: DataTypes.STRING(500) },
+  mediaType: { type: DataTypes.STRING(50), defaultValue: 'text' },
+  fileName: { type: DataTypes.STRING(255), allowNull: true },
+  fileSize: { type: DataTypes.STRING(50), allowNull: true },
   isRead: { type: DataTypes.BOOLEAN, defaultValue: false }
 }, { timestamps: true });
 

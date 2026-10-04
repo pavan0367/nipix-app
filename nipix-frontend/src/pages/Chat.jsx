@@ -1044,7 +1044,13 @@ const Chat = () => {
 
   return (
     <div className="page-theme-chat">
-      <div className="chat-messaging-grid">
+      {isVaultView ? (
+        <SecretVault
+          currentUser={currentUser}
+          onClose={() => setIsVaultView(false)}
+        />
+      ) : (
+        <div className="chat-messaging-grid">
 
         {/* -------------------------------------------------------- */}
         {/* LEFT PANEL: SEARCH BAR + MAGIC WAND 🪄 + 6 BOT ROWS     */}
@@ -1152,13 +1158,7 @@ const Chat = () => {
         {/* RIGHT PANEL: SELECTED AI CONVERSATION WORKSPACE           */}
         {/* -------------------------------------------------------- */}
         <div className={`chat-active-workspace ${!showMobileChat ? 'hidden-mobile' : ''}`}>
-          {isVaultView ? (
-            /* SECRET VAULT VIEW (AUTHENTICATED) */
-            <SecretVault
-              currentUser={currentUser}
-              onClose={() => setIsVaultView(false)}
-            />
-          ) : activeBot ? (
+          {activeBot ? (
             /* REAL INTERACTIVE AI BOT CHAT SCREEN (NO LOGIN REQUIRED) */
             showProfile ? (
               <BotProfileDashboard
@@ -1896,17 +1896,17 @@ const Chat = () => {
             </div>
           </div>
         )}
+        </div>
+      )}
 
-        {/* LOGIN REQUIRED MODAL FOR GUESTS */}
-        <LoginRequiredModal
-          isOpen={loginModalConfig.isOpen}
-          onClose={() => setLoginModalConfig((prev) => ({ ...prev, isOpen: false }))}
-          title={loginModalConfig.title}
-          description={loginModalConfig.description}
-          returnUrl={loginModalConfig.returnUrl}
-        />
-
-      </div>
+      {/* LOGIN REQUIRED MODAL FOR GUESTS */}
+      <LoginRequiredModal
+        isOpen={loginModalConfig.isOpen}
+        onClose={() => setLoginModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={loginModalConfig.title}
+        description={loginModalConfig.description}
+        returnUrl={loginModalConfig.returnUrl}
+      />
     </div>
   );
 };

@@ -97,6 +97,82 @@ const vaultController = {
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
+  },
+
+  // GET /api/vault/conversations
+  getConversations: async (req, res, next) => {
+    try {
+      const conversations = await vaultService.getConversations(req.user.id);
+      res.json({ success: true, conversations });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // POST /api/vault/conversations
+  startConversation: async (req, res, next) => {
+    try {
+      const conversation = await vaultService.startConversation(req.user.id, req.body.targetUserId);
+      res.status(201).json({ success: true, conversation });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  // GET /api/vault/conversations/:id/messages
+  getConversationMessages: async (req, res, next) => {
+    try {
+      const messages = await vaultService.getConversationMessages(req.user.id, req.params.id);
+      res.json({ success: true, messages });
+    } catch (err) {
+      res.status(403).json({ success: false, message: err.message });
+    }
+  },
+
+  // POST /api/vault/conversations/:id/messages
+  sendVaultMessage: async (req, res, next) => {
+    try {
+      const message = await vaultService.sendVaultMessage(req.user.id, req.params.id, {
+        messageText: req.body.messageText,
+        mediaUrl: req.body.mediaUrl,
+        mediaType: req.body.mediaType,
+        fileName: req.body.fileName,
+        fileSize: req.body.fileSize
+      });
+      res.status(201).json({ success: true, message });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  // GET /api/vault/users/search
+  searchScholars: async (req, res, next) => {
+    try {
+      const users = await vaultService.searchScholars(req.user.id, req.query.q);
+      res.json({ success: true, users });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // GET /api/vault/call-logs
+  getCallLogs: async (req, res, next) => {
+    try {
+      const callLogs = await vaultService.getCallLogs(req.user.id);
+      res.json({ success: true, callLogs });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // POST /api/vault/call-logs
+  recordCallLog: async (req, res, next) => {
+    try {
+      const callLog = await vaultService.recordCallLog(req.user.id, req.body);
+      res.status(201).json({ success: true, callLog });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
   }
 };
 
