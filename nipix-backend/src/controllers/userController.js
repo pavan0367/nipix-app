@@ -3,7 +3,8 @@ const userService = require('../services/userService');
 const userController = {
   getProfile: async (req, res) => {
     try {
-      const profile = await userService.getProfile(req.user?.id, req.params.id);
+      const targetId = req.params.id === 'me' ? req.user?.id : req.params.id;
+      const profile = await userService.getProfile(req.user?.id, targetId);
       res.json({ success: true, user: profile });
     } catch (err) {
       res.status(404).json({ success: false, message: err.message });
@@ -12,10 +13,14 @@ const userController = {
 
   updateProfile: async (req, res) => {
     try {
-      const user = await userService.updateProfile(req.user.id, req.body);
+      const updateData = { ...req.body };
+      if (req.file) {
+        updateData.profile_image = req.file.path || req.file.secure_url;
+      }
+      const user = await userService.updateProfile(req.user.id, updateData);
       res.json({ success: true, user });
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
