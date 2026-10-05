@@ -251,6 +251,23 @@ const initSocket = (server) => {
       }
     });
 
+    // 8. Call Reconnect / Network Recovery Signaling
+    socket.on('call:reconnect', (data) => {
+      try {
+        const { callId, targetUserId, reason } = data || {};
+        if (!callId || !targetUserId) return;
+
+        console.log(`[CallSocket Server] call reconnect signal=${callId} by=${socket.userId} target=${targetUserId}`);
+        io.to(`user_${targetUserId}`).emit('call:reconnect', {
+          callId,
+          signaledBy: socket.userId,
+          reason: reason || 'network_unstable'
+        });
+      } catch (err) {
+        console.error('[CallSocket Server] call:reconnect error:', err.message);
+      }
+    });
+
     // 8. Message Read Receipt Flow (Single tick -> Double tick)
     socket.on('message:read', async (data) => {
       try {

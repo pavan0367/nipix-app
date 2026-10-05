@@ -153,10 +153,12 @@ async function runPresenceAndReadReceiptTest() {
   });
 
   // User 1 initiates call
-  socket1.emit('call:initiate', {
+  socket1.emit('call:offer', {
     callId,
     conversationId: convId,
-    targetUserId: user2Id,
+    recipientId: user2Id,
+    callerId: user1Id,
+    callerName: 'Alice',
     callType: 'video',
     sdp: { type: 'offer', sdp: 'v=0\r\no=alice ... m=audio 9 UDP/TLS/RTP/SAVPF 111\r\nm=video 9 UDP/TLS/RTP/SAVPF 96' }
   });
@@ -171,7 +173,7 @@ async function runPresenceAndReadReceiptTest() {
   const answerPromise = new Promise((resolve) => {
     socket1.on('call:answer', resolve);
   });
-  socket2Reconnected.emit('call:accept', {
+  socket2Reconnected.emit('call:answer', {
     callId,
     targetUserId: user1Id,
     sdp: { type: 'answer', sdp: 'v=0\r\no=bob ... m=audio 9 UDP/TLS/RTP/SAVPF 111\r\nm=video 9 UDP/TLS/RTP/SAVPF 96' }
