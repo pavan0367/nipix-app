@@ -15,13 +15,26 @@ import {
   Settings,
   User,
   ShieldAlert,
-  Languages
+  Languages,
+  Phone,
+  Video,
+  PhoneOff
 } from 'lucide-react';
 import NipixLogo from '../NipixLogo';
+import { useCall } from '../../context/CallContext';
 
 const Navbar = ({ currentUser, onLogout }) => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const {
+    activeCall,
+    callDuration,
+    isReconnecting,
+    showOnCallPopover,
+    setShowOnCallPopover,
+    handleEndCall,
+    formatDuration
+  } = useCall();
 
   // Close mobile drawer whenever location changes
   useEffect(() => {
@@ -100,8 +113,154 @@ const Navbar = ({ currentUser, onLogout }) => {
           </Link>
         </div>
 
-        {/* Right Controls: PROMINENT CHAT BUTTON & USER / SIGN IN */}
+        {/* Right Controls: ON CALL INDICATOR, PROMINENT CHAT BUTTON & USER / SIGN IN */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Minimal Persistent On Call Indicator Across Website */}
+          {activeCall && ['calling', 'ringing', 'connecting', 'connected'].includes(activeCall.status) && (
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setShowOnCallPopover((prev) => !prev)}
+                className="on-call-badge-btn"
+                title={`Active ${activeCall.type === 'video' ? 'Video' : 'Audio'} Call • Click to manage`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: isReconnecting
+                    ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.22), rgba(202, 138, 4, 0.35))'
+                    : 'linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.35))',
+                  border: isReconnecting ? '1px solid #eab308' : '1px solid #10b981',
+                  borderRadius: '9999px',
+                  padding: '5px 11px',
+                  color: isReconnecting ? '#fef08a' : '#6ee7b7',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: isReconnecting
+                    ? '0 0 14px rgba(234, 179, 8, 0.45)'
+                    : '0 0 14px rgba(16, 185, 129, 0.45)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span
+                  style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    backgroundColor: isReconnecting ? '#eab308' : '#10b981',
+                    boxShadow: isReconnecting ? '0 0 8px #eab308' : '0 0 8px #10b981',
+                    display: 'inline-block'
+                  }}
+                />
+                {activeCall.type === 'video' ? <Video size={13} /> : <Phone size={13} />}
+                <span style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>
+                  {isReconnecting ? 'Reconnecting...' : formatDuration(callDuration)}
+                </span>
+              </button>
+
+              {/* Popover / Mini-panel */}
+              {showOnCallPopover && (
+                <div
+                  className="on-call-popover"
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    right: 0,
+                    width: '260px',
+                    background: 'rgba(15, 23, 42, 0.98)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.75)',
+                    backdropFilter: 'blur(20px)',
+                    zIndex: 1000,
+                    color: '#fff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: '800',
+                        fontSize: '1rem',
+                        color: '#fff',
+                        flexShrink: 0
+                      }}
+                    >
+                      {(activeCall.contact?.name || activeCall.contact?.username || 'C')[0].toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: '700', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {activeCall.contact?.name || activeCall.contact?.username || 'Contact'}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: isReconnecting ? '#fef08a' : '#34d399', fontWeight: '600' }}>
+                        {isReconnecting ? 'Reconnecting...' : `${activeCall.type === 'video' ? 'Video' : 'Audio'} Call • ${formatDuration(callDuration)}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <Link
+                      to="/chat"
+                      onClick={() => setShowOnCallPopover(false)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: '#fff',
+                        textDecoration: 'none',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        textAlign: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                      }}
+                    >
+                      Return to Call
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleEndCall();
+                        setShowOnCallPopover(false);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        color: '#f87171',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <PhoneOff size={14} /> End
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Prominent Chat Option */}
           <Link to="/chat" className="top-chat-btn" title="Open AI & Secret Chat">
             <div className="pulse-dot" />

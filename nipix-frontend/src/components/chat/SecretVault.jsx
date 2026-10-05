@@ -45,6 +45,7 @@ import vaultApi from '../../services/vaultApi';
 import { getCurrentSystemTime } from '../../pages/Chat';
 import { io } from 'socket.io-client';
 import { SOCKET_URL } from '../../utils/constants';
+import { useCall } from '../../context/CallContext';
 
 const SecretVault = ({ currentUser, onClose }) => {
   const activeUser = currentUser || JSON.parse(localStorage.getItem('nipix_user') || 'null');
@@ -100,12 +101,33 @@ const SecretVault = ({ currentUser, onClose }) => {
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [profileActiveTab, setProfileActiveTab] = useState('media'); // 'media' | 'docs' | 'links'
 
-  // Real Call State & Modals
-  const [activeCall, setActiveCall] = useState(null); // { callId, type: 'audio'|'video', direction: 'outgoing'|'incoming', contact, status, startTime } | null
-  const [incomingCall, setIncomingCall] = useState(null); // { callId, conversationId, callerId, callerName, callType, sdp } | null
-  const [callMuted, setCallMuted] = useState(false);
-  const [callVideoOff, setCallVideoOff] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
+  // Global WebRTC & Call System (Centralized in CallContext for background persistence)
+  const {
+    activeCall,
+    incomingCall,
+    callDuration,
+    callMuted,
+    callVideoOff,
+    isReconnecting,
+    connectionLostReason,
+    onlineUsers,
+    startCall: startGlobalCall,
+    handleAcceptCall,
+    handleDeclineCall,
+    handleEndCall,
+    toggleMic,
+    toggleVideo,
+    markMessagesAsRead,
+    subscribeToMessages,
+    subscribeToReadReceipts,
+    localVideoRef,
+    remoteVideoRef
+  } = useCall();
+
+  const startCall = (type) => {
+    if (!activeConversation || !activeConversation.contact) return;
+    startGlobalCall(type, activeConversation, activeConversation.contact, activeUser);
+  };
 
   // Attachment Menu & Modals
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -127,21 +149,9 @@ const SecretVault = ({ currentUser, onClose }) => {
   const audioInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Socket & State Synchronization Refs (prevents stale closure message drops)
-  const socketRef = useRef(null);
+  // State Synchronization Refs (prevents stale closures)
   const activeConversationRef = useRef(activeConversation);
   const currentUserRef = useRef(activeUser);
-
-  // WebRTC Peer Connection & Media Streams Refs
-  const activeCallRef = useRef(activeCall);
-  const incomingCallRef = useRef(incomingCall);
-  const peerConnectionRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const remoteStreamRef = useRef(null);
-  const iceCandidateQueueRef = useRef({});
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const remoteAudioRef = useRef(null);
 
   useEffect(() => {
     activeConversationRef.current = activeConversation;
@@ -150,206 +160,6 @@ const SecretVault = ({ currentUser, onClose }) => {
   useEffect(() => {
     currentUserRef.current = activeUser;
   }, [activeUser]);
-
-  useEffect(() => {
-    activeCallRef.current = activeCall;
-  }, [activeCall]);
-
-  useEffect(() => {
-    incomingCallRef.current = incomingCall;
-  }, [incomingCall]);
-
-  // STUN & TURN Relay Configuration for Production WebRTC NAT Traversal
-  const ICE_SERVERS = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun.relay.metered.ca:80' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    }
-  ];
-
-  const cleanupCallMedia = () => {
-    console.log('[CallSocket Client] Cleaning up call media and peer connection');
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => {
-        try { track.stop(); } catch (e) {}
-      });
-      localStreamRef.current = null;
-    }
-    if (remoteStreamRef.current) {
-      remoteStreamRef.current.getTracks().forEach((track) => {
-        try { track.stop(); } catch (e) {}
-      });
-      remoteStreamRef.current = null;
-    }
-    if (peerConnectionRef.current) {
-      try { peerConnectionRef.current.close(); } catch (e) {}
-      peerConnectionRef.current = null;
-    }
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
-    }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.srcObject = null;
-    }
-    iceCandidateQueueRef.current = {};
-  };
-
-  const processIceQueue = async (callId) => {
-    const queue = iceCandidateQueueRef.current[callId] || [];
-    iceCandidateQueueRef.current[callId] = [];
-    for (const candidate of queue) {
-      try {
-        if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
-          const candObj = candidate && candidate.candidate !== undefined ? candidate : (candidate && candidate.toJSON ? candidate.toJSON() : candidate);
-          if (candObj && (candObj.candidate || candObj.sdpMid !== null || candObj.sdpMLineIndex !== null)) {
-            try {
-              await peerConnectionRef.current.addIceCandidate(candObj);
-            } catch (err) {
-              await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candObj));
-            }
-            console.log('[CallSocket Client] Added queued ICE candidate for call=' + callId);
-          }
-        }
-      } catch (err) {
-        console.warn('[CallSocket Client] Error applying queued ICE candidate:', err.message);
-      }
-    }
-  };
-
-  const setupPeerConnection = (callId, targetUserId) => {
-    if (peerConnectionRef.current) {
-      try {
-        peerConnectionRef.current.close();
-      } catch (e) {}
-      peerConnectionRef.current = null;
-    }
-    remoteStreamRef.current = null;
-    iceCandidateQueueRef.current = {};
-
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    peerConnectionRef.current = pc;
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate && socketRef.current) {
-        console.log('[CallSocket Client] emitting ICE candidate for call=' + callId);
-        const candidateData = event.candidate.toJSON ? event.candidate.toJSON() : {
-          candidate: event.candidate.candidate,
-          sdpMid: event.candidate.sdpMid,
-          sdpMLineIndex: event.candidate.sdpMLineIndex,
-          usernameFragment: event.candidate.usernameFragment
-        };
-        socketRef.current.emit('call:ice-candidate', {
-          callId,
-          targetUserId,
-          candidate: candidateData
-        });
-      }
-    };
-
-    pc.ontrack = (event) => {
-      console.log('[CallSocket Client] remote track received:', event.track.kind, 'readyState:', event.track.readyState);
-      let stream = remoteStreamRef.current;
-      if (!stream) {
-        stream = new MediaStream();
-        remoteStreamRef.current = stream;
-      }
-      if (event.streams && event.streams[0]) {
-        event.streams[0].getTracks().forEach((track) => {
-          if (!stream.getTracks().some((t) => t.id === track.id)) {
-            stream.addTrack(track);
-          }
-        });
-      }
-      if (event.track && !stream.getTracks().some((t) => t.id === event.track.id)) {
-        stream.addTrack(event.track);
-      }
-
-      event.track.onunmute = () => {
-        console.log('[CallSocket Client] remote track unmuted and receiving RTP:', event.track.kind);
-        if (remoteAudioRef.current && remoteStreamRef.current) {
-          remoteAudioRef.current.play().catch(() => {});
-        }
-        if (remoteVideoRef.current && remoteStreamRef.current) {
-          remoteVideoRef.current.play().catch(() => {});
-        }
-      };
-
-      // Explicitly attach stream and invoke playback
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = stream;
-        remoteAudioRef.current.muted = false;
-        remoteAudioRef.current.play().catch((err) => {
-          console.warn('[CallSocket Client] Remote audio play error:', err.message);
-        });
-      }
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = stream;
-        remoteVideoRef.current.muted = true; // Audio is handled by dedicated remoteAudioRef to prevent echo
-        remoteVideoRef.current.play().catch((err) => {
-          console.warn('[CallSocket Client] Remote video play error:', err.message);
-        });
-      }
-    };
-
-    const handleConnected = () => {
-      console.log(`[CallSocket Client] Call successfully connected for call=${callId}`);
-      setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'connected' } : prev));
-      if (remoteAudioRef.current && remoteStreamRef.current) {
-        remoteAudioRef.current.srcObject = remoteStreamRef.current;
-        remoteAudioRef.current.muted = false;
-        remoteAudioRef.current.play().catch(() => {});
-      }
-      if (remoteVideoRef.current && remoteStreamRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        remoteVideoRef.current.muted = true;
-        remoteVideoRef.current.play().catch(() => {});
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-      console.log(`[CallSocket Client] peer connection state=${state} for call=${callId}`);
-      if (state === 'connected') {
-        handleConnected();
-      } else if (state === 'failed') {
-        setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'failed' } : prev));
-        cleanupCallMedia();
-        setTimeout(() => {
-          setActiveCall((prev) => (prev && prev.callId === callId ? null : prev));
-        }, 2000);
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      const iceState = pc.iceConnectionState;
-      console.log(`[CallSocket Client] iceConnectionState=${iceState} for call=${callId}`);
-      if (iceState === 'connected' || iceState === 'completed') {
-        handleConnected();
-      } else if (iceState === 'failed') {
-        console.warn(`[CallSocket Client] ICE connection failed for call=${callId}`);
-      }
-    };
-
-    return pc;
-  };
 
   // -------------------------------------------------------------------------
   // INITIAL STATUS CHECK
@@ -422,6 +232,8 @@ const SecretVault = ({ currentUser, onClose }) => {
     setConversations((prev) =>
       prev.map((c) => (String(c.id) === String(conv.id) ? { ...c, unread: 0 } : c))
     );
+    // Real authenticated read receipt sent to server & peers
+    markMessagesAsRead(conv.id);
     setLoadingMessages(true);
     try {
       const res = await vaultApi.getMessages(conv.id);
@@ -452,45 +264,14 @@ const SecretVault = ({ currentUser, onClose }) => {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // REAL-TIME SOCKET.IO LIFECYCLE (SECRET VAULT LIVE CHAT)
+    // -------------------------------------------------------------------------
+  // REAL-TIME MESSAGING & READ RECEIPTS VIA CENTRALIZED CALL/SOCKET CONTEXT
   // -------------------------------------------------------------------------
   useEffect(() => {
-    // Only connect when user is inside DASHBOARD view
     if (viewState !== 'DASHBOARD') return;
 
-    const token = localStorage.getItem('nipix_token') || localStorage.getItem('token');
-    if (!token) return;
-
-    const cleanSocketUrl = SOCKET_URL.replace(/\/+$/, '');
-    const socket = io(cleanSocketUrl, {
-      auth: { token },
-      query: { token },
-      transports: ['websocket', 'polling'],
-      withCredentials: true,
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000
-    });
-
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      console.log('[VaultSocket] connected:', socket.id);
-      console.log('[VaultSocket] authenticated user:', currentUserRef.current?.id);
-      console.log('[VaultSocket] joined private room');
-      console.log('[VaultSocket] listener registered');
-      if (currentUserRef.current?.id) {
-        socket.emit('joinUserRoom', currentUserRef.current.id);
-      }
-    });
-
-    socket.on('connect_error', (err) => {
-      console.warn('[VaultSocket] connection error:', err.message);
-    });
-
-    socket.on('vaultMessage', (incomingMsg) => {
+    // 1. Subscribe to incoming vault messages
+    const unsubscribeMessages = subscribeToMessages((incomingMsg) => {
       if (!incomingMsg || !incomingMsg.conversationId) return;
 
       const currentActiveConv = activeConversationRef.current;
@@ -498,20 +279,17 @@ const SecretVault = ({ currentUser, onClose }) => {
       const isMsgForActive = String(currentActiveConv?.id) === String(incomingMsg.conversationId);
       const isSender = String(incomingMsg.senderId) === String(currentAuthUser?.id);
 
-      console.log('[VaultSocket] vaultMessage received:', incomingMsg.id);
-      console.log('[VaultSocket] active conversation:', currentActiveConv?.id);
-      console.log('[VaultSocket] incoming conversation:', incomingMsg.conversationId);
+      // If incoming message is for active conversation and not sent by current user, mark read immediately
+      if (isMsgForActive && !isSender) {
+        markMessagesAsRead(incomingMsg.conversationId);
+      }
 
-      // 1. If incoming message is for the currently active conversation, append directly to active chat
       if (isMsgForActive) {
-        console.log('[VaultSocket] appending message:', incomingMsg.id);
         setMessages((prevMessages) => {
-          // Prevent duplicates by canonical server message ID
           if (prevMessages.some((m) => m.id === incomingMsg.id)) {
             return prevMessages;
           }
 
-          // Reconcile optimistic temporary message if present
           let reconciled = false;
           const mapped = prevMessages.map((m) => {
             if (
@@ -530,28 +308,23 @@ const SecretVault = ({ currentUser, onClose }) => {
           });
 
           const nextList = reconciled ? mapped : [...mapped, incomingMsg];
-
-          // Deterministic sorting by canonical server createdAt timestamp and database ID
           return nextList.sort((a, b) => {
             const timeA = new Date(a.createdAt).getTime();
             const timeB = new Date(b.createdAt).getTime();
             if (timeA !== timeB) return timeA - timeB;
-            if (typeof a.id === 'number' && typeof b.id === 'number') {
-              return a.id - b.id;
-            }
+            if (typeof a.id === 'number' && typeof b.id === 'number') return a.id - b.id;
             return String(a.id).localeCompare(String(b.id));
           });
         });
       }
 
-      // 2. Update conversation list preview, unread status, and ordering
+      // Update conversation list preview, unread count, and sorting
       setConversations((prevConvs) => {
         const convIndex = prevConvs.findIndex(
           (c) => String(c.id) === String(incomingMsg.conversationId)
         );
 
         if (convIndex === -1) {
-          // If conversation is not in local list yet, fetch updated conversations
           loadConversations();
           return prevConvs;
         }
@@ -569,8 +342,6 @@ const SecretVault = ({ currentUser, onClose }) => {
             senderId: incomingMsg.senderId,
             isUser: isSender
           },
-          // If message is for currently active conversation, unread stays 0;
-          // if for a background conversation and sent by contact, increment unread count.
           unread: isMsgForActive ? 0 : (isSender ? existingConv.unread : (existingConv.unread || 0) + 1),
           updatedAt: incomingMsg.createdAt
         };
@@ -581,132 +352,28 @@ const SecretVault = ({ currentUser, onClose }) => {
       });
     });
 
-    // =========================================================================
-    // WEBRTC CALL SIGNALING LISTENERS
-    // =========================================================================
-
-    socket.on('call:incoming', (data) => {
-      console.log('[CallSocket Client] incoming call=' + data.callId + ' from=' + data.callerId);
-      const active = activeCallRef.current;
-      if (active && ['calling', 'ringing', 'connecting', 'connected'].includes(active.status)) {
-        console.log('[CallSocket Client] User busy, signaling busy back to caller');
-        socket.emit('call:busy', { callId: data.callId, targetUserId: data.callerId });
-        return;
-      }
-      setIncomingCall(data);
-    });
-
-    socket.on('call:ringing', (data) => {
-      console.log('[CallSocket Client] remote ringing acknowledged for call=' + data.callId);
-      setActiveCall((prev) => (prev && prev.callId === data.callId && prev.status === 'calling' ? { ...prev, status: 'ringing' } : prev));
-    });
-
-    socket.on('call:answer', async (data) => {
-      console.log('[CallSocket Client] answer received for call=' + data.callId);
-      const pc = peerConnectionRef.current;
-      const active = activeCallRef.current;
-      if (!pc || !active || active.callId !== data.callId) return;
-
-      setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'connecting' } : prev));
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-        await processIceQueue(data.callId);
-      } catch (err) {
-        console.warn('[CallSocket Client] Error setting remote answer:', err.message);
-      }
-    });
-
-    socket.on('call:ice-candidate', async (data) => {
-      const pc = peerConnectionRef.current;
-      const active = activeCallRef.current;
-      const incoming = incomingCallRef.current;
-      const isCallMatch = (active && active.callId === data.callId) || (incoming && incoming.callId === data.callId);
-      if (!isCallMatch) return;
-
-      console.log('[CallSocket Client] ICE candidate received for call=' + data.callId);
-      const candidateObj = data.candidate && data.candidate.candidate !== undefined ? data.candidate : (data.candidate && data.candidate.toJSON ? data.candidate.toJSON() : data.candidate);
-      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
-        if (candidateObj && (candidateObj.candidate || candidateObj.sdpMid !== null || candidateObj.sdpMLineIndex !== null)) {
-          try {
-            await pc.addIceCandidate(candidateObj);
-          } catch (err) {
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate(candidateObj));
-            } catch (fallbackErr) {
-              console.warn('[CallSocket Client] Error adding ICE candidate:', fallbackErr.message);
+    // 2. Subscribe to real-time message read receipts (Single tick ✓ -> Double tick ✓✓)
+    const unsubscribeReceipts = subscribeToReadReceipts((receipt) => {
+      if (!receipt || !receipt.conversationId) return;
+      if (String(activeConversationRef.current?.id) === String(receipt.conversationId)) {
+        setMessages((prevMessages) =>
+          prevMessages.map((m) => {
+            if (String(m.senderId) === String(currentUserRef.current?.id)) {
+              if (!receipt.messageIds || receipt.messageIds.includes(m.id)) {
+                return { ...m, isRead: true };
+              }
             }
-          }
-        }
-      } else {
-        if (!iceCandidateQueueRef.current[data.callId]) {
-          iceCandidateQueueRef.current[data.callId] = [];
-        }
-        iceCandidateQueueRef.current[data.callId].push(candidateObj);
-        console.log('[CallSocket Client] Queued ICE candidate for call=' + data.callId + ' (count=' + iceCandidateQueueRef.current[data.callId].length + ')');
-      }
-    });
-
-    socket.on('call:declined', (data) => {
-      console.log('[CallSocket Client] call declined=' + data.callId);
-      const active = activeCallRef.current;
-      if (active && active.callId === data.callId) {
-        setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'declined' } : prev));
-        cleanupCallMedia();
-        setTimeout(() => {
-          setActiveCall((prev) => (prev && prev.callId === data.callId ? null : prev));
-        }, 2000);
-      }
-    });
-
-    socket.on('call:busy', (data) => {
-      console.log('[CallSocket Client] recipient busy for call=' + data.callId);
-      const active = activeCallRef.current;
-      if (active && active.callId === data.callId) {
-        setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'busy' } : prev));
-        cleanupCallMedia();
-        setTimeout(() => {
-          setActiveCall((prev) => (prev && prev.callId === data.callId ? null : prev));
-        }, 2500);
-      }
-    });
-
-    socket.on('call:cancelled', (data) => {
-      console.log('[CallSocket Client] incoming call cancelled by caller=' + data.callId);
-      const incoming = incomingCallRef.current;
-      if (incoming && incoming.callId === data.callId) {
-        setIncomingCall(null);
-      }
-    });
-
-    socket.on('call:ended', (data) => {
-      console.log('[CallSocket Client] call ended=' + data.callId);
-      const active = activeCallRef.current;
-      if (active && active.callId === data.callId) {
-        setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'ended' } : prev));
-        cleanupCallMedia();
-        setTimeout(() => {
-          setActiveCall((prev) => (prev && prev.callId === data.callId ? null : prev));
-        }, 1500);
+            return m;
+          })
+        );
       }
     });
 
     return () => {
-      socket.off('connect');
-      socket.off('connect_error');
-      socket.off('vaultMessage');
-      socket.off('call:incoming');
-      socket.off('call:ringing');
-      socket.off('call:answer');
-      socket.off('call:ice-candidate');
-      socket.off('call:declined');
-      socket.off('call:busy');
-      socket.off('call:cancelled');
-      socket.off('call:ended');
-      cleanupCallMedia();
-      socket.disconnect();
-      socketRef.current = null;
+      unsubscribeMessages();
+      unsubscribeReceipts();
     };
-  }, [viewState]);
+  }, [viewState, subscribeToMessages, subscribeToReadReceipts, markMessagesAsRead]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -714,40 +381,6 @@ const SecretVault = ({ currentUser, onClose }) => {
     }
   }, [messages]);
 
-  // Call timer effect: ONLY increments duration when call is truly connected
-  useEffect(() => {
-    let timer = null;
-    if (activeCall && activeCall.status === 'connected') {
-      timer = setInterval(() => {
-        setCallDuration((prev) => prev + 1);
-      }, 1000);
-    } else {
-      setCallDuration(0);
-    }
-    return () => timer && clearInterval(timer);
-  }, [activeCall?.status]);
-
-  // Bind video and audio streams when activeCall changes
-  useEffect(() => {
-    if (activeCall) {
-      if (activeCall.type === 'video') {
-        if (localVideoRef.current && localStreamRef.current) {
-          localVideoRef.current.srcObject = localStreamRef.current;
-          localVideoRef.current.play().catch(() => {});
-        }
-        if (remoteVideoRef.current && remoteStreamRef.current) {
-          remoteVideoRef.current.srcObject = remoteStreamRef.current;
-          remoteVideoRef.current.muted = false;
-          remoteVideoRef.current.play().catch(() => {});
-        }
-      }
-      if (remoteAudioRef.current && remoteStreamRef.current) {
-        remoteAudioRef.current.srcObject = remoteStreamRef.current;
-        remoteAudioRef.current.muted = false;
-        remoteAudioRef.current.play().catch(() => {});
-      }
-    }
-  }, [activeCall?.status, activeCall?.type]);
 
   // Format call duration helper (MM:SS)
   const formatSeconds = (sec) => {
@@ -1165,297 +798,10 @@ const SecretVault = ({ currentUser, onClose }) => {
     }
   };
 
+    // -------------------------------------------------------------------------
+  // 8. CALLS (AUDIO / VIDEO) & REAL WEBRTC SIGNALING HANDLED BY CallContext
   // -------------------------------------------------------------------------
-  // 8. CALLS (AUDIO / VIDEO) & REAL WEBRTC SIGNALING
-  // -------------------------------------------------------------------------
-  const startCall = async (type) => {
-    if (!activeConversation || !activeConversation.contact) return;
-    if (!socketRef.current || !socketRef.current.connected) {
-      alert('Encrypted socket connection is offline. Please wait a moment and try again.');
-      return;
-    }
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Media devices (Microphone/Camera) are not supported in this browser context.');
-      return;
-    }
-
-    cleanupCallMedia();
-
-    const contact = activeConversation.contact;
-    const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-
-    // 1. Request microphone & camera permissions
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: type === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
-      });
-    } catch (err) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: type === 'video'
-        });
-      } catch (fallbackErr) {
-        console.warn('[CallSocket Client] Media permission denied:', fallbackErr.message);
-        alert(type === 'video'
-          ? 'Camera and microphone access are required for encrypted video calls.'
-          : 'Microphone access is required for encrypted audio calls.');
-        return;
-      }
-    }
-
-    localStreamRef.current = stream;
-    setCallMuted(false);
-    setCallVideoOff(false);
-    setCallDuration(0);
-
-    setActiveCall({
-      callId,
-      type,
-      direction: 'outgoing',
-      contact,
-      status: 'calling'
-    });
-
-    try {
-      const pc = setupPeerConnection(callId, contact.id);
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      // Ensure transceivers are configured to bidirectional transmission
-      pc.getTransceivers().forEach((tr) => {
-        if (tr.direction === 'recvonly') tr.direction = 'sendrecv';
-      });
-
-      if (localVideoRef.current && type === 'video') {
-        localVideoRef.current.srcObject = stream;
-        localVideoRef.current.play().catch(() => {});
-      }
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      console.log('[CallSocket Client] outgoing call offer=' + callId + ' to=' + contact.id);
-      socketRef.current.emit('call:offer', {
-        callId,
-        conversationId: activeConversation.id,
-        recipientId: contact.id,
-        callerId: activeUser?.id,
-        callerName: activeUser?.full_name || activeUser?.username || 'Scholar',
-        callType: type,
-        sdp: offer
-      });
-    } catch (err) {
-      console.error('[CallSocket Client] Error starting call:', err.message);
-      cleanupCallMedia();
-      setActiveCall(null);
-    }
-  };
-
-  const handleAcceptCall = async () => {
-    const incoming = incomingCallRef.current;
-    if (!incoming || !socketRef.current) return;
-
-    setIncomingCall(null);
-
-    const callId = incoming.callId;
-    const callerId = incoming.callerId;
-    const callType = incoming.callType || 'audio';
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      socketRef.current.emit('call:decline', {
-        callId,
-        targetUserId: callerId,
-        conversationId: incoming.conversationId,
-        reason: 'unsupported'
-      });
-      alert('Media devices are not supported in this browser context.');
-      return;
-    }
-
-    cleanupCallMedia();
-
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: callType === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
-      });
-    } catch (err) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: callType === 'video'
-        });
-      } catch (fallbackErr) {
-        console.warn('[CallSocket Client] Permission error on accept:', fallbackErr.message);
-        socketRef.current.emit('call:decline', {
-          callId,
-          targetUserId: callerId,
-          conversationId: incoming.conversationId,
-          reason: 'permission_denied'
-        });
-        alert('Microphone/Camera permission is required to answer this call.');
-        return;
-      }
-    }
-
-    localStreamRef.current = stream;
-    setCallMuted(false);
-    setCallVideoOff(false);
-    setCallDuration(0);
-
-    setActiveCall({
-      callId,
-      type: callType,
-      direction: 'incoming',
-      contact: { id: callerId, name: incoming.callerName, username: incoming.callerName },
-      status: 'connecting'
-    });
-
-    try {
-      const pc = setupPeerConnection(callId, callerId);
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      // Ensure transceivers are configured to bidirectional transmission
-      pc.getTransceivers().forEach((tr) => {
-        if (tr.direction === 'recvonly') tr.direction = 'sendrecv';
-      });
-
-      if (localVideoRef.current && callType === 'video') {
-        localVideoRef.current.srcObject = stream;
-        localVideoRef.current.play().catch(() => {});
-      }
-
-      await pc.setRemoteDescription(new RTCSessionDescription(incoming.sdp));
-      await processIceQueue(callId);
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      console.log('[CallSocket Client] answer emitted for call=' + callId + ' to=' + callerId);
-      socketRef.current.emit('call:answer', {
-        callId,
-        targetUserId: callerId,
-        sdp: answer
-      });
-    } catch (err) {
-      console.error('[CallSocket Client] Error answering call:', err.message);
-      cleanupCallMedia();
-      setActiveCall(null);
-    }
-  };
-
-  const handleDeclineCall = async () => {
-    const incoming = incomingCallRef.current;
-    if (!incoming) return;
-
-    if (socketRef.current) {
-      socketRef.current.emit('call:decline', {
-        callId: incoming.callId,
-        targetUserId: incoming.callerId,
-        conversationId: incoming.conversationId,
-        reason: 'declined'
-      });
-    }
-
-    try {
-      await vaultApi.recordCallLog({
-        contactId: incoming.callerId,
-        callType: incoming.callType,
-        direction: 'incoming',
-        status: 'declined',
-        duration: 0
-      });
-      loadCallLogs();
-    } catch (e) {
-      console.warn('[CallLog] Error recording decline:', e.message);
-    }
-
-    setIncomingCall(null);
-  };
-
-  const handleEndCall = async () => {
-    const active = activeCallRef.current;
-    if (!active) {
-      cleanupCallMedia();
-      setActiveCall(null);
-      return;
-    }
-
-    const callId = active.callId;
-    const contactId = active.contact?.id;
-    const callType = active.type;
-    const duration = callDuration;
-    const isConnected = active.status === 'connected';
-
-    // If cancelling before answer
-    if (active.direction === 'outgoing' && (active.status === 'calling' || active.status === 'ringing')) {
-      if (socketRef.current && contactId) {
-        socketRef.current.emit('call:cancel', {
-          callId,
-          targetUserId: contactId
-        });
-      }
-      try {
-        await vaultApi.recordCallLog({
-          contactId,
-          callType,
-          direction: 'outgoing',
-          status: 'cancelled',
-          duration: 0
-        });
-        loadCallLogs();
-      } catch (e) {}
-    } else {
-      // Ending an active or connecting call
-      if (socketRef.current && contactId) {
-        socketRef.current.emit('call:end', {
-          callId,
-          targetUserId: contactId,
-          duration
-        });
-      }
-      try {
-        await vaultApi.recordCallLog({
-          contactId,
-          callType,
-          direction: active.direction || 'outgoing',
-          status: isConnected && duration > 0 ? 'completed' : 'cancelled',
-          duration
-        });
-        loadCallLogs();
-      } catch (e) {}
-    }
-
-    cleanupCallMedia();
-    setActiveCall(null);
-    setCallDuration(0);
-  };
-
-  const toggleMic = () => {
-    const nextMuted = !callMuted;
-    setCallMuted(nextMuted);
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !nextMuted;
-      });
-    }
-  };
-
-  const toggleVideo = () => {
-    const nextVideoOff = !callVideoOff;
-    setCallVideoOff(nextVideoOff);
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks().forEach((track) => {
-        track.enabled = !nextVideoOff;
-      });
-    }
-  };
-
-  // -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
   // 9. SETTINGS ACTIONS (CHANGE PIN & RECOVERY)
   // -------------------------------------------------------------------------
   const handleSettingsChangePin = async (e) => {
@@ -2778,7 +2124,7 @@ const SecretVault = ({ currentUser, onClose }) => {
                             contact.avatar || (contact.name || 'S')[0].toUpperCase()
                           )}
                         </div>
-                        {contact.online && (
+                        {(contact.online || (contact.id && onlineUsers.has(String(contact.id)))) && (
                           <div
                             style={{
                               position: 'absolute',
@@ -3289,7 +2635,7 @@ const SecretVault = ({ currentUser, onClose }) => {
                     </div>
                     <div style={{ fontSize: '0.72rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Lock size={10} />
-                      <span>Encrypted Peer • {activeConversation.contact?.online ? 'Online' : 'Offline'}</span>
+                      <span>Encrypted Peer • {(activeConversation.contact?.id && onlineUsers.has(String(activeConversation.contact.id))) ? '🟢 Online' : 'Offline'}</span>
                     </div>
                   </div>
                 </div>
@@ -3547,7 +2893,11 @@ const SecretVault = ({ currentUser, onClose }) => {
                               {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             {isUser && (
-                              <CheckCheck size={13} color="#fff" />
+                              msg.isRead ? (
+                                <CheckCheck size={13} color="#38bdf8" title="Read" />
+                              ) : (
+                                <Check size={13} color="rgba(255, 255, 255, 0.7)" title="Delivered to Server" />
+                              )
                             )}
                           </div>
                         </div>
@@ -4197,7 +3547,7 @@ const SecretVault = ({ currentUser, onClose }) => {
       {/* =============================================================== */}
       {/* CALL MODAL (AUDIO & VIDEO CALL INTERFACE)                       */}
       {/* =============================================================== */}
-      {activeCall && (
+      {activeCall && viewState === 'DASHBOARD' && (
         <div
           style={{
             position: 'fixed',
@@ -4255,7 +3605,8 @@ const SecretVault = ({ currentUser, onClose }) => {
                   color: activeCall.status === 'connected' ? '#10b981' : (activeCall.status === 'declined' || activeCall.status === 'busy' || activeCall.status === 'failed' ? '#f87171' : '#38bdf8'),
                   fontWeight: '600'
                 }}>
-                  {activeCall.status === 'calling' && 'Encrypted Audio Transmission • Calling...'}
+                  {isReconnecting && 'Network Unstable • Reconnecting...'}
+                  {!isReconnecting && activeCall.status === 'calling' && 'Encrypted Audio Transmission • Calling...'}
                   {activeCall.status === 'ringing' && 'Encrypted Audio Transmission • Ringing...'}
                   {activeCall.status === 'connecting' && 'Encrypted Audio Transmission • Establishing Secure Peer Link...'}
                   {activeCall.status === 'connected' && 'Encrypted Audio Transmission • Connected'}
@@ -4377,7 +3728,7 @@ const SecretVault = ({ currentUser, onClose }) => {
                   fontWeight: '700',
                   color: activeCall.status === 'connected' ? '#10b981' : (activeCall.status === 'declined' || activeCall.status === 'busy' || activeCall.status === 'failed' ? '#f87171' : '#38bdf8')
                 }}>
-                  {activeCall.status === 'connected' ? formatSeconds(callDuration) : (activeCall.status === 'calling' ? 'Calling...' : activeCall.status === 'ringing' ? 'Ringing...' : activeCall.status === 'connecting' ? 'Securing Video Feed...' : '')}
+                  {isReconnecting ? 'Reconnecting...' : (activeCall.status === 'connected' ? formatSeconds(callDuration) : (activeCall.status === 'calling' ? 'Calling...' : activeCall.status === 'ringing' ? 'Ringing...' : activeCall.status === 'connecting' ? 'Securing Video Feed...' : ''))}
                 </div>
               </div>
             )}

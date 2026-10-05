@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import AppRoutes from './routes/AppRoutes';
 import { ThemeProvider } from './context/ThemeContext';
+import { CallProvider } from './context/CallContext';
 import { API_BASE } from './utils/constants';
 import './index.css';
 import './App.css';
@@ -83,7 +84,9 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <AppContent />
+        <CallProvider>
+          <AppContent />
+        </CallProvider>
       </Router>
     </ThemeProvider>
   );

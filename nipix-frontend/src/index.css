@@ -343,6 +343,39 @@ code, pre {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
 
+/* Persistent Global On Call Indicator & Mini-Panel */
+.on-call-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.on-call-badge-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.on-call-popover {
+  animation: popoverFadeIn 0.2s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Theme Toggle Button in Header */
 .theme-toggle-btn {
   width: 36px;

@@ -1,8 +1,10 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
-const { User, ConversationMember, CallLog } = require('../models');
+const { Op } = require('sequelize');
+const { User, ConversationMember, CallLog, Message } = require('../models');
 
 let io;
+const userSocketsMap = new Map(); // userId -> Set of socket IDs
 
 const initSocket = (server) => {
   const allowedOrigins = [
@@ -62,6 +64,30 @@ const initSocket = (server) => {
     const userRoom = `user_${socket.userId}`;
     socket.join(userRoom);
     console.log(`[VaultSocket Server] User connected: ${socket.id}, verified userId: ${socket.userId}, joined room: ${userRoom}`);
+
+    // Track active connection for server-authoritative presence
+    const uid = Number(socket.userId);
+    const existingSockets = userSocketsMap.get(uid) || new Set();
+    const isFirstConnection = existingSockets.size === 0;
+    existingSockets.add(socket.id);
+    userSocketsMap.set(uid, existingSockets);
+
+    if (isFirstConnection) {
+      console.log(`[Presence Server] User ${uid} is now ONLINE`);
+      io.emit('presence:update', { userId: uid, status: 'online' });
+    }
+
+    // Send immediate sync of all currently online user IDs to the newly connected socket
+    socket.emit('presence:sync', {
+      onlineUserIds: Array.from(userSocketsMap.keys())
+    });
+
+    // Client query for active presence list
+    socket.on('presence:query', (callback) => {
+      if (typeof callback === 'function') {
+        callback({ onlineUserIds: Array.from(userSocketsMap.keys()) });
+      }
+    });
 
     // Guard joinUserRoom so a client can never subscribe to another user's room
     socket.on('joinUserRoom', (requestedUserId) => {
@@ -225,8 +251,70 @@ const initSocket = (server) => {
       }
     });
 
+    // 8. Message Read Receipt Flow (Single tick -> Double tick)
+    socket.on('message:read', async (data) => {
+      try {
+        const { conversationId, messageIds } = data || {};
+        if (!conversationId) return;
+
+        // SECURITY: Verify caller is an authorized member of this conversation
+        const isMember = await ConversationMember.findOne({
+          where: { conversationId, userId: socket.userId }
+        });
+        if (!isMember) {
+          console.warn(`[VaultSocket Server] Unauthorized message:read attempt by user ${socket.userId} in conv ${conversationId}`);
+          return;
+        }
+
+        const updateCondition = {
+          conversationId,
+          senderId: { [Op.ne]: socket.userId },
+          isRead: false
+        };
+
+        if (Array.isArray(messageIds) && messageIds.length > 0) {
+          updateCondition.id = messageIds;
+        }
+
+        const [updatedRows] = await Message.update(
+          { isRead: true },
+          { where: updateCondition }
+        );
+
+        console.log(`[VaultSocket Server] Marked ${updatedRows} messages as read in conversation ${conversationId} by reader ${socket.userId}`);
+
+        // Notify other conversation members in real time
+        const otherMembers = await ConversationMember.findAll({
+          where: { conversationId, userId: { [Op.ne]: socket.userId } },
+          attributes: ['userId']
+        });
+
+        otherMembers.forEach((m) => {
+          io.to(`user_${m.userId}`).emit('message:read', {
+            conversationId,
+            readerId: socket.userId,
+            messageIds: messageIds || null
+          });
+        });
+      } catch (err) {
+        console.error('[VaultSocket Server] message:read error:', err.message);
+      }
+    });
+
     socket.on('disconnect', (reason) => {
       console.log(`[VaultSocket Server] User disconnected: ${socket.id} (userId: ${socket.userId}, reason: ${reason})`);
+      const uid = Number(socket.userId);
+      const userSockets = userSocketsMap.get(uid);
+      if (userSockets) {
+        userSockets.delete(socket.id);
+        if (userSockets.size === 0) {
+          userSocketsMap.delete(uid);
+          console.log(`[Presence Server] User ${uid} is now OFFLINE (all connections closed)`);
+          io.emit('presence:update', { userId: uid, status: 'offline' });
+        } else {
+          console.log(`[Presence Server] User ${uid} remaining connections: ${userSockets.size}`);
+        }
+      }
     });
   });
 

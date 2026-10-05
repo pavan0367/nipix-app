@@ -476,7 +476,7 @@ const vaultService = {
     }
 
     // Mark messages sent to this user as read
-    await Message.update(
+    const [updatedRows] = await Message.update(
       { isRead: true },
       {
         where: {
@@ -486,6 +486,24 @@ const vaultService = {
         }
       }
     );
+
+    if (updatedRows > 0 && getIO) {
+      try {
+        const io = getIO();
+        if (io) {
+          const otherMembers = await ConversationMember.findAll({
+            where: { conversationId, userId: { [Op.ne]: userId } },
+            attributes: ['userId']
+          });
+          otherMembers.forEach((m) => {
+            io.to(`user_${m.userId}`).emit('message:read', {
+              conversationId,
+              readerId: userId
+            });
+          });
+        }
+      } catch (err) {}
+    }
 
     const messages = await Message.findAll({
       where: { conversationId },
