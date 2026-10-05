@@ -43,8 +43,12 @@ import {
 } from 'lucide-react';
 import vaultApi from '../../services/vaultApi';
 import { getCurrentSystemTime } from '../../pages/Chat';
+import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../../utils/constants';
 
 const SecretVault = ({ currentUser, onClose }) => {
+  const activeUser = currentUser || JSON.parse(localStorage.getItem('nipix_user') || 'null');
+
   // Vault Navigation State: 'LOADING' | 'PIN_CREATE' | 'PIN_ENTRY' | 'FORGOT_PIN_DATE' | 'SET_NEW_PIN' | 'DASHBOARD'
   const [viewState, setViewState] = useState('LOADING');
 
@@ -122,6 +126,19 @@ const SecretVault = ({ currentUser, onClose }) => {
   const audioInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  // Socket & State Synchronization Refs (prevents stale closure message drops)
+  const socketRef = useRef(null);
+  const activeConversationRef = useRef(activeConversation);
+  const currentUserRef = useRef(activeUser);
+
+  useEffect(() => {
+    activeConversationRef.current = activeConversation;
+  }, [activeConversation]);
+
+  useEffect(() => {
+    currentUserRef.current = activeUser;
+  }, [activeUser]);
+
   // -------------------------------------------------------------------------
   // INITIAL STATUS CHECK
   // -------------------------------------------------------------------------
@@ -163,7 +180,7 @@ const SecretVault = ({ currentUser, onClose }) => {
       const res = await vaultApi.getConversations();
       if (res && res.conversations) {
         setConversations(res.conversations);
-        if (res.conversations.length > 0 && !activeConversation) {
+        if (res.conversations.length > 0 && !activeConversationRef.current) {
           selectConversation(res.conversations[0]);
         }
       }
@@ -188,11 +205,33 @@ const SecretVault = ({ currentUser, onClose }) => {
 
   const selectConversation = async (conv) => {
     setActiveConversation(conv);
+    activeConversationRef.current = conv;
+    // Mark as read in inbox list
+    setConversations((prev) =>
+      prev.map((c) => (String(c.id) === String(conv.id) ? { ...c, unread: 0 } : c))
+    );
     setLoadingMessages(true);
     try {
       const res = await vaultApi.getMessages(conv.id);
       if (res && res.messages) {
-        setMessages(res.messages);
+        setMessages((currentMessages) => {
+          // If socket delivered any messages for this conversation during fetch, merge safely
+          const msgMap = new Map();
+          res.messages.forEach((m) => msgMap.set(m.id, m));
+          currentMessages.forEach((m) => {
+            if (String(m.conversationId) === String(conv.id) && !msgMap.has(m.id)) {
+              msgMap.set(m.id, m);
+            }
+          });
+          const combined = Array.from(msgMap.values());
+          return combined.sort((a, b) => {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+            if (timeA !== timeB) return timeA - timeB;
+            if (typeof a.id === 'number' && typeof b.id === 'number') return a.id - b.id;
+            return String(a.id).localeCompare(String(b.id));
+          });
+        });
       }
     } catch (err) {
       console.warn('Could not load conversation messages:', err.message);
@@ -200,6 +239,144 @@ const SecretVault = ({ currentUser, onClose }) => {
       setLoadingMessages(false);
     }
   };
+
+  // -------------------------------------------------------------------------
+  // REAL-TIME SOCKET.IO LIFECYCLE (SECRET VAULT LIVE CHAT)
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    // Only connect when user is inside DASHBOARD view
+    if (viewState !== 'DASHBOARD') return;
+
+    const token = localStorage.getItem('nipix_token') || localStorage.getItem('token');
+    if (!token) return;
+
+    const cleanSocketUrl = SOCKET_URL.replace(/\/+$/, '');
+    const socket = io(cleanSocketUrl, {
+      auth: { token },
+      query: { token },
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('[VaultSocket] connected:', socket.id);
+      console.log('[VaultSocket] authenticated user:', currentUserRef.current?.id);
+      console.log('[VaultSocket] joined private room');
+      console.log('[VaultSocket] listener registered');
+      if (currentUserRef.current?.id) {
+        socket.emit('joinUserRoom', currentUserRef.current.id);
+      }
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('[VaultSocket] connection error:', err.message);
+    });
+
+    socket.on('vaultMessage', (incomingMsg) => {
+      if (!incomingMsg || !incomingMsg.conversationId) return;
+
+      const currentActiveConv = activeConversationRef.current;
+      const currentAuthUser = currentUserRef.current;
+      const isMsgForActive = String(currentActiveConv?.id) === String(incomingMsg.conversationId);
+      const isSender = String(incomingMsg.senderId) === String(currentAuthUser?.id);
+
+      console.log('[VaultSocket] vaultMessage received:', incomingMsg.id);
+      console.log('[VaultSocket] active conversation:', currentActiveConv?.id);
+      console.log('[VaultSocket] incoming conversation:', incomingMsg.conversationId);
+
+      // 1. If incoming message is for the currently active conversation, append directly to active chat
+      if (isMsgForActive) {
+        console.log('[VaultSocket] appending message:', incomingMsg.id);
+        setMessages((prevMessages) => {
+          // Prevent duplicates by canonical server message ID
+          if (prevMessages.some((m) => m.id === incomingMsg.id)) {
+            return prevMessages;
+          }
+
+          // Reconcile optimistic temporary message if present
+          let reconciled = false;
+          const mapped = prevMessages.map((m) => {
+            if (
+              !reconciled &&
+              isSender &&
+              typeof m.id === 'string' &&
+              m.id.startsWith('temp-') &&
+              String(m.conversationId) === String(incomingMsg.conversationId) &&
+              m.mediaType === incomingMsg.mediaType &&
+              (m.text === incomingMsg.text || m.mediaUrl === incomingMsg.mediaUrl)
+            ) {
+              reconciled = true;
+              return incomingMsg;
+            }
+            return m;
+          });
+
+          const nextList = reconciled ? mapped : [...mapped, incomingMsg];
+
+          // Deterministic sorting by canonical server createdAt timestamp and database ID
+          return nextList.sort((a, b) => {
+            const timeA = new Date(a.createdAt).getTime();
+            const timeB = new Date(b.createdAt).getTime();
+            if (timeA !== timeB) return timeA - timeB;
+            if (typeof a.id === 'number' && typeof b.id === 'number') {
+              return a.id - b.id;
+            }
+            return String(a.id).localeCompare(String(b.id));
+          });
+        });
+      }
+
+      // 2. Update conversation list preview, unread status, and ordering
+      setConversations((prevConvs) => {
+        const convIndex = prevConvs.findIndex(
+          (c) => String(c.id) === String(incomingMsg.conversationId)
+        );
+
+        if (convIndex === -1) {
+          // If conversation is not in local list yet, fetch updated conversations
+          loadConversations();
+          return prevConvs;
+        }
+
+        const existingConv = prevConvs[convIndex];
+        const updatedConv = {
+          ...existingConv,
+          lastMessage: {
+            id: incomingMsg.id,
+            text: incomingMsg.text,
+            mediaUrl: incomingMsg.mediaUrl,
+            mediaType: incomingMsg.mediaType || 'text',
+            fileName: incomingMsg.fileName,
+            time: incomingMsg.createdAt,
+            senderId: incomingMsg.senderId,
+            isUser: isSender
+          },
+          // If message is for currently active conversation, unread stays 0;
+          // if for a background conversation and sent by contact, increment unread count.
+          unread: isMsgForActive ? 0 : (isSender ? existingConv.unread : (existingConv.unread || 0) + 1),
+          updatedAt: incomingMsg.createdAt
+        };
+
+        const updatedList = [...prevConvs];
+        updatedList.splice(convIndex, 1);
+        return [updatedConv, ...updatedList];
+      });
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('vaultMessage');
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [viewState]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -399,11 +576,37 @@ const SecretVault = ({ currentUser, onClose }) => {
       });
 
       if (res && res.message) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === optimisticMsg.id ? res.message : m))
-        );
-        // Refresh conversation list to update lastMessage
-        loadConversations();
+        setMessages((prev) => {
+          const alreadyDelivered = prev.some((m) => m.id === res.message.id);
+          if (alreadyDelivered) {
+            return prev.filter((m) => m.id !== optimisticMsg.id);
+          }
+          return prev.map((m) => (m.id === optimisticMsg.id ? res.message : m));
+        });
+        setConversations((prevConvs) => {
+          const convIndex = prevConvs.findIndex(
+            (c) => String(c.id) === String(activeConversation.id)
+          );
+          if (convIndex === -1) return prevConvs;
+          const existing = prevConvs[convIndex];
+          const updated = {
+            ...existing,
+            lastMessage: {
+              id: res.message.id,
+              text: res.message.text,
+              mediaUrl: res.message.mediaUrl,
+              mediaType: res.message.mediaType || 'text',
+              fileName: res.message.fileName,
+              time: res.message.createdAt,
+              senderId: res.message.senderId,
+              isUser: true
+            },
+            updatedAt: res.message.createdAt
+          };
+          const updatedList = [...prevConvs];
+          updatedList.splice(convIndex, 1);
+          return [updated, ...updatedList];
+        });
       }
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -452,10 +655,37 @@ const SecretVault = ({ currentUser, onClose }) => {
           fileSize: sizeFormatted
         });
         if (res && res.message) {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === optimisticMsg.id ? res.message : m))
-          );
-          loadConversations();
+          setMessages((prev) => {
+            const alreadyDelivered = prev.some((m) => m.id === res.message.id);
+            if (alreadyDelivered) {
+              return prev.filter((m) => m.id !== optimisticMsg.id);
+            }
+            return prev.map((m) => (m.id === optimisticMsg.id ? res.message : m));
+          });
+          setConversations((prevConvs) => {
+            const convIndex = prevConvs.findIndex(
+              (c) => String(c.id) === String(activeConversation.id)
+            );
+            if (convIndex === -1) return prevConvs;
+            const existing = prevConvs[convIndex];
+            const updated = {
+              ...existing,
+              lastMessage: {
+                id: res.message.id,
+                text: res.message.text,
+                mediaUrl: res.message.mediaUrl,
+                mediaType: res.message.mediaType || mediaType,
+                fileName: res.message.fileName,
+                time: res.message.createdAt,
+                senderId: res.message.senderId,
+                isUser: true
+              },
+              updatedAt: res.message.createdAt
+            };
+            const updatedList = [...prevConvs];
+            updatedList.splice(convIndex, 1);
+            return [updated, ...updatedList];
+          });
         }
       } catch (err) {
         console.error('Failed to send attachment:', err);
@@ -504,10 +734,37 @@ const SecretVault = ({ currentUser, onClose }) => {
             fileName: 'Shared Location Coordinates'
           });
           if (res && res.message) {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === optimisticMsg.id ? res.message : m))
-            );
-            loadConversations();
+            setMessages((prev) => {
+              const alreadyDelivered = prev.some((m) => m.id === res.message.id);
+              if (alreadyDelivered) {
+                return prev.filter((m) => m.id !== optimisticMsg.id);
+              }
+              return prev.map((m) => (m.id === optimisticMsg.id ? res.message : m));
+            });
+            setConversations((prevConvs) => {
+              const convIndex = prevConvs.findIndex(
+                (c) => String(c.id) === String(activeConversation.id)
+              );
+              if (convIndex === -1) return prevConvs;
+              const existing = prevConvs[convIndex];
+              const updated = {
+                ...existing,
+                lastMessage: {
+                  id: res.message.id,
+                  text: res.message.text,
+                  mediaUrl: res.message.mediaUrl,
+                  mediaType: res.message.mediaType || 'location',
+                  fileName: res.message.fileName,
+                  time: res.message.createdAt,
+                  senderId: res.message.senderId,
+                  isUser: true
+                },
+                updatedAt: res.message.createdAt
+              };
+              const updatedList = [...prevConvs];
+              updatedList.splice(convIndex, 1);
+              return [updated, ...updatedList];
+            });
           }
         } catch (err) {
           console.error('Failed to send location:', err);
@@ -2506,7 +2763,9 @@ const SecretVault = ({ currentUser, onClose }) => {
                   </div>
                 ) : (
                   messages.map((msg) => {
-                    const isUser = msg.isUser || String(msg.senderId) === String(currentUser?.id);
+                    const isUser = currentUser?.id
+                      ? String(msg.senderId) === String(currentUser?.id)
+                      : Boolean(msg.isUser);
 
                     return (
                       <div
@@ -2553,6 +2812,17 @@ const SecretVault = ({ currentUser, onClose }) => {
                                 src={msg.mediaUrl}
                                 controls
                                 style={{ maxWidth: '280px', maxHeight: '200px', display: 'block' }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Audio Attachment Preview */}
+                          {msg.mediaType === 'audio' && msg.mediaUrl && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <audio
+                                src={msg.mediaUrl}
+                                controls
+                                style={{ maxWidth: '280px', height: '36px', display: 'block' }}
                               />
                             </div>
                           )}

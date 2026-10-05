@@ -7,7 +7,11 @@ const useSocket = (userId) => {
 
   useEffect(() => {
     if (userId) {
-      socketRef.current = io(SOCKET_URL);
+      const token = localStorage.getItem('nipix_token') || localStorage.getItem('token');
+      socketRef.current = io(SOCKET_URL, {
+        auth: { token },
+        transports: ['websocket', 'polling']
+      });
       socketRef.current.emit('joinUserRoom', userId);
 
       socketRef.current.on('receiveMessage', (message) => {

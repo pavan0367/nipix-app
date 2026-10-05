@@ -563,7 +563,7 @@ const vaultService = {
       createdAt: message.createdAt
     };
 
-    // Emit real-time event via socket
+    // Emit real-time event via socket to all authorized conversation members
     try {
       if (getIO) {
         const io = getIO();
@@ -572,13 +572,18 @@ const vaultService = {
             where: { conversationId },
             attributes: ['userId']
           });
+          console.log(`[VaultSocket Server] Emitting vaultMessage ${message.id} to conversation ${conversationId}, member rooms:`, members.map(m => `user_${m.userId}`));
           members.forEach(m => {
-            io.to(`user_${m.userId}`).emit('vaultMessage', formattedMsg);
+            const memberMsg = {
+              ...formattedMsg,
+              isUser: String(m.userId) === String(userId)
+            };
+            io.to(`user_${m.userId}`).emit('vaultMessage', memberMsg);
           });
         }
       }
     } catch (sockErr) {
-      console.warn('Socket notification skipped:', sockErr.message);
+      console.warn('[VaultSocket Server] Socket notification skipped:', sockErr.message);
     }
 
     return formattedMsg;
