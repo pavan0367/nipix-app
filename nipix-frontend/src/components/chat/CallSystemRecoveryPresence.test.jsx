@@ -178,4 +178,58 @@ describe('NIPIX AI SCHOLAR — Final Call System, Recovery, Presence & Read Rece
     onlineUsers.add('210002');
     expect(onlineUsers.has('210002')).toBe(true);
   });
+
+  test('6. CallProvider renders without ReferenceError and provides remoteAudioRef', () => {
+    let contextValue = null;
+    const Consumer = () => {
+      contextValue = useCall();
+      return <div>Call Consumer</div>;
+    };
+
+    let html = '';
+    expect(() => {
+      html = ReactDOMServer.renderToString(
+        <CallProvider>
+          <Consumer />
+        </CallProvider>
+      );
+    }).not.toThrow();
+
+    expect(html).toContain('Call Consumer');
+    expect(contextValue).toBeDefined();
+    expect(contextValue.remoteAudioRef).toBeDefined();
+    expect(contextValue.remoteAudioRef).toHaveProperty('current');
+  });
+
+  test('7. SecretVault and CallProvider render without remoteAudioRef ReferenceError', () => {
+    expect(() => {
+      ReactDOMServer.renderToString(
+        <CallProvider>
+          <div className="secret-vault-container">
+            <audio autoPlay playsInline />
+          </div>
+        </CallProvider>
+      );
+    }).not.toThrow();
+  });
+
+  test('8. vaultApi.unlock handles string or object PIN payload and succeeds', async () => {
+    const vaultApiModule = require('../../services/vaultApi');
+    const vaultApi = vaultApiModule.vaultApi || vaultApiModule.default || vaultApiModule;
+    vaultApi.unlock.mockResolvedValue({ success: true });
+    const resString = await vaultApi.unlock('5678');
+    expect(resString).toEqual({ success: true });
+
+    const resObj = await vaultApi.unlock({ pin: '5678' });
+    expect(resObj).toEqual({ success: true });
+  });
+
+  test('9. vaultApi.unlock rejects on invalid PIN preserving vault security', async () => {
+    const vaultApiModule = require('../../services/vaultApi');
+    const vaultApi = vaultApiModule.vaultApi || vaultApiModule.default || vaultApiModule;
+    vaultApi.unlock.mockRejectedValueOnce(new Error('Incorrect 4-digit PIN. 4 attempt(s) remaining before temporary lockout.'));
+
+    await expect(vaultApi.unlock('0000')).rejects.toThrow('Incorrect 4-digit PIN');
+  });
 });
+

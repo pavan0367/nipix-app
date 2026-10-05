@@ -1671,23 +1671,6 @@ const SecretVault = ({ currentUser, onClose }) => {
         position: 'relative'
       }}
     >
-      {/* Persistent Hidden Remote Audio Element for Uninterrupted Audio Transmission */}
-      <audio
-        ref={remoteAudioRef}
-        autoPlay
-        playsInline
-        style={{
-          position: 'fixed',
-          width: '1px',
-          height: '1px',
-          opacity: 0.001,
-          pointerEvents: 'none',
-          bottom: 0,
-          right: 0,
-          zIndex: -1
-        }}
-      />
-
       {/* ----------------------------------------------------------------- */}
       {/* GLOBAL SECRET VAULT HEADER: [←] 🛡 Secret Vault [End-to-End Encrypted] */}
       {/* CRITICAL: NO AUDIO CALL OR VIDEO CALL BUTTONS IN THIS HEADER!      */}

@@ -16,8 +16,11 @@ export const vaultApi = {
     return res.data;
   },
 
-  unlock: async (pin) => {
-    const res = await api.post('/vault/unlock', { pin });
+  unlock: async (pinPayload) => {
+    const pin = typeof pinPayload === 'object' && pinPayload !== null
+      ? (pinPayload.pin || pinPayload.pinInput)
+      : pinPayload;
+    const res = await api.post('/vault/unlock', { pin: String(pin || '').trim() });
     return res.data;
   },
 

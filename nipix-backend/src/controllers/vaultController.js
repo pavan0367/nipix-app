@@ -30,9 +30,14 @@ const vaultController = {
   // POST /api/vault/unlock
   unlock: async (req, res, next) => {
     try {
+      const pinRaw = req.body?.pin !== undefined ? req.body.pin : req.body?.pinInput;
+      if (pinRaw === undefined || pinRaw === null || (typeof pinRaw === 'string' && pinRaw.trim() === '')) {
+        return res.status(400).json({ success: false, message: '4-digit PIN is required.' });
+      }
+      const pin = typeof pinRaw === 'object' && pinRaw !== null ? (pinRaw.pin || pinRaw.pinInput) : pinRaw;
       const result = await vaultService.unlockVault({
         userId: req.user.id,
-        pin: req.body.pin
+        pin: String(pin).trim()
       });
       res.json(result);
     } catch (err) {
