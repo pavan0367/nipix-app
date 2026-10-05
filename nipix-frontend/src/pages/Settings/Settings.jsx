@@ -72,7 +72,7 @@ const Settings = () => {
               Choose your reading comfort. Text colors automatically adjust to basic black in light mode and basic white in dark mode.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+            <div className="settings-theme-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
               {/* 1. Light Mode */}
               <button
                 type="button"

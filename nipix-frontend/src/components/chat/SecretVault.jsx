@@ -159,10 +159,27 @@ const SecretVault = ({ currentUser, onClose }) => {
     incomingCallRef.current = incomingCall;
   }, [incomingCall]);
 
-  // STUN Configuration for WebRTC
+  // STUN & TURN Relay Configuration for Production WebRTC NAT Traversal
   const ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
   ];
 
   const cleanupCallMedia = () => {
@@ -200,9 +217,16 @@ const SecretVault = ({ currentUser, onClose }) => {
     iceCandidateQueueRef.current[callId] = [];
     for (const candidate of queue) {
       try {
-        if (peerConnectionRef.current) {
-          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log('[CallSocket Client] Added queued ICE candidate for call=' + callId);
+        if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
+          const candObj = candidate && candidate.candidate !== undefined ? candidate : (candidate && candidate.toJSON ? candidate.toJSON() : candidate);
+          if (candObj && (candObj.candidate || candObj.sdpMid !== null || candObj.sdpMLineIndex !== null)) {
+            try {
+              await peerConnectionRef.current.addIceCandidate(candObj);
+            } catch (err) {
+              await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candObj));
+            }
+            console.log('[CallSocket Client] Added queued ICE candidate for call=' + callId);
+          }
         }
       } catch (err) {
         console.warn('[CallSocket Client] Error applying queued ICE candidate:', err.message);
@@ -211,7 +235,14 @@ const SecretVault = ({ currentUser, onClose }) => {
   };
 
   const setupPeerConnection = (callId, targetUserId) => {
-    cleanupCallMedia();
+    if (peerConnectionRef.current) {
+      try {
+        peerConnectionRef.current.close();
+      } catch (e) {}
+      peerConnectionRef.current = null;
+    }
+    remoteStreamRef.current = null;
+    iceCandidateQueueRef.current = {};
 
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     peerConnectionRef.current = pc;
@@ -219,22 +250,77 @@ const SecretVault = ({ currentUser, onClose }) => {
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
         console.log('[CallSocket Client] emitting ICE candidate for call=' + callId);
+        const candidateData = event.candidate.toJSON ? event.candidate.toJSON() : {
+          candidate: event.candidate.candidate,
+          sdpMid: event.candidate.sdpMid,
+          sdpMLineIndex: event.candidate.sdpMLineIndex,
+          usernameFragment: event.candidate.usernameFragment
+        };
         socketRef.current.emit('call:ice-candidate', {
           callId,
           targetUserId,
-          candidate: event.candidate
+          candidate: candidateData
         });
       }
     };
 
     pc.ontrack = (event) => {
-      console.log('[CallSocket Client] remote track received:', event.track.kind);
-      remoteStreamRef.current = event.streams[0];
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
+      console.log('[CallSocket Client] remote track received:', event.track.kind, 'readyState:', event.track.readyState);
+      let stream = remoteStreamRef.current;
+      if (!stream) {
+        stream = new MediaStream();
+        remoteStreamRef.current = stream;
       }
+      if (event.streams && event.streams[0]) {
+        event.streams[0].getTracks().forEach((track) => {
+          if (!stream.getTracks().some((t) => t.id === track.id)) {
+            stream.addTrack(track);
+          }
+        });
+      }
+      if (event.track && !stream.getTracks().some((t) => t.id === event.track.id)) {
+        stream.addTrack(event.track);
+      }
+
+      event.track.onunmute = () => {
+        console.log('[CallSocket Client] remote track unmuted and receiving RTP:', event.track.kind);
+        if (remoteAudioRef.current && remoteStreamRef.current) {
+          remoteAudioRef.current.play().catch(() => {});
+        }
+        if (remoteVideoRef.current && remoteStreamRef.current) {
+          remoteVideoRef.current.play().catch(() => {});
+        }
+      };
+
+      // Explicitly attach stream and invoke playback
       if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = event.streams[0];
+        remoteAudioRef.current.srcObject = stream;
+        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.play().catch((err) => {
+          console.warn('[CallSocket Client] Remote audio play error:', err.message);
+        });
+      }
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+        remoteVideoRef.current.muted = true; // Audio is handled by dedicated remoteAudioRef to prevent echo
+        remoteVideoRef.current.play().catch((err) => {
+          console.warn('[CallSocket Client] Remote video play error:', err.message);
+        });
+      }
+    };
+
+    const handleConnected = () => {
+      console.log(`[CallSocket Client] Call successfully connected for call=${callId}`);
+      setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'connected' } : prev));
+      if (remoteAudioRef.current && remoteStreamRef.current) {
+        remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.play().catch(() => {});
+      }
+      if (remoteVideoRef.current && remoteStreamRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        remoteVideoRef.current.muted = true;
+        remoteVideoRef.current.play().catch(() => {});
       }
     };
 
@@ -242,13 +328,23 @@ const SecretVault = ({ currentUser, onClose }) => {
       const state = pc.connectionState;
       console.log(`[CallSocket Client] peer connection state=${state} for call=${callId}`);
       if (state === 'connected') {
-        setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'connected' } : prev));
-      } else if (state === 'failed' || state === 'disconnected') {
-        setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'ended' } : prev));
+        handleConnected();
+      } else if (state === 'failed') {
+        setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'failed' } : prev));
         cleanupCallMedia();
         setTimeout(() => {
           setActiveCall((prev) => (prev && prev.callId === callId ? null : prev));
-        }, 1500);
+        }, 2000);
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      const iceState = pc.iceConnectionState;
+      console.log(`[CallSocket Client] iceConnectionState=${iceState} for call=${callId}`);
+      if (iceState === 'connected' || iceState === 'completed') {
+        handleConnected();
+      } else if (iceState === 'failed') {
+        console.warn(`[CallSocket Client] ICE connection failed for call=${callId}`);
       }
     };
 
@@ -523,20 +619,30 @@ const SecretVault = ({ currentUser, onClose }) => {
     socket.on('call:ice-candidate', async (data) => {
       const pc = peerConnectionRef.current;
       const active = activeCallRef.current;
-      if (!active || active.callId !== data.callId) return;
+      const incoming = incomingCallRef.current;
+      const isCallMatch = (active && active.callId === data.callId) || (incoming && incoming.callId === data.callId);
+      if (!isCallMatch) return;
 
       console.log('[CallSocket Client] ICE candidate received for call=' + data.callId);
+      const candidateObj = data.candidate && data.candidate.candidate !== undefined ? data.candidate : (data.candidate && data.candidate.toJSON ? data.candidate.toJSON() : data.candidate);
       if (pc && pc.remoteDescription && pc.remoteDescription.type) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (err) {
-          console.warn('[CallSocket Client] Error adding ICE candidate:', err.message);
+        if (candidateObj && (candidateObj.candidate || candidateObj.sdpMid !== null || candidateObj.sdpMLineIndex !== null)) {
+          try {
+            await pc.addIceCandidate(candidateObj);
+          } catch (err) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(candidateObj));
+            } catch (fallbackErr) {
+              console.warn('[CallSocket Client] Error adding ICE candidate:', fallbackErr.message);
+            }
+          }
         }
       } else {
         if (!iceCandidateQueueRef.current[data.callId]) {
           iceCandidateQueueRef.current[data.callId] = [];
         }
-        iceCandidateQueueRef.current[data.callId].push(data.candidate);
+        iceCandidateQueueRef.current[data.callId].push(candidateObj);
+        console.log('[CallSocket Client] Queued ICE candidate for call=' + data.callId + ' (count=' + iceCandidateQueueRef.current[data.callId].length + ')');
       }
     });
 
@@ -623,16 +729,23 @@ const SecretVault = ({ currentUser, onClose }) => {
 
   // Bind video and audio streams when activeCall changes
   useEffect(() => {
-    if (activeCall && activeCall.type === 'video') {
-      if (localVideoRef.current && localStreamRef.current) {
-        localVideoRef.current.srcObject = localStreamRef.current;
+    if (activeCall) {
+      if (activeCall.type === 'video') {
+        if (localVideoRef.current && localStreamRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current;
+          localVideoRef.current.play().catch(() => {});
+        }
+        if (remoteVideoRef.current && remoteStreamRef.current) {
+          remoteVideoRef.current.srcObject = remoteStreamRef.current;
+          remoteVideoRef.current.muted = false;
+          remoteVideoRef.current.play().catch(() => {});
+        }
       }
-      if (remoteVideoRef.current && remoteStreamRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+      if (remoteAudioRef.current && remoteStreamRef.current) {
+        remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.play().catch(() => {});
       }
-    }
-    if (remoteAudioRef.current && remoteStreamRef.current) {
-      remoteAudioRef.current.srcObject = remoteStreamRef.current;
     }
   }, [activeCall?.status, activeCall?.type]);
 
@@ -1067,6 +1180,8 @@ const SecretVault = ({ currentUser, onClose }) => {
       return;
     }
 
+    cleanupCallMedia();
+
     const contact = activeConversation.contact;
     const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
@@ -1074,15 +1189,22 @@ const SecretVault = ({ currentUser, onClose }) => {
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: type === 'video'
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: type === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
       });
     } catch (err) {
-      console.warn('[CallSocket Client] Media permission denied:', err.message);
-      alert(type === 'video'
-        ? 'Camera and microphone access are required for encrypted video calls.'
-        : 'Microphone access is required for encrypted audio calls.');
-      return;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: type === 'video'
+        });
+      } catch (fallbackErr) {
+        console.warn('[CallSocket Client] Media permission denied:', fallbackErr.message);
+        alert(type === 'video'
+          ? 'Camera and microphone access are required for encrypted video calls.'
+          : 'Microphone access is required for encrypted audio calls.');
+        return;
+      }
     }
 
     localStreamRef.current = stream;
@@ -1102,8 +1224,14 @@ const SecretVault = ({ currentUser, onClose }) => {
       const pc = setupPeerConnection(callId, contact.id);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
+      // Ensure transceivers are configured to bidirectional transmission
+      pc.getTransceivers().forEach((tr) => {
+        if (tr.direction === 'recvonly') tr.direction = 'sendrecv';
+      });
+
       if (localVideoRef.current && type === 'video') {
         localVideoRef.current.srcObject = stream;
+        localVideoRef.current.play().catch(() => {});
       }
 
       const offer = await pc.createOffer();
@@ -1147,22 +1275,31 @@ const SecretVault = ({ currentUser, onClose }) => {
       return;
     }
 
+    cleanupCallMedia();
+
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callType === 'video'
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: callType === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
       });
     } catch (err) {
-      console.warn('[CallSocket Client] Permission error on accept:', err.message);
-      socketRef.current.emit('call:decline', {
-        callId,
-        targetUserId: callerId,
-        conversationId: incoming.conversationId,
-        reason: 'permission_denied'
-      });
-      alert('Microphone/Camera permission is required to answer this call.');
-      return;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: callType === 'video'
+        });
+      } catch (fallbackErr) {
+        console.warn('[CallSocket Client] Permission error on accept:', fallbackErr.message);
+        socketRef.current.emit('call:decline', {
+          callId,
+          targetUserId: callerId,
+          conversationId: incoming.conversationId,
+          reason: 'permission_denied'
+        });
+        alert('Microphone/Camera permission is required to answer this call.');
+        return;
+      }
     }
 
     localStreamRef.current = stream;
@@ -1182,8 +1319,14 @@ const SecretVault = ({ currentUser, onClose }) => {
       const pc = setupPeerConnection(callId, callerId);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
+      // Ensure transceivers are configured to bidirectional transmission
+      pc.getTransceivers().forEach((tr) => {
+        if (tr.direction === 'recvonly') tr.direction = 'sendrecv';
+      });
+
       if (localVideoRef.current && callType === 'video') {
         localVideoRef.current.srcObject = stream;
+        localVideoRef.current.play().catch(() => {});
       }
 
       await pc.setRemoteDescription(new RTCSessionDescription(incoming.sdp));
@@ -2178,9 +2321,27 @@ const SecretVault = ({ currentUser, onClose }) => {
         color: '#e2e8f0',
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
-        border: '1px solid rgba(16, 185, 129, 0.2)'
+        border: '1px solid rgba(16, 185, 129, 0.2)',
+        position: 'relative'
       }}
     >
+      {/* Persistent Hidden Remote Audio Element for Uninterrupted Audio Transmission */}
+      <audio
+        ref={remoteAudioRef}
+        autoPlay
+        playsInline
+        style={{
+          position: 'fixed',
+          width: '1px',
+          height: '1px',
+          opacity: 0.001,
+          pointerEvents: 'none',
+          bottom: 0,
+          right: 0,
+          zIndex: -1
+        }}
+      />
+
       {/* ----------------------------------------------------------------- */}
       {/* GLOBAL SECRET VAULT HEADER: [←] 🛡 Secret Vault [End-to-End Encrypted] */}
       {/* CRITICAL: NO AUDIO CALL OR VIDEO CALL BUTTONS IN THIS HEADER!      */}
@@ -2272,12 +2433,13 @@ const SecretVault = ({ currentUser, onClose }) => {
       {/* DASHBOARD WORKSPACE BODY: 4 COLUMNS / PANELS                      */}
       {/* LEFT: Navigation | MIDDLE-LEFT: List | CENTER: Chat | RIGHT: Profile */}
       {/* ----------------------------------------------------------------- */}
-      <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+      <div className="vault-workspace-body" style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
 
         {/* =============================================================== */}
         {/* PANEL 1: SECRET VAULT LEFT NAVIGATION (WIDTH: ~210px)          */}
         {/* =============================================================== */}
         <div
+          className={`vault-panel-nav ${activeConversation ? 'vault-mobile-hidden' : ''}`}
           style={{
             width: '210px',
             borderRight: '1px solid rgba(255, 255, 255, 0.08)',
@@ -2405,6 +2567,7 @@ const SecretVault = ({ currentUser, onClose }) => {
         {/* PANEL 2: MIDDLE-LEFT LIST / INBOX (WIDTH: ~310px)               */}
         {/* =============================================================== */}
         <div
+          className={`vault-panel-inbox ${activeConversation ? 'vault-mobile-hidden' : ''}`}
           style={{
             width: '310px',
             borderRight: '1px solid rgba(255, 255, 255, 0.08)',
@@ -3054,7 +3217,7 @@ const SecretVault = ({ currentUser, onClose }) => {
         {/* =============================================================== */}
         {/* PANEL 3: CENTER ACTIVE CHAT WORKSPACE (FLEX: 1)                 */}
         {/* =============================================================== */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#0a0f1d' }}>
+        <div className="vault-panel-chat" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#0a0f1d' }}>
 
           {activeConversation ? (
             <>
@@ -3071,7 +3234,31 @@ const SecretVault = ({ currentUser, onClose }) => {
                 }}
               >
                 {/* Contact Info */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Mobile Back Button to return to inbox on small screens */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveConversation(null)}
+                    className="vault-mobile-back-btn"
+                    title="Back to conversations"
+                    aria-label="Back to conversations"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: '#fff',
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '8px',
+                      display: 'none',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      flexShrink: 0
+                    }}
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+
                   <div
                     style={{
                       width: '40px',
@@ -3597,6 +3784,7 @@ const SecretVault = ({ currentUser, onClose }) => {
         {/* =============================================================== */}
         {showProfileDrawer && activeConversation && (
           <div
+            className="vault-profile-drawer"
             style={{
               width: '320px',
               borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
@@ -4019,20 +4207,20 @@ const SecretVault = ({ currentUser, onClose }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 9999
+            zIndex: 9999,
+            padding: '16px'
           }}
         >
-          {/* Hidden Remote Audio Element for Live Audio Transmission */}
-          <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
-
           <div
             style={{
-              maxWidth: activeCall.type === 'video' ? '680px' : '400px',
-              width: '90%',
+              maxWidth: activeCall.type === 'video' ? 'min(680px, 94vw)' : 'min(400px, 92vw)',
+              width: '100%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
               background: 'rgba(15, 23, 42, 0.95)',
               border: '1px solid rgba(16, 185, 129, 0.35)',
               borderRadius: '24px',
-              padding: '32px 24px',
+              padding: '28px 20px',
               textAlign: 'center',
               boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8)'
             }}
@@ -4085,7 +4273,7 @@ const SecretVault = ({ currentUser, onClose }) => {
                 <div
                   style={{
                     width: '100%',
-                    height: '280px',
+                    height: 'clamp(200px, 42vh, 320px)',
                     borderRadius: '16px',
                     background: '#020617',
                     position: 'relative',
@@ -4105,13 +4293,17 @@ const SecretVault = ({ currentUser, onClose }) => {
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
-                      display: activeCall.status === 'connected' ? 'block' : 'none'
+                      position: 'absolute',
+                      inset: 0,
+                      opacity: activeCall.status === 'connected' ? 1 : 0,
+                      pointerEvents: activeCall.status === 'connected' ? 'auto' : 'none',
+                      transition: 'opacity 0.3s ease'
                     }}
                   />
 
                   {/* Fallback / Connecting State Placeholder */}
                   {activeCall.status !== 'connected' ? (
-                    <div style={{ textAlign: 'center' }}>
+                    <div style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
                       <div
                         style={{
                           width: '70px',
@@ -4139,7 +4331,7 @@ const SecretVault = ({ currentUser, onClose }) => {
                       </div>
                     </div>
                   ) : callVideoOff ? (
-                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Camera Paused</div>
+                    <div style={{ color: '#64748b', fontSize: '0.85rem', position: 'relative', zIndex: 2 }}>Camera Paused</div>
                   ) : null}
 
                   {/* Local Pip Video Feed */}
@@ -4148,8 +4340,8 @@ const SecretVault = ({ currentUser, onClose }) => {
                       position: 'absolute',
                       top: '12px',
                       right: '12px',
-                      width: '90px',
-                      height: '68px',
+                      width: 'clamp(72px, 22vw, 96px)',
+                      height: 'clamp(54px, 16vw, 72px)',
                       borderRadius: '8px',
                       background: 'rgba(0, 0, 0, 0.7)',
                       border: '1px solid rgba(255, 255, 255, 0.25)',
@@ -4158,7 +4350,8 @@ const SecretVault = ({ currentUser, onClose }) => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '0.68rem',
-                      color: '#fff'
+                      color: '#fff',
+                      zIndex: 10
                     }}
                   >
                     <video

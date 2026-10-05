@@ -50,7 +50,7 @@ function AppContent() {
     <div className={`app-container ${isChatRoute ? 'app-container-chat' : ''}`} style={{ background: 'var(--bg-primary)', minHeight: isChatRoute ? '100vh' : '100vh', height: isChatRoute ? '100vh' : 'auto', maxHeight: isChatRoute ? '100vh' : 'none', overflow: isChatRoute ? 'hidden' : 'visible', color: 'var(--text-main)' }}>
       {/* Persistent Top Navigation with Prominent Top-Right Chat Option */}
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: isChatRoute ? '100vh' : 'auto', maxHeight: isChatRoute ? '100vh' : 'none', overflow: isChatRoute ? 'hidden' : 'visible' }}>
-        <Navbar currentUser={user} />
+        <Navbar currentUser={user} onLogout={handleLogout} />
 
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: isChatRoute ? 'hidden' : 'visible' }}>
           {/* Persistent Academic Sidebar */}

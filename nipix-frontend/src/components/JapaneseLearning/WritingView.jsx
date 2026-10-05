@@ -34,21 +34,44 @@ const WritingView = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
+  const getEventPos = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    const clientX = touch ? touch.clientX : e.clientX;
+    const clientY = touch ? touch.clientY : e.clientY;
+    const scaleX = canvas.width / (rect.width || 1);
+    const scaleY = canvas.height / (rect.height || 1);
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e) => {
+    if (e.touches && e.cancelable) {
+      e.preventDefault();
+    }
     isDrawing.current = true;
     const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
+    if (!canvas) return;
+    const pos = getEventPos(e);
     const ctx = canvas.getContext('2d');
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo(pos.x, pos.y);
   };
 
   const draw = (e) => {
     if (!isDrawing.current) return;
+    if (e.touches && e.cancelable) {
+      e.preventDefault();
+    }
     const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
+    if (!canvas) return;
+    const pos = getEventPos(e);
     const ctx = canvas.getContext('2d');
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
   };
 
@@ -201,7 +224,11 @@ const WritingView = () => {
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
                   onMouseLeave={stopDrawing}
-                  style={{ width: '100%', height: '100%', cursor: 'crosshair', position: 'relative', zIndex: 2 }}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                  onTouchCancel={stopDrawing}
+                  style={{ width: '100%', height: '100%', cursor: 'crosshair', position: 'relative', zIndex: 2, touchAction: 'none' }}
                 />
               </div>
 
