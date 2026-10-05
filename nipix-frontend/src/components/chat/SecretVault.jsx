@@ -100,8 +100,9 @@ const SecretVault = ({ currentUser, onClose }) => {
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [profileActiveTab, setProfileActiveTab] = useState('media'); // 'media' | 'docs' | 'links'
 
-  // Call Simulation Modal
-  const [activeCall, setActiveCall] = useState(null); // { type: 'audio' | 'video', contact: ... } | null
+  // Real Call State & Modals
+  const [activeCall, setActiveCall] = useState(null); // { callId, type: 'audio'|'video', direction: 'outgoing'|'incoming', contact, status, startTime } | null
+  const [incomingCall, setIncomingCall] = useState(null); // { callId, conversationId, callerId, callerName, callType, sdp } | null
   const [callMuted, setCallMuted] = useState(false);
   const [callVideoOff, setCallVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
@@ -131,6 +132,17 @@ const SecretVault = ({ currentUser, onClose }) => {
   const activeConversationRef = useRef(activeConversation);
   const currentUserRef = useRef(activeUser);
 
+  // WebRTC Peer Connection & Media Streams Refs
+  const activeCallRef = useRef(activeCall);
+  const incomingCallRef = useRef(incomingCall);
+  const peerConnectionRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const iceCandidateQueueRef = useRef({});
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
+
   useEffect(() => {
     activeConversationRef.current = activeConversation;
   }, [activeConversation]);
@@ -138,6 +150,110 @@ const SecretVault = ({ currentUser, onClose }) => {
   useEffect(() => {
     currentUserRef.current = activeUser;
   }, [activeUser]);
+
+  useEffect(() => {
+    activeCallRef.current = activeCall;
+  }, [activeCall]);
+
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
+
+  // STUN Configuration for WebRTC
+  const ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ];
+
+  const cleanupCallMedia = () => {
+    console.log('[CallSocket Client] Cleaning up call media and peer connection');
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        try { track.stop(); } catch (e) {}
+      });
+      localStreamRef.current = null;
+    }
+    if (remoteStreamRef.current) {
+      remoteStreamRef.current.getTracks().forEach((track) => {
+        try { track.stop(); } catch (e) {}
+      });
+      remoteStreamRef.current = null;
+    }
+    if (peerConnectionRef.current) {
+      try { peerConnectionRef.current.close(); } catch (e) {}
+      peerConnectionRef.current = null;
+    }
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null;
+    }
+    iceCandidateQueueRef.current = {};
+  };
+
+  const processIceQueue = async (callId) => {
+    const queue = iceCandidateQueueRef.current[callId] || [];
+    iceCandidateQueueRef.current[callId] = [];
+    for (const candidate of queue) {
+      try {
+        if (peerConnectionRef.current) {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log('[CallSocket Client] Added queued ICE candidate for call=' + callId);
+        }
+      } catch (err) {
+        console.warn('[CallSocket Client] Error applying queued ICE candidate:', err.message);
+      }
+    }
+  };
+
+  const setupPeerConnection = (callId, targetUserId) => {
+    cleanupCallMedia();
+
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    peerConnectionRef.current = pc;
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && socketRef.current) {
+        console.log('[CallSocket Client] emitting ICE candidate for call=' + callId);
+        socketRef.current.emit('call:ice-candidate', {
+          callId,
+          targetUserId,
+          candidate: event.candidate
+        });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      console.log('[CallSocket Client] remote track received:', event.track.kind);
+      remoteStreamRef.current = event.streams[0];
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = event.streams[0];
+      }
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = event.streams[0];
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+      console.log(`[CallSocket Client] peer connection state=${state} for call=${callId}`);
+      if (state === 'connected') {
+        setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'connected' } : prev));
+      } else if (state === 'failed' || state === 'disconnected') {
+        setActiveCall((prev) => (prev && prev.callId === callId ? { ...prev, status: 'ended' } : prev));
+        cleanupCallMedia();
+        setTimeout(() => {
+          setActiveCall((prev) => (prev && prev.callId === callId ? null : prev));
+        }, 1500);
+      }
+    };
+
+    return pc;
+  };
 
   // -------------------------------------------------------------------------
   // INITIAL STATUS CHECK
@@ -369,10 +485,118 @@ const SecretVault = ({ currentUser, onClose }) => {
       });
     });
 
+    // =========================================================================
+    // WEBRTC CALL SIGNALING LISTENERS
+    // =========================================================================
+
+    socket.on('call:incoming', (data) => {
+      console.log('[CallSocket Client] incoming call=' + data.callId + ' from=' + data.callerId);
+      const active = activeCallRef.current;
+      if (active && ['calling', 'ringing', 'connecting', 'connected'].includes(active.status)) {
+        console.log('[CallSocket Client] User busy, signaling busy back to caller');
+        socket.emit('call:busy', { callId: data.callId, targetUserId: data.callerId });
+        return;
+      }
+      setIncomingCall(data);
+    });
+
+    socket.on('call:ringing', (data) => {
+      console.log('[CallSocket Client] remote ringing acknowledged for call=' + data.callId);
+      setActiveCall((prev) => (prev && prev.callId === data.callId && prev.status === 'calling' ? { ...prev, status: 'ringing' } : prev));
+    });
+
+    socket.on('call:answer', async (data) => {
+      console.log('[CallSocket Client] answer received for call=' + data.callId);
+      const pc = peerConnectionRef.current;
+      const active = activeCallRef.current;
+      if (!pc || !active || active.callId !== data.callId) return;
+
+      setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'connecting' } : prev));
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        await processIceQueue(data.callId);
+      } catch (err) {
+        console.warn('[CallSocket Client] Error setting remote answer:', err.message);
+      }
+    });
+
+    socket.on('call:ice-candidate', async (data) => {
+      const pc = peerConnectionRef.current;
+      const active = activeCallRef.current;
+      if (!active || active.callId !== data.callId) return;
+
+      console.log('[CallSocket Client] ICE candidate received for call=' + data.callId);
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (err) {
+          console.warn('[CallSocket Client] Error adding ICE candidate:', err.message);
+        }
+      } else {
+        if (!iceCandidateQueueRef.current[data.callId]) {
+          iceCandidateQueueRef.current[data.callId] = [];
+        }
+        iceCandidateQueueRef.current[data.callId].push(data.candidate);
+      }
+    });
+
+    socket.on('call:declined', (data) => {
+      console.log('[CallSocket Client] call declined=' + data.callId);
+      const active = activeCallRef.current;
+      if (active && active.callId === data.callId) {
+        setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'declined' } : prev));
+        cleanupCallMedia();
+        setTimeout(() => {
+          setActiveCall((prev) => (prev && prev.callId === data.callId ? null : prev));
+        }, 2000);
+      }
+    });
+
+    socket.on('call:busy', (data) => {
+      console.log('[CallSocket Client] recipient busy for call=' + data.callId);
+      const active = activeCallRef.current;
+      if (active && active.callId === data.callId) {
+        setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'busy' } : prev));
+        cleanupCallMedia();
+        setTimeout(() => {
+          setActiveCall((prev) => (prev && prev.callId === data.callId ? null : prev));
+        }, 2500);
+      }
+    });
+
+    socket.on('call:cancelled', (data) => {
+      console.log('[CallSocket Client] incoming call cancelled by caller=' + data.callId);
+      const incoming = incomingCallRef.current;
+      if (incoming && incoming.callId === data.callId) {
+        setIncomingCall(null);
+      }
+    });
+
+    socket.on('call:ended', (data) => {
+      console.log('[CallSocket Client] call ended=' + data.callId);
+      const active = activeCallRef.current;
+      if (active && active.callId === data.callId) {
+        setActiveCall((prev) => (prev && prev.callId === data.callId ? { ...prev, status: 'ended' } : prev));
+        cleanupCallMedia();
+        setTimeout(() => {
+          setActiveCall((prev) => (prev && prev.callId === data.callId ? null : prev));
+        }, 1500);
+      }
+    });
+
     return () => {
       socket.off('connect');
       socket.off('connect_error');
       socket.off('vaultMessage');
+      socket.off('call:incoming');
+      socket.off('call:ringing');
+      socket.off('call:answer');
+      socket.off('call:ice-candidate');
+      socket.off('call:declined');
+      socket.off('call:busy');
+      socket.off('call:cancelled');
+      socket.off('call:ended');
+      cleanupCallMedia();
       socket.disconnect();
       socketRef.current = null;
     };
@@ -384,10 +608,10 @@ const SecretVault = ({ currentUser, onClose }) => {
     }
   }, [messages]);
 
-  // Call timer effect
+  // Call timer effect: ONLY increments duration when call is truly connected
   useEffect(() => {
     let timer = null;
-    if (activeCall) {
+    if (activeCall && activeCall.status === 'connected') {
       timer = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
@@ -395,7 +619,22 @@ const SecretVault = ({ currentUser, onClose }) => {
       setCallDuration(0);
     }
     return () => timer && clearInterval(timer);
-  }, [activeCall]);
+  }, [activeCall?.status]);
+
+  // Bind video and audio streams when activeCall changes
+  useEffect(() => {
+    if (activeCall && activeCall.type === 'video') {
+      if (localVideoRef.current && localStreamRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current;
+      }
+      if (remoteVideoRef.current && remoteStreamRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+      }
+    }
+    if (remoteAudioRef.current && remoteStreamRef.current) {
+      remoteAudioRef.current.srcObject = remoteStreamRef.current;
+    }
+  }, [activeCall?.status, activeCall?.type]);
 
   // Format call duration helper (MM:SS)
   const formatSeconds = (sec) => {
@@ -814,44 +1053,262 @@ const SecretVault = ({ currentUser, onClose }) => {
   };
 
   // -------------------------------------------------------------------------
-  // 8. CALLS (AUDIO / VIDEO) & CALL LOGGING
+  // 8. CALLS (AUDIO / VIDEO) & REAL WEBRTC SIGNALING
   // -------------------------------------------------------------------------
-  const startCall = (type) => {
-    if (!activeConversation) return;
-    setActiveCall({
-      type,
-      contact: activeConversation.contact
-    });
+  const startCall = async (type) => {
+    if (!activeConversation || !activeConversation.contact) return;
+    if (!socketRef.current || !socketRef.current.connected) {
+      alert('Encrypted socket connection is offline. Please wait a moment and try again.');
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Media devices (Microphone/Camera) are not supported in this browser context.');
+      return;
+    }
+
+    const contact = activeConversation.contact;
+    const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+    // 1. Request microphone & camera permissions
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: type === 'video'
+      });
+    } catch (err) {
+      console.warn('[CallSocket Client] Media permission denied:', err.message);
+      alert(type === 'video'
+        ? 'Camera and microphone access are required for encrypted video calls.'
+        : 'Microphone access is required for encrypted audio calls.');
+      return;
+    }
+
+    localStreamRef.current = stream;
     setCallMuted(false);
     setCallVideoOff(false);
     setCallDuration(0);
+
+    setActiveCall({
+      callId,
+      type,
+      direction: 'outgoing',
+      contact,
+      status: 'calling'
+    });
+
+    try {
+      const pc = setupPeerConnection(callId, contact.id);
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+      if (localVideoRef.current && type === 'video') {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      console.log('[CallSocket Client] outgoing call offer=' + callId + ' to=' + contact.id);
+      socketRef.current.emit('call:offer', {
+        callId,
+        conversationId: activeConversation.id,
+        recipientId: contact.id,
+        callerId: activeUser?.id,
+        callerName: activeUser?.full_name || activeUser?.username || 'Scholar',
+        callType: type,
+        sdp: offer
+      });
+    } catch (err) {
+      console.error('[CallSocket Client] Error starting call:', err.message);
+      cleanupCallMedia();
+      setActiveCall(null);
+    }
+  };
+
+  const handleAcceptCall = async () => {
+    const incoming = incomingCallRef.current;
+    if (!incoming || !socketRef.current) return;
+
+    setIncomingCall(null);
+
+    const callId = incoming.callId;
+    const callerId = incoming.callerId;
+    const callType = incoming.callType || 'audio';
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      socketRef.current.emit('call:decline', {
+        callId,
+        targetUserId: callerId,
+        conversationId: incoming.conversationId,
+        reason: 'unsupported'
+      });
+      alert('Media devices are not supported in this browser context.');
+      return;
+    }
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: callType === 'video'
+      });
+    } catch (err) {
+      console.warn('[CallSocket Client] Permission error on accept:', err.message);
+      socketRef.current.emit('call:decline', {
+        callId,
+        targetUserId: callerId,
+        conversationId: incoming.conversationId,
+        reason: 'permission_denied'
+      });
+      alert('Microphone/Camera permission is required to answer this call.');
+      return;
+    }
+
+    localStreamRef.current = stream;
+    setCallMuted(false);
+    setCallVideoOff(false);
+    setCallDuration(0);
+
+    setActiveCall({
+      callId,
+      type: callType,
+      direction: 'incoming',
+      contact: { id: callerId, name: incoming.callerName, username: incoming.callerName },
+      status: 'connecting'
+    });
+
+    try {
+      const pc = setupPeerConnection(callId, callerId);
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+      if (localVideoRef.current && callType === 'video') {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      await pc.setRemoteDescription(new RTCSessionDescription(incoming.sdp));
+      await processIceQueue(callId);
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      console.log('[CallSocket Client] answer emitted for call=' + callId + ' to=' + callerId);
+      socketRef.current.emit('call:answer', {
+        callId,
+        targetUserId: callerId,
+        sdp: answer
+      });
+    } catch (err) {
+      console.error('[CallSocket Client] Error answering call:', err.message);
+      cleanupCallMedia();
+      setActiveCall(null);
+    }
+  };
+
+  const handleDeclineCall = async () => {
+    const incoming = incomingCallRef.current;
+    if (!incoming) return;
+
+    if (socketRef.current) {
+      socketRef.current.emit('call:decline', {
+        callId: incoming.callId,
+        targetUserId: incoming.callerId,
+        conversationId: incoming.conversationId,
+        reason: 'declined'
+      });
+    }
+
+    try {
+      await vaultApi.recordCallLog({
+        contactId: incoming.callerId,
+        callType: incoming.callType,
+        direction: 'incoming',
+        status: 'declined',
+        duration: 0
+      });
+      loadCallLogs();
+    } catch (e) {
+      console.warn('[CallLog] Error recording decline:', e.message);
+    }
+
+    setIncomingCall(null);
   };
 
   const handleEndCall = async () => {
-    if (!activeCall || !activeConversation) {
+    const active = activeCallRef.current;
+    if (!active) {
+      cleanupCallMedia();
       setActiveCall(null);
       return;
     }
 
+    const callId = active.callId;
+    const contactId = active.contact?.id;
+    const callType = active.type;
     const duration = callDuration;
-    const callType = activeCall.type;
-    const contactId = activeConversation.contact.id;
+    const isConnected = active.status === 'connected';
 
+    // If cancelling before answer
+    if (active.direction === 'outgoing' && (active.status === 'calling' || active.status === 'ringing')) {
+      if (socketRef.current && contactId) {
+        socketRef.current.emit('call:cancel', {
+          callId,
+          targetUserId: contactId
+        });
+      }
+      try {
+        await vaultApi.recordCallLog({
+          contactId,
+          callType,
+          direction: 'outgoing',
+          status: 'cancelled',
+          duration: 0
+        });
+        loadCallLogs();
+      } catch (e) {}
+    } else {
+      // Ending an active or connecting call
+      if (socketRef.current && contactId) {
+        socketRef.current.emit('call:end', {
+          callId,
+          targetUserId: contactId,
+          duration
+        });
+      }
+      try {
+        await vaultApi.recordCallLog({
+          contactId,
+          callType,
+          direction: active.direction || 'outgoing',
+          status: isConnected && duration > 0 ? 'completed' : 'cancelled',
+          duration
+        });
+        loadCallLogs();
+      } catch (e) {}
+    }
+
+    cleanupCallMedia();
     setActiveCall(null);
     setCallDuration(0);
+  };
 
-    // Save real call log to backend database
-    try {
-      await vaultApi.recordCallLog({
-        contactId,
-        callType,
-        direction: 'outgoing',
-        status: duration > 0 ? 'completed' : 'cancelled',
-        duration
+  const toggleMic = () => {
+    const nextMuted = !callMuted;
+    setCallMuted(nextMuted);
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = !nextMuted;
       });
-      loadCallLogs();
-    } catch (err) {
-      console.warn('Could not record call log:', err.message);
+    }
+  };
+
+  const toggleVideo = () => {
+    const nextVideoOff = !callVideoOff;
+    setCallVideoOff(nextVideoOff);
+    if (localStreamRef.current) {
+      localStreamRef.current.getVideoTracks().forEach((track) => {
+        track.enabled = !nextVideoOff;
+      });
     }
   };
 
@@ -3448,6 +3905,108 @@ const SecretVault = ({ currentUser, onClose }) => {
       </div>
 
       {/* =============================================================== */}
+      {/* INCOMING CALL MODAL (AUDIO & VIDEO NOTIFICATION)                 */}
+      {/* =============================================================== */}
+      {incomingCall && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(20px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000
+          }}
+        >
+          <div
+            style={{
+              maxWidth: '400px',
+              width: '90%',
+              background: 'rgba(15, 23, 42, 0.95)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              borderRadius: '24px',
+              padding: '36px 24px',
+              textAlign: 'center',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85)'
+            }}
+          >
+            <div
+              style={{
+                width: '90px',
+                height: '90px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.6), rgba(5, 150, 105, 0.9))',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                fontWeight: '800',
+                color: '#fff',
+                border: '3px solid #10b981',
+                marginBottom: '16px',
+                boxShadow: '0 0 35px rgba(16, 185, 129, 0.5)'
+              }}
+            >
+              {(incomingCall.callerName || 'S')[0].toUpperCase()}
+            </div>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '1.3rem', fontWeight: '800', color: '#fff' }}>
+              {incomingCall.callerName || 'Scholar'}
+            </h3>
+            <div style={{ fontSize: '0.88rem', color: '#10b981', fontWeight: '600', marginBottom: '28px' }}>
+              Incoming Encrypted {incomingCall.callType === 'video' ? 'Video' : 'Audio'} Call...
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+              <button
+                type="button"
+                onClick={handleDeclineCall}
+                title="Decline Call"
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '14px',
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#f87171',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                <PhoneOff size={18} />
+                <span>Decline</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleAcceptCall}
+                title="Accept Call"
+                style={{
+                  padding: '12px 28px',
+                  borderRadius: '14px',
+                  background: '#10b981',
+                  border: 'none',
+                  color: '#fff',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 18px rgba(16, 185, 129, 0.4)'
+                }}
+              >
+                {incomingCall.callType === 'video' ? <Video size={18} /> : <Phone size={18} />}
+                <span>Accept</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =============================================================== */}
       {/* CALL MODAL (AUDIO & VIDEO CALL INTERFACE)                       */}
       {/* =============================================================== */}
       {activeCall && (
@@ -3463,6 +4022,9 @@ const SecretVault = ({ currentUser, onClose }) => {
             zIndex: 9999
           }}
         >
+          {/* Hidden Remote Audio Element for Live Audio Transmission */}
+          <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+
           <div
             style={{
               maxWidth: activeCall.type === 'video' ? '680px' : '400px',
@@ -3500,11 +4062,22 @@ const SecretVault = ({ currentUser, onClose }) => {
                 <h3 style={{ margin: '0 0 6px 0', fontSize: '1.3rem', fontWeight: '800', color: '#fff' }}>
                   {activeCall.contact?.name || activeCall.contact?.username}
                 </h3>
-                <div style={{ fontSize: '0.84rem', color: '#10b981', fontWeight: '600' }}>
-                  Encrypted Audio Transmission • Connected
+                <div style={{
+                  fontSize: '0.84rem',
+                  color: activeCall.status === 'connected' ? '#10b981' : (activeCall.status === 'declined' || activeCall.status === 'busy' || activeCall.status === 'failed' ? '#f87171' : '#38bdf8'),
+                  fontWeight: '600'
+                }}>
+                  {activeCall.status === 'calling' && 'Encrypted Audio Transmission • Calling...'}
+                  {activeCall.status === 'ringing' && 'Encrypted Audio Transmission • Ringing...'}
+                  {activeCall.status === 'connecting' && 'Encrypted Audio Transmission • Establishing Secure Peer Link...'}
+                  {activeCall.status === 'connected' && 'Encrypted Audio Transmission • Connected'}
+                  {activeCall.status === 'declined' && 'Encrypted Audio Transmission • Call Declined'}
+                  {activeCall.status === 'busy' && 'Encrypted Audio Transmission • User Busy'}
+                  {activeCall.status === 'ended' && 'Encrypted Audio Transmission • Call Ended'}
+                  {activeCall.status === 'failed' && 'Encrypted Audio Transmission • Connection Failed'}
                 </div>
                 <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#fff', marginTop: '10px', letterSpacing: '0.05em' }}>
-                  {formatSeconds(callDuration)}
+                  {activeCall.status === 'connected' ? formatSeconds(callDuration) : (activeCall.status === 'calling' || activeCall.status === 'ringing' || activeCall.status === 'connecting' ? 'Securing Channel...' : '')}
                 </div>
               </div>
             ) : (
@@ -3523,9 +4096,21 @@ const SecretVault = ({ currentUser, onClose }) => {
                     marginBottom: '16px'
                   }}
                 >
-                  {callVideoOff ? (
-                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Camera Paused</div>
-                  ) : (
+                  {/* Remote Video Stream Feed */}
+                  <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: activeCall.status === 'connected' ? 'block' : 'none'
+                    }}
+                  />
+
+                  {/* Fallback / Connecting State Placeholder */}
+                  {activeCall.status !== 'connected' ? (
                     <div style={{ textAlign: 'center' }}>
                       <div
                         style={{
@@ -3544,21 +4129,31 @@ const SecretVault = ({ currentUser, onClose }) => {
                       >
                         {(activeCall.contact?.name || activeCall.contact?.username || 'S')[0].toUpperCase()}
                       </div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Encrypted Video Feed</div>
+                      <div style={{ color: '#38bdf8', fontSize: '0.82rem', fontWeight: '600' }}>
+                        {activeCall.status === 'calling' && 'Calling Remote Peer...'}
+                        {activeCall.status === 'ringing' && 'Ringing Remote Peer...'}
+                        {activeCall.status === 'connecting' && 'Negotiating Video Stream...'}
+                        {activeCall.status === 'declined' && 'Call Declined'}
+                        {activeCall.status === 'busy' && 'User Busy'}
+                        {activeCall.status === 'ended' && 'Call Ended'}
+                      </div>
                     </div>
-                  )}
+                  ) : callVideoOff ? (
+                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>Camera Paused</div>
+                  ) : null}
 
-                  {/* Remote Pip */}
+                  {/* Local Pip Video Feed */}
                   <div
                     style={{
                       position: 'absolute',
                       top: '12px',
                       right: '12px',
-                      width: '80px',
-                      height: '60px',
+                      width: '90px',
+                      height: '68px',
                       borderRadius: '8px',
-                      background: 'rgba(0, 0, 0, 0.6)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      background: 'rgba(0, 0, 0, 0.7)',
+                      border: '1px solid rgba(255, 255, 255, 0.25)',
+                      overflow: 'hidden',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -3566,14 +4161,30 @@ const SecretVault = ({ currentUser, onClose }) => {
                       color: '#fff'
                     }}
                   >
-                    You
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: !callVideoOff ? 'block' : 'none'
+                      }}
+                    />
+                    {callVideoOff && <span>You</span>}
                   </div>
                 </div>
                 <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '800', color: '#fff' }}>
                   {activeCall.contact?.name || activeCall.contact?.username}
                 </h3>
-                <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#10b981' }}>
-                  {formatSeconds(callDuration)}
+                <div style={{
+                  fontSize: '0.95rem',
+                  fontWeight: '700',
+                  color: activeCall.status === 'connected' ? '#10b981' : (activeCall.status === 'declined' || activeCall.status === 'busy' || activeCall.status === 'failed' ? '#f87171' : '#38bdf8')
+                }}>
+                  {activeCall.status === 'connected' ? formatSeconds(callDuration) : (activeCall.status === 'calling' ? 'Calling...' : activeCall.status === 'ringing' ? 'Ringing...' : activeCall.status === 'connecting' ? 'Securing Video Feed...' : '')}
                 </div>
               </div>
             )}
@@ -3582,7 +4193,7 @@ const SecretVault = ({ currentUser, onClose }) => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '16px' }}>
               <button
                 type="button"
-                onClick={() => setCallMuted(!callMuted)}
+                onClick={toggleMic}
                 title={callMuted ? 'Unmute Microphone' : 'Mute Microphone'}
                 style={{
                   width: '46px',
@@ -3603,7 +4214,7 @@ const SecretVault = ({ currentUser, onClose }) => {
               {activeCall.type === 'video' && (
                 <button
                   type="button"
-                  onClick={() => setCallVideoOff(!callVideoOff)}
+                  onClick={toggleVideo}
                   title={callVideoOff ? 'Turn Video On' : 'Turn Video Off'}
                   style={{
                     width: '46px',

@@ -1,6 +1,6 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { User, ConversationMember, CallLog } = require('../models');
 
 let io;
 
@@ -70,6 +70,159 @@ const initSocket = (server) => {
         return;
       }
       socket.join(`user_${socket.userId}`);
+    });
+
+    // =========================================================================
+    // WEBRTC CALL SIGNALING (AUDIO & VIDEO CALLS)
+    // =========================================================================
+
+    // 1. Outgoing Call Offer
+    socket.on('call:offer', async (data) => {
+      try {
+        const { callId, conversationId, recipientId, callerId, callerName, callType, sdp } = data || {};
+        if (!callId || !recipientId || !sdp) {
+          console.warn(`[CallSocket Server] Invalid offer payload from user ${socket.userId}`);
+          return;
+        }
+
+        if (String(socket.userId) !== String(callerId)) {
+          console.warn(`[CallSocket Server] Unauthorized callerId ${callerId} attempted by user ${socket.userId}`);
+          return;
+        }
+
+        // Authorize conversation membership: both caller and recipient must be members
+        if (conversationId) {
+          const members = await ConversationMember.findAll({
+            where: {
+              conversationId,
+              userId: [socket.userId, recipientId]
+            }
+          });
+          if (members.length < 2 && String(socket.userId) !== String(recipientId)) {
+            console.warn(`[CallSocket Server] Membership verification failed: conversation ${conversationId} does not include users ${socket.userId} and ${recipientId}`);
+            return;
+          }
+        }
+
+        console.log(`[CallSocket Server] authenticated user=${socket.userId}`);
+        console.log(`[CallSocket Server] call offer=${callId} caller=${socket.userId} recipient=${recipientId} type=${callType}`);
+        console.log(`[CallSocket Server] forwarding offer to user_${recipientId}`);
+
+        // Forward incoming call to recipient's private room
+        io.to(`user_${recipientId}`).emit('call:incoming', {
+          callId,
+          conversationId,
+          callerId: socket.userId,
+          callerName: callerName || 'Scholar',
+          callType: callType || 'audio',
+          sdp
+        });
+
+        // Acknowledge ringing to caller
+        socket.emit('call:ringing', { callId, recipientId });
+      } catch (err) {
+        console.error('[CallSocket Server] call:offer error:', err.message);
+      }
+    });
+
+    // 2. Call Answer
+    socket.on('call:answer', (data) => {
+      try {
+        const { callId, targetUserId, sdp } = data || {};
+        if (!callId || !targetUserId || !sdp) return;
+
+        console.log(`[CallSocket Server] answer=${callId} responder=${socket.userId} target=${targetUserId}`);
+        io.to(`user_${targetUserId}`).emit('call:answer', {
+          callId,
+          responderId: socket.userId,
+          sdp
+        });
+      } catch (err) {
+        console.error('[CallSocket Server] call:answer error:', err.message);
+      }
+    });
+
+    // 3. ICE Candidate Forwarding
+    socket.on('call:ice-candidate', (data) => {
+      try {
+        const { callId, targetUserId, candidate } = data || {};
+        if (!callId || !targetUserId || !candidate) return;
+
+        console.log(`[CallSocket Server] ICE candidate=${callId} sender=${socket.userId} target=${targetUserId}`);
+        io.to(`user_${targetUserId}`).emit('call:ice-candidate', {
+          callId,
+          senderId: socket.userId,
+          candidate
+        });
+      } catch (err) {
+        console.error('[CallSocket Server] call:ice-candidate error:', err.message);
+      }
+    });
+
+    // 4. Decline Call
+    socket.on('call:decline', async (data) => {
+      try {
+        const { callId, targetUserId, conversationId, reason } = data || {};
+        if (!callId || !targetUserId) return;
+
+        console.log(`[CallSocket Server] call declined=${callId} by=${socket.userId} target=${targetUserId}`);
+        io.to(`user_${targetUserId}`).emit('call:declined', {
+          callId,
+          declinerId: socket.userId,
+          reason
+        });
+      } catch (err) {
+        console.error('[CallSocket Server] call:decline error:', err.message);
+      }
+    });
+
+    // 5. Cancel Call (Caller cancels before answer)
+    socket.on('call:cancel', (data) => {
+      try {
+        const { callId, targetUserId } = data || {};
+        if (!callId || !targetUserId) return;
+
+        console.log(`[CallSocket Server] call cancelled=${callId} by=${socket.userId} target=${targetUserId}`);
+        io.to(`user_${targetUserId}`).emit('call:cancelled', {
+          callId,
+          callerId: socket.userId
+        });
+      } catch (err) {
+        console.error('[CallSocket Server] call:cancel error:', err.message);
+      }
+    });
+
+    // 6. Busy State (User is already in another call)
+    socket.on('call:busy', (data) => {
+      try {
+        const { callId, targetUserId } = data || {};
+        if (!callId || !targetUserId) return;
+
+        console.log(`[CallSocket Server] call busy=${callId} responder=${socket.userId} target=${targetUserId}`);
+        io.to(`user_${targetUserId}`).emit('call:busy', {
+          callId,
+          responderId: socket.userId
+        });
+      } catch (err) {
+        console.error('[CallSocket Server] call:busy error:', err.message);
+      }
+    });
+
+    // 7. End Call
+    socket.on('call:end', (data) => {
+      try {
+        const { callId, targetUserId, duration } = data || {};
+        if (!callId || !targetUserId) return;
+
+        console.log(`[CallSocket Server] call ended=${callId} by=${socket.userId} duration=${duration || 0}`);
+        io.to(`user_${targetUserId}`).emit('call:ended', {
+          callId,
+          endedBy: socket.userId,
+          duration: duration || 0
+        });
+      } catch (err) {
+        console.error('[CallSocket Server] call:end error:', err.message);
+      }
     });
 
     socket.on('disconnect', (reason) => {
