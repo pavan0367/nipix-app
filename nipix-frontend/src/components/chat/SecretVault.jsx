@@ -555,8 +555,8 @@ const SecretVault = ({ currentUser, onClose }) => {
     const optimisticMsg = {
       id: `temp-${Date.now()}`,
       conversationId: activeConversation.id,
-      senderId: currentUser?.id,
-      senderName: currentUser?.full_name || currentUser?.username || 'You',
+      senderId: activeUser?.id,
+      senderName: activeUser?.full_name || activeUser?.username || 'You',
       isUser: true,
       text,
       mediaUrl: null,
@@ -632,8 +632,8 @@ const SecretVault = ({ currentUser, onClose }) => {
       const optimisticMsg = {
         id: `temp-${Date.now()}`,
         conversationId: activeConversation.id,
-        senderId: currentUser?.id,
-        senderName: currentUser?.full_name || currentUser?.username || 'You',
+        senderId: activeUser?.id,
+        senderName: activeUser?.full_name || activeUser?.username || 'You',
         isUser: true,
         text: file.name,
         mediaUrl: base64Data,
@@ -712,8 +712,8 @@ const SecretVault = ({ currentUser, onClose }) => {
         const optimisticMsg = {
           id: `temp-${Date.now()}`,
           conversationId: activeConversation.id,
-          senderId: currentUser?.id,
-          senderName: currentUser?.full_name || currentUser?.username || 'You',
+          senderId: activeUser?.id,
+          senderName: activeUser?.full_name || activeUser?.username || 'You',
           isUser: true,
           text: locString,
           mediaUrl: mapUrl,
@@ -1931,11 +1931,11 @@ const SecretVault = ({ currentUser, onClose }) => {
                 justifyContent: 'center'
               }}
             >
-              {(currentUser?.full_name || currentUser?.username || 'U')[0].toUpperCase()}
+              {(activeUser?.full_name || activeUser?.username || 'U')[0].toUpperCase()}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {currentUser?.full_name || currentUser?.username || 'Scholar'}
+                {activeUser?.full_name || activeUser?.username || 'Scholar'}
               </div>
               <div style={{ fontSize: '0.7rem', color: '#10b981' }}>
                 ● Active Encrypted
@@ -2763,8 +2763,8 @@ const SecretVault = ({ currentUser, onClose }) => {
                   </div>
                 ) : (
                   messages.map((msg) => {
-                    const isUser = currentUser?.id
-                      ? String(msg.senderId) === String(currentUser?.id)
+                    const isUser = activeUser?.id
+                      ? String(msg.senderId) === String(activeUser?.id)
                       : Boolean(msg.isUser);
 
                     return (
